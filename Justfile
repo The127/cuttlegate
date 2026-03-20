@@ -1,5 +1,9 @@
 # Install just: https://github.com/casey/just#installation
 
+# Build the server binary into build/server
+build:
+    go build -o build/server ./cmd/server
+
 # Run all unit tests (includes architecture import rules)
 test:
     go test ./...
