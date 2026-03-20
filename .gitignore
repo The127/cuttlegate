@@ -1,0 +1,21 @@
+# Build artefacts
+*.test
+*.out
+*.prof
+/server
+build/
+
+# Environment / secrets
+.env
+.env.*
+*.env
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Editor / OS noise
+.DS_Store
+.idea/
+*.swp
+*.swo

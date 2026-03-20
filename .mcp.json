@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "hivetrack": {
+      "command": "hivetrack-mcp",
+      "env": {
+        "HIVETRACK_URL": "https://hivetrack.karo.gay"
+      }
+    }
+  }
+}

@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS flags;
+DROP TABLE IF EXISTS environments;
+DROP TABLE IF EXISTS projects;
