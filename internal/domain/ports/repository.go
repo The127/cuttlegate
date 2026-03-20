@@ -31,3 +31,10 @@ type EnvironmentRepository interface {
 	ListByProject(ctx context.Context, projectID string) ([]*domain.Environment, error)
 	Delete(ctx context.Context, id string) error
 }
+
+// RuleRepository is the port for persisting and retrieving targeting rules.
+type RuleRepository interface {
+	ListByFlagEnvironment(ctx context.Context, flagID, environmentID string) ([]*domain.Rule, error)
+	Upsert(ctx context.Context, rule *domain.Rule) error
+	Delete(ctx context.Context, id string) error
+}
