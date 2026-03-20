@@ -13,6 +13,9 @@ type FlagEnvironmentStateRepository interface {
 	CreateBatch(ctx context.Context, states []*domain.FlagEnvironmentState) error
 	// ListByEnvironment returns all state rows for a given environment. Returns empty slice, never nil.
 	ListByEnvironment(ctx context.Context, environmentID string) ([]*domain.FlagEnvironmentState, error)
+	// GetByFlagAndEnvironment returns the state row for a specific flag+environment pair.
+	// Returns nil, nil when no state row exists (treated as disabled by the evaluation engine).
+	GetByFlagAndEnvironment(ctx context.Context, flagID, environmentID string) (*domain.FlagEnvironmentState, error)
 	// SetEnabled updates the enabled field for a specific flag+environment pair.
 	// Returns ErrNotFound if no state row exists for that combination.
 	SetEnabled(ctx context.Context, flagID, environmentID string, enabled bool) error

@@ -3,6 +3,7 @@ package dbadapter
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	"github.com/karo/cuttlegate/internal/domain"
 	"github.com/karo/cuttlegate/internal/domain/ports"
@@ -65,6 +66,21 @@ func (r *PostgresFlagEnvironmentStateRepository) ListByEnvironment(ctx context.C
 		states = append(states, &s)
 	}
 	return states, rows.Err()
+}
+
+func (r *PostgresFlagEnvironmentStateRepository) GetByFlagAndEnvironment(ctx context.Context, flagID, environmentID string) (*domain.FlagEnvironmentState, error) {
+	var s domain.FlagEnvironmentState
+	err := r.db.QueryRowContext(ctx,
+		`SELECT flag_id, environment_id, enabled FROM flag_environment_states WHERE flag_id = $1 AND environment_id = $2`,
+		flagID, environmentID,
+	).Scan(&s.FlagID, &s.EnvironmentID, &s.Enabled)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &s, nil
 }
 
 func (r *PostgresFlagEnvironmentStateRepository) SetEnabled(ctx context.Context, flagID, environmentID string, enabled bool) error {

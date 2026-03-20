@@ -43,6 +43,15 @@ func (f *fakeFlagEnvironmentStateRepository) ListByEnvironment(_ context.Context
 	return result, nil
 }
 
+func (f *fakeFlagEnvironmentStateRepository) GetByFlagAndEnvironment(_ context.Context, flagID, environmentID string) (*domain.FlagEnvironmentState, error) {
+	s, ok := f.states[stateKey(flagID, environmentID)]
+	if !ok {
+		return nil, nil
+	}
+	cp := *s
+	return &cp, nil
+}
+
 func (f *fakeFlagEnvironmentStateRepository) SetEnabled(_ context.Context, flagID, environmentID string, enabled bool) error {
 	k := stateKey(flagID, environmentID)
 	s, ok := f.states[k]
