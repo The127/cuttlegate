@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+msg_file="$1"
+msg=$(cat "$msg_file")
+
+# ── Conventional commits format ───────────────────────────────────────────────
+# Expected: <type>[optional scope]: <description>
+# Valid types: feat, fix, chore, docs, test, refactor, ci
+conventional_pattern='^(feat|fix|chore|docs|test|refactor|ci)(\([^)]+\))?: .{1,}'
+
+if ! echo "$msg" | head -1 | grep -qE "$conventional_pattern"; then
+  echo ""
+  echo "commit-msg: commit message must follow Conventional Commits format."
+  echo ""
+  echo "  Format:  <type>[optional scope]: <description>"
+  echo "  Types:   feat, fix, chore, docs, test, refactor, ci"
+  echo ""
+  echo "  Example: feat(flags): add flag evaluation endpoint"
+  echo "           chore: update go.mod dependencies"
+  echo ""
+  echo "  Your message: $(head -1 <<< "$msg")"
+  exit 1
+fi
+
+# ── Issue reference required ──────────────────────────────────────────────────
+# Every commit must reference an issue in the footer: refs #N or closes #N
+if ! echo "$msg" | grep -qE '(refs|closes|fixes|resolves) #[0-9]+'; then
+  echo ""
+  echo "commit-msg: commit message must include an issue reference."
+  echo ""
+  echo "  Add one of the following to the commit body or footer:"
+  echo "    refs #N     (references the issue without closing it)"
+  echo "    closes #N   (closes the issue when merged)"
+  echo ""
+  echo "  Example:"
+  echo "    feat: add flag evaluation endpoint"
+  echo ""
+  echo "    Implements the core GET /flags/:key handler."
+  echo ""
+  echo "    closes #42"
+  exit 1
+fi

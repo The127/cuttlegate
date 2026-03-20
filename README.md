@@ -8,6 +8,9 @@ A feature flag service built on a ports & adapters architecture.
 # Install dependencies
 go mod download
 
+# Activate git hooks (required once after cloning)
+just install-hooks
+
 # Run tests
 just test
 

@@ -1,5 +1,10 @@
 # Install just: https://github.com/casey/just#installation
 
+# Activate git hooks from .githooks/ (run once after cloning)
+install-hooks:
+    git config core.hooksPath .githooks
+    @echo "Hooks installed."
+
 # Run the linter
 lint:
     golangci-lint run ./...
