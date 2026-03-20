@@ -35,3 +35,4 @@ See `template.md`. Status values: `Proposed`, `Accepted`, `Deprecated`, `Superse
 | [0004](0004-ai-development-tooling-graphiti-axon.md) | AI development tooling evaluation — Graphiti and Axon | Accepted |
 | [0005](0005-api-key-evaluation.md) | API key authentication — rejected | Accepted |
 | [0006](0006-cuttlegate-as-pure-resource-server.md) | Cuttlegate is a pure resource server — Keyline owns all auth | Accepted |
+| [0007](0007-api-versioning-strategy.md) | API versioning strategy — URL prefix `/api/v1/` | Accepted |

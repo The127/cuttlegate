@@ -129,6 +129,17 @@ No boolean fields exist in Sprint 2 responses. This convention applies from Spri
 
 ---
 
+## Versioning
+
+All API routes are prefixed with `/api/v1/`. See [ADR 0007](adr/0007-api-versioning-strategy.md) for the full decision and breaking change policy.
+
+In brief:
+- Adding fields or endpoints is **non-breaking** — no version bump needed
+- Removing/renaming fields, changing types, or removing endpoints is **breaking** — requires `/api/v2/`
+- Every new endpoint must register under `/api/v1/` — no exceptions
+
+---
+
 ## Validation record
 
 | Date | Endpoint | Validator | Outcome |
