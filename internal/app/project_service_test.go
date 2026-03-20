@@ -71,7 +71,7 @@ func (f *fakeProjectRepository) Delete(_ context.Context, id string) error {
 
 func TestProjectService_Create_Succeeds(t *testing.T) {
 	svc := app.NewProjectService(newFakeProjectRepository())
-	p, err := svc.Create(context.Background(), "Acme Corp", "acme")
+	p, err := svc.Create(authCtx("editor-1", domain.RoleEditor), "Acme Corp", "acme")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -88,10 +88,11 @@ func TestProjectService_Create_Succeeds(t *testing.T) {
 
 func TestProjectService_Create_DuplicateSlug_ReturnsErrConflict(t *testing.T) {
 	svc := app.NewProjectService(newFakeProjectRepository())
-	if _, err := svc.Create(context.Background(), "Acme Corp", "acme"); err != nil {
+	ctx := authCtx("editor-1", domain.RoleEditor)
+	if _, err := svc.Create(ctx, "Acme Corp", "acme"); err != nil {
 		t.Fatalf("first create: %v", err)
 	}
-	_, err := svc.Create(context.Background(), "Acme Duplicate", "acme")
+	_, err := svc.Create(ctx, "Acme Duplicate", "acme")
 	if !errors.Is(err, domain.ErrConflict) {
 		t.Errorf("expected ErrConflict, got %v", err)
 	}
@@ -121,7 +122,7 @@ func TestProjectService_List_EmptyReturnsEmptySlice(t *testing.T) {
 
 func TestProjectService_Delete_NotFound_ReturnsErrNotFound(t *testing.T) {
 	svc := app.NewProjectService(newFakeProjectRepository())
-	err := svc.Delete(context.Background(), "00000000-0000-0000-0000-000000000000")
+	err := svc.Delete(authCtx("editor-1", domain.RoleEditor), "00000000-0000-0000-0000-000000000000")
 	if !errors.Is(err, domain.ErrNotFound) {
 		t.Errorf("expected ErrNotFound, got %v", err)
 	}
@@ -129,7 +130,7 @@ func TestProjectService_Delete_NotFound_ReturnsErrNotFound(t *testing.T) {
 
 func TestProjectService_UpdateName_Succeeds(t *testing.T) {
 	svc := app.NewProjectService(newFakeProjectRepository())
-	ctx := context.Background()
+	ctx := authCtx("editor-1", domain.RoleEditor)
 	p, err := svc.Create(ctx, "Acme", "acme")
 	if err != nil {
 		t.Fatalf("create: %v", err)
@@ -151,7 +152,7 @@ func TestProjectService_UpdateName_Succeeds(t *testing.T) {
 
 func TestProjectService_UpdateName_NotFound_ReturnsErrNotFound(t *testing.T) {
 	svc := app.NewProjectService(newFakeProjectRepository())
-	_, err := svc.UpdateName(context.Background(), "ghost", "Whatever")
+	_, err := svc.UpdateName(authCtx("editor-1", domain.RoleEditor), "ghost", "Whatever")
 	if !errors.Is(err, domain.ErrNotFound) {
 		t.Errorf("expected ErrNotFound, got %v", err)
 	}
@@ -159,7 +160,7 @@ func TestProjectService_UpdateName_NotFound_ReturnsErrNotFound(t *testing.T) {
 
 func TestProjectService_DeleteBySlug_Succeeds(t *testing.T) {
 	svc := app.NewProjectService(newFakeProjectRepository())
-	ctx := context.Background()
+	ctx := authCtx("editor-1", domain.RoleEditor)
 	if _, err := svc.Create(ctx, "Acme", "acme"); err != nil {
 		t.Fatalf("create: %v", err)
 	}
@@ -174,8 +175,42 @@ func TestProjectService_DeleteBySlug_Succeeds(t *testing.T) {
 
 func TestProjectService_DeleteBySlug_NotFound_ReturnsErrNotFound(t *testing.T) {
 	svc := app.NewProjectService(newFakeProjectRepository())
-	err := svc.DeleteBySlug(context.Background(), "ghost")
+	err := svc.DeleteBySlug(authCtx("editor-1", domain.RoleEditor), "ghost")
 	if !errors.Is(err, domain.ErrNotFound) {
 		t.Errorf("expected ErrNotFound, got %v", err)
+	}
+}
+
+// ── RBAC ──────────────────────────────────────────────────────────────────────
+
+func TestProjectService_Create_ViewerForbidden(t *testing.T) {
+	svc := app.NewProjectService(newFakeProjectRepository())
+	_, err := svc.Create(authCtx("viewer-1", domain.RoleViewer), "Acme", "acme")
+	if !errors.Is(err, domain.ErrForbidden) {
+		t.Errorf("expected ErrForbidden, got %v", err)
+	}
+}
+
+func TestProjectService_UpdateName_ViewerForbidden(t *testing.T) {
+	svc := app.NewProjectService(newFakeProjectRepository())
+	_, err := svc.UpdateName(authCtx("viewer-1", domain.RoleViewer), "acme", "New Name")
+	if !errors.Is(err, domain.ErrForbidden) {
+		t.Errorf("expected ErrForbidden, got %v", err)
+	}
+}
+
+func TestProjectService_DeleteBySlug_ViewerForbidden(t *testing.T) {
+	svc := app.NewProjectService(newFakeProjectRepository())
+	err := svc.DeleteBySlug(authCtx("viewer-1", domain.RoleViewer), "acme")
+	if !errors.Is(err, domain.ErrForbidden) {
+		t.Errorf("expected ErrForbidden, got %v", err)
+	}
+}
+
+func TestProjectService_Create_NoAuthContextForbidden(t *testing.T) {
+	svc := app.NewProjectService(newFakeProjectRepository())
+	_, err := svc.Create(context.Background(), "Acme", "acme")
+	if !errors.Is(err, domain.ErrForbidden) {
+		t.Errorf("expected ErrForbidden, got %v", err)
 	}
 }

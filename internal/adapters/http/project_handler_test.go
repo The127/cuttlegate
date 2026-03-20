@@ -15,7 +15,8 @@ import (
 
 // fakeProjectService is a test double for the projectService interface.
 type fakeProjectService struct {
-	projects map[string]*domain.Project // keyed by slug
+	projects  map[string]*domain.Project // keyed by slug
+	mutateErr error                      // if set, mutating methods return this error
 }
 
 func newFakeProjectService() *fakeProjectService {
@@ -23,6 +24,9 @@ func newFakeProjectService() *fakeProjectService {
 }
 
 func (f *fakeProjectService) Create(_ context.Context, name, slug string) (*domain.Project, error) {
+	if f.mutateErr != nil {
+		return nil, f.mutateErr
+	}
 	if _, exists := f.projects[slug]; exists {
 		return nil, domain.ErrConflict
 	}
@@ -55,6 +59,9 @@ func (f *fakeProjectService) List(_ context.Context) ([]*domain.Project, error) 
 }
 
 func (f *fakeProjectService) UpdateName(_ context.Context, slug, name string) (*domain.Project, error) {
+	if f.mutateErr != nil {
+		return nil, f.mutateErr
+	}
 	p, ok := f.projects[slug]
 	if !ok {
 		return nil, domain.ErrNotFound
@@ -65,6 +72,9 @@ func (f *fakeProjectService) UpdateName(_ context.Context, slug, name string) (*
 }
 
 func (f *fakeProjectService) DeleteBySlug(_ context.Context, slug string) error {
+	if f.mutateErr != nil {
+		return f.mutateErr
+	}
 	if _, ok := f.projects[slug]; !ok {
 		return domain.ErrNotFound
 	}
@@ -377,6 +387,63 @@ func TestProjectHandler_Get_IDIsString(t *testing.T) {
 	}
 	if _, ok := p["id"].(string); !ok {
 		t.Errorf("'id' is not a string: %T %v", p["id"], p["id"])
+	}
+}
+
+// ── RBAC ──────────────────────────────────────────────────────────────────────
+
+func TestProjectHandler_Create_Forbidden_Returns403(t *testing.T) {
+	svc := newFakeProjectService()
+	svc.mutateErr = domain.ErrForbidden
+	mux := newTestMux(svc, noopAuth)
+
+	body := `{"name":"Acme","slug":"acme"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/projects", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status: got %d, want 403", rec.Code)
+	}
+	var b map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&b); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if b["error"] != "forbidden" {
+		t.Errorf("error code: got %v, want forbidden", b["error"])
+	}
+}
+
+func TestProjectHandler_Patch_Forbidden_Returns403(t *testing.T) {
+	svc := newFakeProjectService()
+	svc.projects["acme"] = &domain.Project{ID: "uid-1", Name: "Acme", Slug: "acme", CreatedAt: time.Now()}
+	svc.mutateErr = domain.ErrForbidden
+	mux := newTestMux(svc, noopAuth)
+
+	body := `{"name":"New Name"}`
+	req := httptest.NewRequest(http.MethodPatch, "/api/v1/projects/acme", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status: got %d, want 403", rec.Code)
+	}
+}
+
+func TestProjectHandler_Delete_Forbidden_Returns403(t *testing.T) {
+	svc := newFakeProjectService()
+	svc.projects["acme"] = &domain.Project{ID: "uid-1", Name: "Acme", Slug: "acme", CreatedAt: time.Now()}
+	svc.mutateErr = domain.ErrForbidden
+	mux := newTestMux(svc, noopAuth)
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/projects/acme", nil)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status: got %d, want 403", rec.Code)
 	}
 }
 

@@ -15,9 +15,10 @@ import (
 
 // fakeEnvironmentService is a test double for the environmentService interface.
 type fakeEnvironmentService struct {
-	envs     map[string]*domain.Environment // key: projectID+"/"+slug
-	byID     map[string]*domain.Environment
-	projects map[string]string // slug → ID (for Create)
+	envs      map[string]*domain.Environment // key: projectID+"/"+slug
+	byID      map[string]*domain.Environment
+	projects  map[string]string // slug → ID (for Create)
+	mutateErr error             // if set, mutating methods return this error
 }
 
 func newFakeEnvironmentService(projectSlugs ...string) *fakeEnvironmentService {
@@ -35,6 +36,9 @@ func newFakeEnvironmentService(projectSlugs ...string) *fakeEnvironmentService {
 func ek(projectID, slug string) string { return projectID + "/" + slug }
 
 func (f *fakeEnvironmentService) Create(_ context.Context, projectSlug, name, envSlug string) (*domain.Environment, error) {
+	if f.mutateErr != nil {
+		return nil, f.mutateErr
+	}
 	projID, ok := f.projects[projectSlug]
 	if !ok {
 		return nil, domain.ErrNotFound
@@ -76,6 +80,9 @@ func (f *fakeEnvironmentService) ListByProject(_ context.Context, projectID stri
 }
 
 func (f *fakeEnvironmentService) DeleteBySlug(_ context.Context, projectID, slug string) error {
+	if f.mutateErr != nil {
+		return f.mutateErr
+	}
 	k := ek(projectID, slug)
 	e, ok := f.envs[k]
 	if !ok {
@@ -276,6 +283,45 @@ func TestEnvironmentHandler_Unauthenticated_Returns401(t *testing.T) {
 		if rec.Code != http.StatusUnauthorized {
 			t.Errorf("%s %s: got %d, want 401", tc.method, tc.path, rec.Code)
 		}
+	}
+}
+
+// ── RBAC ──────────────────────────────────────────────────────────────────────
+
+func TestEnvironmentHandler_Create_Forbidden_Returns403(t *testing.T) {
+	svc := newFakeEnvironmentService("acme")
+	svc.mutateErr = domain.ErrForbidden
+	mux := newEnvMux(svc, newFakeResolver("acme"), noopAuth)
+
+	body := `{"name":"Production","slug":"prod"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/projects/acme/environments", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status: got %d, want 403", rec.Code)
+	}
+	var b map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&b); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if b["error"] != "forbidden" {
+		t.Errorf("error code: got %v, want forbidden", b["error"])
+	}
+}
+
+func TestEnvironmentHandler_Delete_Forbidden_Returns403(t *testing.T) {
+	svc := newFakeEnvironmentService("acme")
+	svc.mutateErr = domain.ErrForbidden
+	mux := newEnvMux(svc, newFakeResolver("acme"), noopAuth)
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/projects/acme/environments/prod", nil)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status: got %d, want 403", rec.Code)
 	}
 }
 
