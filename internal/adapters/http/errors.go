@@ -23,6 +23,14 @@ func WriteError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, domain.ErrNotFound):
 		status, code, message = http.StatusNotFound, "not_found", "resource not found"
+	case errors.Is(err, domain.ErrImmutableVariants):
+		status, code, message = http.StatusBadRequest, "immutable_variants", err.Error()
+	case errors.Is(err, domain.ErrLastVariant):
+		status, code, message = http.StatusBadRequest, "last_variant", err.Error()
+	case errors.Is(err, domain.ErrDefaultVariant):
+		status, code, message = http.StatusConflict, "default_variant", err.Error()
+	case errors.Is(err, domain.ErrLastAdmin):
+		status, code, message = http.StatusConflict, "last_admin", "cannot remove the last admin"
 	case errors.Is(err, domain.ErrConflict):
 		status, code, message = http.StatusConflict, "conflict", "resource already exists"
 	case errors.Is(err, domain.ErrForbidden):
