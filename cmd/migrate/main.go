@@ -27,7 +27,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("migrate init: %v", err)
 	}
-	defer m.Close()
+	defer m.Close() //nolint:errcheck
 
 	cmd := "up"
 	if len(os.Args) > 1 {

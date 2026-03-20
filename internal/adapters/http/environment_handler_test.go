@@ -104,7 +104,9 @@ func TestEnvironmentHandler_List_EmptyReturnsWrappedArray(t *testing.T) {
 		t.Fatalf("status: got %d, want 200", rec.Code)
 	}
 	var body map[string]any
-	json.NewDecoder(rec.Body).Decode(&body)
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
 	envs, ok := body["environments"]
 	if !ok {
 		t.Fatal("missing 'environments' key")
@@ -139,7 +141,9 @@ func TestEnvironmentHandler_Create_Succeeds(t *testing.T) {
 		t.Fatalf("status: got %d, want 201", rec.Code)
 	}
 	var e map[string]any
-	json.NewDecoder(rec.Body).Decode(&e)
+	if err := json.NewDecoder(rec.Body).Decode(&e); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
 	for _, field := range []string{"id", "project_id", "name", "slug", "created_at"} {
 		if _, ok := e[field]; !ok {
 			t.Errorf("response missing field %q", field)

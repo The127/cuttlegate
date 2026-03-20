@@ -1,5 +1,9 @@
 # Install just: https://github.com/casey/just#installation
 
+# Run the linter
+lint:
+    golangci-lint run ./...
+
 # Build the server binary into build/server
 build:
     go build -o build/server ./cmd/server

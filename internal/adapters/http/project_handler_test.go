@@ -76,8 +76,8 @@ func (f *fakeProjectService) DeleteBySlug(_ context.Context, slug string) error 
 func noopAuth(next http.Handler) http.Handler { return next }
 
 // requireAuth401 is a middleware that always rejects with 401.
-func requireAuth401(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func requireAuth401(_ http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 	})
 }
@@ -372,7 +372,9 @@ func TestProjectHandler_Get_IDIsString(t *testing.T) {
 	mux.ServeHTTP(rec, req)
 
 	var p map[string]any
-	json.NewDecoder(rec.Body).Decode(&p)
+	if err := json.NewDecoder(rec.Body).Decode(&p); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
 	if _, ok := p["id"].(string); !ok {
 		t.Errorf("'id' is not a string: %T %v", p["id"], p["id"])
 	}
@@ -389,7 +391,9 @@ func TestProjectHandler_Get_CreatedAtIsISO8601UTC(t *testing.T) {
 	mux.ServeHTTP(rec, req)
 
 	var p map[string]any
-	json.NewDecoder(rec.Body).Decode(&p)
+	if err := json.NewDecoder(rec.Body).Decode(&p); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
 	createdAt, ok := p["created_at"].(string)
 	if !ok {
 		t.Fatalf("'created_at' is not a string: %T", p["created_at"])

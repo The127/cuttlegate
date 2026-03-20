@@ -13,8 +13,8 @@ import (
 // against the OIDC provider's JWKS. JWKS keys are fetched on first use and
 // cached automatically by the go-oidc library.
 type OIDCVerifier struct {
-	verifier   *gooidc.IDTokenVerifier
-	roleClaim  string
+	verifier  *gooidc.IDTokenVerifier
+	roleClaim string
 }
 
 // NewOIDCVerifier discovers the OIDC provider at issuer and returns a verifier.

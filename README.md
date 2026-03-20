@@ -20,3 +20,16 @@ just migrate-up
 
 ## Development
 
+Install `golangci-lint` (pinned via `tools.go`):
+
+```sh
+go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+```
+
+Then run:
+
+```sh
+just lint   # run linter
+just test   # run tests
+```
+

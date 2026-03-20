@@ -31,4 +31,3 @@ type EnvironmentRepository interface {
 	ListByProject(ctx context.Context, projectID string) ([]*domain.Environment, error)
 	Delete(ctx context.Context, id string) error
 }
-

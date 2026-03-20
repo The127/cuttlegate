@@ -33,7 +33,7 @@ func assert401JSON(t *testing.T, rec *httptest.ResponseRecorder) {
 
 func TestRequireBearer_MissingHeader_Returns401(t *testing.T) {
 	mw := RequireBearer(&stubVerifier{err: errors.New("should not be called")})
-	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
@@ -46,7 +46,7 @@ func TestRequireBearer_MissingHeader_Returns401(t *testing.T) {
 
 func TestRequireBearer_NotBearerScheme_Returns401(t *testing.T) {
 	mw := RequireBearer(&stubVerifier{err: errors.New("should not be called")})
-	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
@@ -60,7 +60,7 @@ func TestRequireBearer_NotBearerScheme_Returns401(t *testing.T) {
 
 func TestRequireBearer_InvalidToken_Returns401(t *testing.T) {
 	mw := RequireBearer(&stubVerifier{err: errors.New("invalid token")})
-	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 

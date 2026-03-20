@@ -111,7 +111,7 @@ func runMigrations(dsn string) error {
 	if err != nil {
 		return fmt.Errorf("migrate init: %w", err)
 	}
-	defer m.Close()
+	defer m.Close() //nolint:errcheck
 	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return err
 	}

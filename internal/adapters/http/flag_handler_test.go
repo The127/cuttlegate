@@ -125,7 +125,9 @@ func TestFlagHandler_List_EmptyReturnsWrappedArray(t *testing.T) {
 		t.Fatalf("status: got %d, want 200", rec.Code)
 	}
 	var body map[string]any
-	json.NewDecoder(rec.Body).Decode(&body)
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
 	flags, ok := body["flags"]
 	if !ok {
 		t.Fatal("missing 'flags' key")
@@ -159,7 +161,9 @@ func TestFlagHandler_Create_Succeeds(t *testing.T) {
 		t.Fatalf("status: got %d, want 201", rec.Code)
 	}
 	var f map[string]any
-	json.NewDecoder(rec.Body).Decode(&f)
+	if err := json.NewDecoder(rec.Body).Decode(&f); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
 	for _, field := range []string{"id", "project_id", "key", "name", "type", "variants", "default_variant_key", "created_at"} {
 		if _, ok := f[field]; !ok {
 			t.Errorf("response missing field %q", field)
@@ -255,7 +259,9 @@ func TestFlagHandler_Patch_UpdatesName(t *testing.T) {
 		t.Fatalf("status: got %d, want 200", rec.Code)
 	}
 	var f map[string]any
-	json.NewDecoder(rec.Body).Decode(&f)
+	if err := json.NewDecoder(rec.Body).Decode(&f); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
 	if f["name"] != "Dark Mode Beta" {
 		t.Errorf("name: got %v", f["name"])
 	}
@@ -275,7 +281,9 @@ func TestFlagHandler_Patch_IgnoresKeyAndType(t *testing.T) {
 		t.Fatalf("status: got %d, want 200", rec.Code)
 	}
 	var f map[string]any
-	json.NewDecoder(rec.Body).Decode(&f)
+	if err := json.NewDecoder(rec.Body).Decode(&f); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
 	if f["key"] != "dark-mode" {
 		t.Errorf("key changed: got %v", f["key"])
 	}
