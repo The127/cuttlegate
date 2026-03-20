@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -14,10 +16,12 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
+	_ "github.com/lib/pq"
 
 	dbmigrations "github.com/karo/cuttlegate/db"
+	dbadapter "github.com/karo/cuttlegate/internal/adapters/db"
 	httpadapter "github.com/karo/cuttlegate/internal/adapters/http"
-	"github.com/karo/cuttlegate/internal/domain/ports"
+	"github.com/karo/cuttlegate/internal/app"
 )
 
 func main() {
@@ -43,7 +47,7 @@ func run() error {
 		}
 	}
 
-	// ── Adapters ──────────────────────────────────────────────────────────────
+	// ── OIDC verifier ─────────────────────────────────────────────────────────
 
 	verifier, err := httpadapter.NewOIDCVerifier(
 		context.Background(),
@@ -55,33 +59,58 @@ func run() error {
 		return fmt.Errorf("oidc: %w", err)
 	}
 
-	// DB connection and repository adapters are wired here once dbadapter
-	// implementations land (Sprint 2). Example shape:
-	//
-	//   db, err := sql.Open("pgx", cfg.DSN)
-	//   if err != nil { return fmt.Errorf("db: %w", err) }
-	//   var flags    ports.FlagRepository        = dbadapter.NewFlagRepository(db)
-	//   var projects ports.ProjectRepository     = dbadapter.NewProjectRepository(db)
-	//   var envs     ports.EnvironmentRepository = dbadapter.NewPostgresEnvironmentRepository(db)
-	//   var events   ports.EventPublisher        = pubsub.NewEventPublisher()
+	// ── HTTP mux ──────────────────────────────────────────────────────────────
 
-	// ── Use cases ─────────────────────────────────────────────────────────────
+	mux := http.NewServeMux()
+	requireBearer := httpadapter.RequireBearer(verifier)
 
-	// Use-case constructors receive repository and publisher ports and are
-	// registered here before being passed to HTTP handlers (Sprint 2). Example:
-	//
-	//   flagUC := app.NewFlagUseCase(flags, events)
+	// Public: SPA OIDC config — no auth required.
+	clientCfg := spaClientConfig{
+		Authority:   cfg.OIDCIssuer,
+		ClientID:    cfg.OIDCClientID,
+		RedirectURI: cfg.OIDCRedirectURI,
+	}
+	mux.HandleFunc("GET /api/v1/config", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(clientCfg) //nolint:errcheck
+	})
 
-	// ── HTTP ──────────────────────────────────────────────────────────────────
+	// Authenticated API routes — wired when DATABASE_URL is available.
+	if cfg.DSN != "" {
+		conn, err := sql.Open("postgres", cfg.DSN)
+		if err != nil {
+			return fmt.Errorf("db: %w", err)
+		}
+		defer conn.Close() //nolint:errcheck
 
-	mux := buildMux(verifier)
+		projRepo := dbadapter.NewPostgresProjectRepository(conn)
+		envRepo := dbadapter.NewPostgresEnvironmentRepository(conn)
+		memberRepo := dbadapter.NewPostgresProjectMemberRepository(conn)
+		flagRepo := dbadapter.NewPostgresFlagRepository(conn)
+		stateRepo := dbadapter.NewPostgresFlagEnvironmentStateRepository(conn)
+
+		projSvc := app.NewProjectService(projRepo)
+		envSvc := app.NewEnvironmentService(envRepo, projRepo)
+		memberSvc := app.NewProjectMemberService(memberRepo, projRepo)
+		flagSvc := app.NewFlagService(flagRepo, envRepo, stateRepo)
+
+		httpadapter.NewProjectHandler(projSvc).RegisterRoutes(mux, requireBearer)
+		httpadapter.NewEnvironmentHandler(envSvc, projSvc).RegisterRoutes(mux, requireBearer)
+		httpadapter.NewProjectMemberHandler(memberSvc).RegisterRoutes(mux, requireBearer)
+		httpadapter.NewFlagHandler(flagSvc, projSvc).RegisterRoutes(mux, requireBearer)
+		httpadapter.NewFlagVariantHandler(flagSvc, projSvc).RegisterRoutes(mux, requireBearer)
+		httpadapter.NewFlagEnvironmentHandler(flagSvc, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
+	}
+
+	// SPA static files — registered last so /api/v1/* routes take precedence.
+	serveSPA(mux)
+
+	// ── Server ────────────────────────────────────────────────────────────────
 
 	srv := &http.Server{
 		Addr:    cfg.Addr,
 		Handler: mux,
 	}
-
-	// ── Startup and graceful shutdown ─────────────────────────────────────────
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -102,6 +131,14 @@ func run() error {
 	return srv.Shutdown(shutdownCtx)
 }
 
+// spaClientConfig is the public OIDC config returned to the SPA.
+// Only values safe to expose to the browser are included.
+type spaClientConfig struct {
+	Authority   string `json:"authority"`
+	ClientID    string `json:"client_id"`
+	RedirectURI string `json:"redirect_uri"`
+}
+
 func runMigrations(dsn string) error {
 	src, err := iofs.New(dbmigrations.FS, "migrations")
 	if err != nil {
@@ -117,23 +154,4 @@ func runMigrations(dsn string) error {
 	}
 	log.Println("migrations applied")
 	return nil
-}
-
-func buildMux(verifier ports.TokenVerifier) *http.ServeMux {
-	mux := http.NewServeMux()
-	requireBearer := httpadapter.RequireBearer(verifier)
-
-	// ── Application routes (Sprint 2) ─────────────────────────────────────────
-	//
-	// All API routes are Bearer-authenticated. Example shape:
-	//
-	//   mux.Handle("GET /api/projects", requireBearer(flagHandler.ListProjects))
-	//   mux.Handle("POST /api/projects", requireBearer(flagHandler.CreateProject))
-
-	// Placeholder — replaced by real routes in Sprint 2.
-	mux.Handle("/", requireBearer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})))
-
-	return mux
 }

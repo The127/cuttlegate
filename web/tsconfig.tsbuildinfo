@@ -1,0 +1,1 @@
+{"root":["./src/api.ts","./src/auth.ts","./src/main.tsx","./src/queryClient.ts","./src/router.tsx","./src/components/ProjectSwitcher.tsx","./src/routes/__root.tsx","./src/routes/_authenticated.tsx","./src/routes/index.tsx","./src/routes/auth/callback.tsx","./src/routes/projects/$slug.environments.$envSlug.tsx","./src/routes/projects/$slug.tsx"],"version":"5.9.3"}

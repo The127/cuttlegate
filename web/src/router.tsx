@@ -1,0 +1,25 @@
+import { createRouter } from '@tanstack/react-router'
+import { rootRoute } from './routes/__root'
+import { authenticatedRoute } from './routes/_authenticated'
+import { indexRoute } from './routes/index'
+import { callbackRoute } from './routes/auth/callback'
+import { projectRoute } from './routes/projects/$slug'
+import { projectEnvRoute } from './routes/projects/$slug.environments.$envSlug'
+
+const routeTree = rootRoute.addChildren([
+  authenticatedRoute.addChildren([
+    indexRoute,
+    projectRoute.addChildren([projectEnvRoute]),
+  ]),
+  callbackRoute,
+])
+
+export function createAppRouter() {
+  return createRouter({ routeTree })
+}
+
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: ReturnType<typeof createAppRouter>
+  }
+}
