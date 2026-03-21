@@ -74,6 +74,11 @@ func (h *EvaluationHandler) evaluate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !apiKeyScopeAllows(r.Context(), proj.ID, env.ID) {
+		WriteError(w, domain.ErrForbidden)
+		return
+	}
+
 	var body evaluateRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		WriteError(w, newBadRequest("invalid request body"))
@@ -130,6 +135,11 @@ func (h *EvaluationHandler) evaluateAll(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 		WriteError(w, err)
+		return
+	}
+
+	if !apiKeyScopeAllows(r.Context(), proj.ID, env.ID) {
+		WriteError(w, domain.ErrForbidden)
 		return
 	}
 
