@@ -25,6 +25,10 @@ func (f *fakeEvaluationService) Evaluate(_ context.Context, _, _, _ string, _ do
 }
 
 func newEvalMux(svc *fakeEvaluationService) *http.ServeMux {
+	return newEvalMuxWithCORS(svc, nil)
+}
+
+func newEvalMuxWithCORS(svc *fakeEvaluationService, corsOrigins []string) *http.ServeMux {
 	proj := &domain.Project{ID: "proj-1", Slug: "my-project", Name: "My Project", CreatedAt: time.Now()}
 	env := &domain.Environment{ID: "env-1", ProjectID: "proj-1", Slug: "production", Name: "Production"}
 
@@ -34,6 +38,7 @@ func newEvalMux(svc *fakeEvaluationService) *http.ServeMux {
 		svc,
 		&fakeProjResolver{projects: map[string]*domain.Project{proj.Slug: proj}},
 		&fakeEnvResolver{envs: map[string]*domain.Environment{"proj-1/production": env}},
+		corsOrigins,
 	).RegisterRoutes(mux, noAuth)
 	return mux
 }
@@ -166,5 +171,127 @@ func TestEvaluationHandler_Evaluate_ProjectNotFound(t *testing.T) {
 
 	if w.Code != http.StatusNotFound {
 		t.Fatalf("expected 404, got %d", w.Code)
+	}
+}
+
+const evalPath = "/api/v1/projects/my-project/environments/production/flags/my-flag/evaluate"
+
+func TestEvaluationHandler_CORS_Preflight_AllowedOrigin(t *testing.T) {
+	svc := &fakeEvaluationService{}
+	mux := newEvalMuxWithCORS(svc, []string{"https://app.example.com"})
+
+	req := httptest.NewRequest(http.MethodOptions, evalPath, nil)
+	req.Header.Set("Origin", "https://app.example.com")
+	req.Header.Set("Access-Control-Request-Method", "POST")
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 preflight, got %d", w.Code)
+	}
+	if got := w.Header().Get("Access-Control-Allow-Origin"); got != "https://app.example.com" {
+		t.Errorf("expected ACAO=https://app.example.com, got %q", got)
+	}
+	if got := w.Header().Get("Access-Control-Allow-Methods"); got == "" {
+		t.Error("expected Access-Control-Allow-Methods to be set")
+	}
+	if got := w.Header().Get("Access-Control-Allow-Headers"); got == "" {
+		t.Error("expected Access-Control-Allow-Headers to be set")
+	}
+	if got := w.Header().Get("Vary"); got == "" {
+		t.Error("expected Vary header to be set")
+	}
+}
+
+func TestEvaluationHandler_CORS_Preflight_DisallowedOrigin(t *testing.T) {
+	svc := &fakeEvaluationService{}
+	mux := newEvalMuxWithCORS(svc, []string{"https://app.example.com"})
+
+	req := httptest.NewRequest(http.MethodOptions, evalPath, nil)
+	req.Header.Set("Origin", "https://evil.example.com")
+	req.Header.Set("Access-Control-Request-Method", "POST")
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	if got := w.Header().Get("Access-Control-Allow-Origin"); got != "" {
+		t.Errorf("expected no ACAO header for disallowed origin, got %q", got)
+	}
+}
+
+func TestEvaluationHandler_CORS_ActualRequest_AllowedOrigin(t *testing.T) {
+	svc := &fakeEvaluationService{view: &app.EvalView{
+		Key: "my-flag", Enabled: true, Reason: domain.ReasonDefault,
+	}}
+	mux := newEvalMuxWithCORS(svc, []string{"https://app.example.com"})
+
+	body := `{"context":{"user_id":"u_1","attributes":{}}}`
+	req := httptest.NewRequest(http.MethodPost, evalPath, strings.NewReader(body))
+	req.Header.Set("Origin", "https://app.example.com")
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	if got := w.Header().Get("Access-Control-Allow-Origin"); got != "https://app.example.com" {
+		t.Errorf("expected ACAO=https://app.example.com, got %q", got)
+	}
+}
+
+func TestEvaluationHandler_CORS_ActualRequest_DisallowedOrigin(t *testing.T) {
+	svc := &fakeEvaluationService{view: &app.EvalView{
+		Key: "my-flag", Enabled: true, Reason: domain.ReasonDefault,
+	}}
+	mux := newEvalMuxWithCORS(svc, []string{"https://app.example.com"})
+
+	body := `{"context":{"user_id":"u_1","attributes":{}}}`
+	req := httptest.NewRequest(http.MethodPost, evalPath, strings.NewReader(body))
+	req.Header.Set("Origin", "https://evil.example.com")
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	if got := w.Header().Get("Access-Control-Allow-Origin"); got != "" {
+		t.Errorf("expected no ACAO header for disallowed origin, got %q", got)
+	}
+}
+
+func TestEvaluationHandler_CORS_NoOrigin_PassesThrough(t *testing.T) {
+	svc := &fakeEvaluationService{view: &app.EvalView{
+		Key: "my-flag", Enabled: true, Reason: domain.ReasonDefault,
+	}}
+	mux := newEvalMuxWithCORS(svc, []string{"https://app.example.com"})
+
+	body := `{"context":{"user_id":"u_1","attributes":{}}}`
+	req := httptest.NewRequest(http.MethodPost, evalPath, strings.NewReader(body))
+	// No Origin header — server-side SDK
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	if got := w.Header().Get("Access-Control-Allow-Origin"); got != "" {
+		t.Errorf("expected no ACAO header when no Origin sent, got %q", got)
+	}
+}
+
+func TestEvaluationHandler_CORS_Disabled_OptionsReturns405(t *testing.T) {
+	svc := &fakeEvaluationService{}
+	mux := newEvalMuxWithCORS(svc, nil) // CORS disabled
+
+	req := httptest.NewRequest(http.MethodOptions, evalPath, nil)
+	req.Header.Set("Origin", "https://app.example.com")
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	// OPTIONS is not registered when CORS is disabled — mux returns 405
+	if w.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("expected 405 when CORS disabled, got %d", w.Code)
 	}
 }

@@ -16,20 +16,34 @@ type evaluationService interface {
 
 // EvaluationHandler handles flag evaluation HTTP requests.
 type EvaluationHandler struct {
-	svc      evaluationService
-	projects projectResolver
-	envs     environmentResolver
+	svc         evaluationService
+	projects    projectResolver
+	envs        environmentResolver
+	corsOrigins []string
 }
 
 // NewEvaluationHandler constructs an EvaluationHandler.
-func NewEvaluationHandler(svc evaluationService, projects projectResolver, envs environmentResolver) *EvaluationHandler {
-	return &EvaluationHandler{svc: svc, projects: projects, envs: envs}
+// corsOrigins is the list of exact origins permitted for cross-origin requests.
+// Pass nil or an empty slice to disable CORS.
+func NewEvaluationHandler(svc evaluationService, projects projectResolver, envs environmentResolver, corsOrigins []string) *EvaluationHandler {
+	return &EvaluationHandler{svc: svc, projects: projects, envs: envs, corsOrigins: corsOrigins}
 }
 
 // RegisterRoutes registers the evaluation route on mux behind the provided auth middleware.
+// If the handler was constructed with allowed CORS origins, a preflight OPTIONS route is
+// also registered and the CORS middleware is applied as the outermost wrapper.
 func (h *EvaluationHandler) RegisterRoutes(mux *http.ServeMux, auth func(http.Handler) http.Handler) {
-	mux.Handle("POST /api/v1/projects/{slug}/environments/{env_slug}/flags/{key}/evaluate",
-		auth(http.HandlerFunc(h.evaluate)))
+	const path = "/api/v1/projects/{slug}/environments/{env_slug}/flags/{key}/evaluate"
+
+	cors := CORS(h.corsOrigins)
+
+	mux.Handle("POST "+path, cors(auth(http.HandlerFunc(h.evaluate))))
+
+	if len(h.corsOrigins) > 0 {
+		mux.Handle("OPTIONS "+path, cors(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})))
+	}
 }
 
 type evaluateRequest struct {

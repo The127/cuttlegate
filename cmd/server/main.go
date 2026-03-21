@@ -108,7 +108,7 @@ func run() error {
 		httpadapter.NewFlagEnvironmentHandler(flagSvc, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
 		httpadapter.NewRuleHandler(ruleSvc, projSvc, flagSvc, envSvc).RegisterRoutes(mux, requireBearer)
 		httpadapter.NewSegmentHandler(segmentSvc, projSvc).RegisterRoutes(mux, requireBearer)
-		httpadapter.NewEvaluationHandler(evalSvc, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
+		httpadapter.NewEvaluationHandler(evalSvc, projSvc, envSvc, cfg.CORSAllowedOrigins).RegisterRoutes(mux, requireBearer)
 	}
 
 	// SPA static files — registered last so /api/v1/* routes take precedence.
