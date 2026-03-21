@@ -18,6 +18,11 @@ build/
 web/node_modules/
 web/dist/
 
+# Docs site
+site/node_modules/
+site/build/
+site/.docusaurus/
+
 # Editor / OS noise
 .DS_Store
 .idea/
