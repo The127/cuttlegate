@@ -295,3 +295,51 @@ func TestFlagVariantHandler_Unauthenticated_Returns401(t *testing.T) {
 		}
 	}
 }
+
+// ── RBAC ──────────────────────────────────────────────────────────────────────
+
+func TestFlagVariantHandler_Add_Forbidden_Returns403(t *testing.T) {
+	svc := newFakeVariantService()
+	svc.err = domain.ErrForbidden
+	mux := newVariantMux(svc, noopAuth)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/projects/acme/flags/release/variants",
+		strings.NewReader(`{"key":"v3","name":"V3"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status: got %d, want 403", rec.Code)
+	}
+}
+
+func TestFlagVariantHandler_Rename_Forbidden_Returns403(t *testing.T) {
+	svc := newFakeVariantService()
+	svc.err = domain.ErrForbidden
+	mux := newVariantMux(svc, noopAuth)
+
+	req := httptest.NewRequest(http.MethodPatch, "/api/v1/projects/acme/flags/release/variants/v1",
+		strings.NewReader(`{"name":"New"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status: got %d, want 403", rec.Code)
+	}
+}
+
+func TestFlagVariantHandler_Delete_Forbidden_Returns403(t *testing.T) {
+	svc := newFakeVariantService()
+	svc.err = domain.ErrForbidden
+	mux := newVariantMux(svc, noopAuth)
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/projects/acme/flags/release/variants/v2", nil)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status: got %d, want 403", rec.Code)
+	}
+}

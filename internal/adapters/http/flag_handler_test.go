@@ -15,8 +15,9 @@ import (
 
 // fakeFlagService is a test double for the flagService interface.
 type fakeFlagService struct {
-	flags map[string]*domain.Flag // key: projectID+"/"+key
-	byID  map[string]*domain.Flag
+	flags     map[string]*domain.Flag // key: projectID+"/"+key
+	byID      map[string]*domain.Flag
+	mutateErr error // returned by Create, Update, DeleteByKey
 }
 
 func newFakeFlagService() *fakeFlagService {
@@ -29,6 +30,9 @@ func newFakeFlagService() *fakeFlagService {
 func fk(projectID, key string) string { return projectID + "/" + key }
 
 func (f *fakeFlagService) Create(_ context.Context, flag *domain.Flag) error {
+	if f.mutateErr != nil {
+		return f.mutateErr
+	}
 	k := fk(flag.ProjectID, flag.Key)
 	if _, exists := f.flags[k]; exists {
 		return domain.ErrConflict
@@ -62,6 +66,9 @@ func (f *fakeFlagService) ListByProject(_ context.Context, projectID string) ([]
 }
 
 func (f *fakeFlagService) Update(_ context.Context, flag *domain.Flag) error {
+	if f.mutateErr != nil {
+		return f.mutateErr
+	}
 	existing, ok := f.byID[flag.ID]
 	if !ok {
 		return domain.ErrNotFound
@@ -73,6 +80,9 @@ func (f *fakeFlagService) Update(_ context.Context, flag *domain.Flag) error {
 }
 
 func (f *fakeFlagService) DeleteByKey(_ context.Context, projectID, key string) error {
+	if f.mutateErr != nil {
+		return f.mutateErr
+	}
 	k := fk(projectID, key)
 	flag, ok := f.flags[k]
 	if !ok {
@@ -358,5 +368,64 @@ func TestFlagHandler_Unauthenticated_Returns401(t *testing.T) {
 		if rec.Code != http.StatusUnauthorized {
 			t.Errorf("%s %s: got %d, want 401", tc.method, tc.path, rec.Code)
 		}
+	}
+}
+
+// ── RBAC ──────────────────────────────────────────────────────────────────────
+
+func TestFlagHandler_Create_Forbidden_Returns403(t *testing.T) {
+	svc := newFakeFlagService()
+	svc.mutateErr = domain.ErrForbidden
+	mux := newFlagMux(svc, newFakeResolver("acme"), noopAuth)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/projects/acme/flags", strings.NewReader(boolFlagBody))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status: got %d, want 403", rec.Code)
+	}
+	var b map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&b); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if b["error"] != "forbidden" {
+		t.Errorf("error code: got %v, want forbidden", b["error"])
+	}
+}
+
+func TestFlagHandler_Update_Forbidden_Returns403(t *testing.T) {
+	svc := newFakeFlagService()
+	// seed so GetByKey succeeds before Update is called
+	svc.flags[fk("proj-acme", "dark-mode")] = &domain.Flag{
+		ID: "flag-1", ProjectID: "proj-acme", Key: "dark-mode",
+	}
+	svc.byID["flag-1"] = svc.flags[fk("proj-acme", "dark-mode")]
+	svc.mutateErr = domain.ErrForbidden
+	mux := newFlagMux(svc, newFakeResolver("acme"), noopAuth)
+
+	req := httptest.NewRequest(http.MethodPatch, "/api/v1/projects/acme/flags/dark-mode",
+		strings.NewReader(`{"name":"New Name"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status: got %d, want 403", rec.Code)
+	}
+}
+
+func TestFlagHandler_Delete_Forbidden_Returns403(t *testing.T) {
+	svc := newFakeFlagService()
+	svc.mutateErr = domain.ErrForbidden
+	mux := newFlagMux(svc, newFakeResolver("acme"), noopAuth)
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/projects/acme/flags/dark-mode", nil)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status: got %d, want 403", rec.Code)
 	}
 }
