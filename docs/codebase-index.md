@@ -1,6 +1,6 @@
 # Codebase Index
 
-_Generated 2026-03-21 01:33 UTC. Read this at session start for orientation._
+_Generated 2026-03-21 02:28 UTC. Read this at session start for orientation._
 
 ## Packages
 ```
@@ -41,6 +41,7 @@ type ProjectMember struct {
 type Project struct {
 type Rule struct {
 type User struct {
+type ValidationError struct {
 type Variant struct {
 ```
 
@@ -53,6 +54,7 @@ type FlagEnvironmentView struct {
 type FlagService struct {
 type ProjectMemberService struct {
 type ProjectService struct {
+type RuleService struct {
 ```
 
 ## HTTP handlers & middleware (internal/adapters/http/)
@@ -65,6 +67,7 @@ type FlagVariantHandler struct {
 type OIDCVerifier struct {
 type ProjectHandler struct {
 type ProjectMemberHandler struct {
+type RuleHandler struct {
 ```
 
 ## DB adapters (internal/adapters/db/)
@@ -75,4 +78,5 @@ type PostgresFlagEnvironmentStateRepository struct {
 type PostgresFlagRepository struct {
 type PostgresProjectMemberRepository struct {
 type PostgresProjectRepository struct {
+type PostgresRuleRepository struct {
 ```
