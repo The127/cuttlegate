@@ -42,9 +42,15 @@ export interface EvalRequest {
 /** SDK configuration options. */
 export interface CuttlegateConfig {
   /** Base URL of the Cuttlegate server, e.g. https://flags.example.com */
-  serverUrl: string;
+  baseUrl: string;
   /** Service account token for authentication. */
   token: string;
+  /** Environment slug to evaluate against, e.g. "production". */
+  environment: string;
+  /** Request timeout in milliseconds. Defaults to 5000. */
+  timeout?: number;
+  /** Custom fetch implementation. Defaults to the global `fetch`. */
+  fetch?: typeof fetch;
 }
 
 /** Standard error shape returned by the Cuttlegate API. */
