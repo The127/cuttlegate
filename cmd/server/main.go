@@ -96,6 +96,7 @@ func run() error {
 		ruleRepo := dbadapter.NewPostgresRuleRepository(conn)
 		// TODO(#42): replace with PostgresSegmentRepository once migration 000005/000006 lands.
 		segmentRepo := dbadapter.NewFakeSegmentRepository()
+		apiKeyRepo := dbadapter.NewPostgresAPIKeyRepository(conn)
 
 		projSvc := app.NewProjectService(projRepo)
 		envSvc := app.NewEnvironmentService(envRepo, projRepo)
@@ -104,6 +105,7 @@ func run() error {
 		ruleSvc := app.NewRuleService(ruleRepo)
 		segmentSvc := app.NewSegmentService(segmentRepo)
 		evalSvc := app.NewEvaluationService(flagRepo, stateRepo, ruleRepo, segmentRepo)
+		apiKeySvc := app.NewAPIKeyService(apiKeyRepo)
 
 		httpadapter.NewProjectHandler(projSvc).RegisterRoutes(mux, requireBearer)
 		httpadapter.NewEnvironmentHandler(envSvc, projSvc).RegisterRoutes(mux, requireBearer)
@@ -113,8 +115,10 @@ func run() error {
 		httpadapter.NewFlagEnvironmentHandler(flagSvc, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
 		httpadapter.NewRuleHandler(ruleSvc, projSvc, flagSvc, envSvc).RegisterRoutes(mux, requireBearer)
 		httpadapter.NewSegmentHandler(segmentSvc, projSvc).RegisterRoutes(mux, requireBearer)
+		httpadapter.NewAPIKeyHandler(apiKeySvc, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
 		evalRateLimiter := httpadapter.NewRateLimiter(cfg.EvalRateLimit, cfg.EvalRateLimitWindow)
-		evalAuth := func(h http.Handler) http.Handler { return requireBearer(evalRateLimiter.Limit(h)) }
+		requireBearerOrAPIKey := httpadapter.RequireBearerOrAPIKey(verifier, apiKeySvc)
+		evalAuth := func(h http.Handler) http.Handler { return requireBearerOrAPIKey(evalRateLimiter.Limit(h)) }
 		httpadapter.NewEvaluationHandler(evalSvc, projSvc, envSvc).RegisterRoutes(mux, evalAuth)
 
 		httpadapter.NewSSEHandler(broker, projSvc, envSvc).RegisterRoutes(mux, requireBearer)

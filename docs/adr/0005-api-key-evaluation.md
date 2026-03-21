@@ -1,7 +1,7 @@
 # ADR 0005: API key authentication — rejected
 
 **Date:** 2026-03-20
-**Status:** Accepted
+**Status:** Superseded by ADR 0012
 **Issue:** #24
 
 ## Context

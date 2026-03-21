@@ -1,0 +1,132 @@
+package httpadapter
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"time"
+
+	"github.com/karo/cuttlegate/internal/app"
+)
+
+// apiKeyService is the use-case interface required by APIKeyHandler.
+type apiKeyService interface {
+	Create(ctx context.Context, projectID, environmentID, name string) (*app.APIKeyCreateResult, error)
+	List(ctx context.Context, projectID, environmentID string) ([]app.APIKeyView, error)
+	Revoke(ctx context.Context, id string) error
+}
+
+// APIKeyHandler handles HTTP requests for API key management.
+type APIKeyHandler struct {
+	svc      apiKeyService
+	projects projectResolver
+	envs     environmentResolver
+}
+
+// NewAPIKeyHandler constructs an APIKeyHandler.
+func NewAPIKeyHandler(svc apiKeyService, projects projectResolver, envs environmentResolver) *APIKeyHandler {
+	return &APIKeyHandler{svc: svc, projects: projects, envs: envs}
+}
+
+// RegisterRoutes registers API key management routes on mux behind the provided auth middleware.
+func (h *APIKeyHandler) RegisterRoutes(mux *http.ServeMux, auth func(http.Handler) http.Handler) {
+	mux.Handle("POST /api/v1/projects/{slug}/environments/{env_slug}/api-keys",
+		auth(http.HandlerFunc(h.create)))
+	mux.Handle("GET /api/v1/projects/{slug}/environments/{env_slug}/api-keys",
+		auth(http.HandlerFunc(h.list)))
+	mux.Handle("DELETE /api/v1/projects/{slug}/environments/{env_slug}/api-keys/{key_id}",
+		auth(http.HandlerFunc(h.revoke)))
+}
+
+type apiKeyResponse struct {
+	ID            string     `json:"id"`
+	Name          string     `json:"name"`
+	DisplayPrefix string     `json:"display_prefix"`
+	CreatedAt     time.Time  `json:"created_at"`
+	RevokedAt     *time.Time `json:"revoked_at,omitempty"`
+}
+
+type apiKeyCreateResponse struct {
+	apiKeyResponse
+	Key string `json:"key"`
+}
+
+func (h *APIKeyHandler) create(w http.ResponseWriter, r *http.Request) {
+	proj, err := h.projects.GetBySlug(r.Context(), r.PathValue("slug"))
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+	env, err := h.envs.GetBySlug(r.Context(), proj.ID, r.PathValue("env_slug"))
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	var body struct {
+		Name string `json:"name"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		WriteError(w, newBadRequest("invalid request body"))
+		return
+	}
+	if body.Name == "" {
+		WriteError(w, newBadRequest("name is required"))
+		return
+	}
+
+	result, err := h.svc.Create(r.Context(), proj.ID, env.ID, body.Name)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, apiKeyCreateResponse{
+		apiKeyResponse: apiKeyResponse{
+			ID:            result.ID,
+			Name:          result.Name,
+			DisplayPrefix: result.DisplayPrefix,
+			CreatedAt:     result.CreatedAt.UTC(),
+		},
+		Key: result.Plaintext,
+	})
+}
+
+func (h *APIKeyHandler) list(w http.ResponseWriter, r *http.Request) {
+	proj, err := h.projects.GetBySlug(r.Context(), r.PathValue("slug"))
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+	env, err := h.envs.GetBySlug(r.Context(), proj.ID, r.PathValue("env_slug"))
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	views, err := h.svc.List(r.Context(), proj.ID, env.ID)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	items := make([]apiKeyResponse, len(views))
+	for i, v := range views {
+		items[i] = apiKeyResponse{
+			ID:            v.ID,
+			Name:          v.Name,
+			DisplayPrefix: v.DisplayPrefix,
+			CreatedAt:     v.CreatedAt.UTC(),
+			RevokedAt:     v.RevokedAt,
+		}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"api_keys": items})
+}
+
+func (h *APIKeyHandler) revoke(w http.ResponseWriter, r *http.Request) {
+	if err := h.svc.Revoke(r.Context(), r.PathValue("key_id")); err != nil {
+		WriteError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}

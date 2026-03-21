@@ -33,9 +33,10 @@ See `template.md`. Status values: `Proposed`, `Accepted`, `Deprecated`, `Superse
 | [0002](0002-test-pyramid-strategy.md) | Test pyramid strategy | Accepted |
 | [0003](0003-ports-and-adapters-architecture.md) | Ports and adapters architecture | Accepted |
 | [0004](0004-ai-development-tooling-graphiti-axon.md) | AI development tooling evaluation — Graphiti and Axon | Accepted |
-| [0005](0005-api-key-evaluation.md) | API key authentication — rejected | Accepted |
+| [0005](0005-api-key-evaluation.md) | API key authentication — rejected | Superseded by ADR 0012 |
 | [0006](0006-cuttlegate-as-pure-resource-server.md) | Cuttlegate is a pure resource server — Keyline owns all auth | Accepted |
 | [0007](0007-api-versioning-strategy.md) | API versioning strategy — URL prefix `/api/v1/` | Accepted |
 | [0008](0008-rbac-in-app-layer.md) | RBAC enforced in the app layer, not the HTTP adapter | Accepted |
 | [0009](0009-js-sdk-single-package.md) | JS/TS SDK: single package with dual entry points | Accepted |
 | [0011](0011-in-process-event-fanout.md) | In-process event fanout for SSE delivery | Accepted |
+| [0012](0012-api-key-second-auth-path.md) | API key as second authentication path for the evaluation endpoint | Accepted |
