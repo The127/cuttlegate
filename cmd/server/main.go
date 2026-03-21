@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -55,6 +56,7 @@ func run() error {
 		cfg.OIDCIssuer,
 		cfg.OIDCAudience,
 		cfg.OIDCRoleClaim,
+		slog.Default(),
 	)
 	if err != nil {
 		return fmt.Errorf("oidc: %w", err)
