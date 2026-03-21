@@ -21,33 +21,39 @@ async function authedFetch(path: string, init?: RequestInit): Promise<Response> 
   return fetch(path, { ...init, headers })
 }
 
+async function throwIfNotOk(res: Response): Promise<void> {
+  if (res.ok) return
+  let message = `${res.status} ${res.statusText}`
+  try {
+    const body = JSON.parse(await res.text())
+    if (typeof body.message === 'string') {
+      message = body.message
+    }
+  } catch {
+    // Response is not valid JSON — keep the status text fallback.
+  }
+  throw new APIError(res.status, message)
+}
+
 export async function fetchJSON<T>(path: string): Promise<T> {
   const res = await authedFetch(path)
-  if (!res.ok) {
-    throw new APIError(res.status, `${res.status} ${res.statusText}`)
-  }
+  await throwIfNotOk(res)
   return res.json() as Promise<T>
 }
 
 export async function patchJSON<T>(path: string, body: unknown): Promise<T> {
   const res = await authedFetch(path, { method: 'PATCH', body: JSON.stringify(body) })
-  if (!res.ok) {
-    throw new APIError(res.status, `${res.status} ${res.statusText}`)
-  }
+  await throwIfNotOk(res)
   return res.json() as Promise<T>
 }
 
 export async function postJSON<T>(path: string, body: unknown): Promise<T> {
   const res = await authedFetch(path, { method: 'POST', body: JSON.stringify(body) })
-  if (!res.ok) {
-    throw new APIError(res.status, `${res.status} ${res.statusText}`)
-  }
+  await throwIfNotOk(res)
   return res.json() as Promise<T>
 }
 
 export async function deleteRequest(path: string): Promise<void> {
   const res = await authedFetch(path, { method: 'DELETE' })
-  if (!res.ok) {
-    throw new APIError(res.status, `${res.status} ${res.statusText}`)
-  }
+  await throwIfNotOk(res)
 }
