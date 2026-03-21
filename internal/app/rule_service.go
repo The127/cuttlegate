@@ -35,6 +35,15 @@ func (s *RuleService) Create(ctx context.Context, flagID, environmentID string, 
 	if err := rule.Validate(); err != nil {
 		return nil, err
 	}
+	existing, err := s.repo.ListByFlagEnvironment(ctx, flagID, environmentID)
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range existing {
+		if r.Priority == priority {
+			return nil, domain.ErrPriorityConflict
+		}
+	}
 	id, err := newUUID()
 	if err != nil {
 		return nil, err
@@ -60,6 +69,15 @@ func (s *RuleService) Update(ctx context.Context, rule *domain.Rule) (*domain.Ru
 	}
 	if err := rule.Validate(); err != nil {
 		return nil, err
+	}
+	existing, err := s.repo.ListByFlagEnvironment(ctx, rule.FlagID, rule.EnvironmentID)
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range existing {
+		if r.Priority == rule.Priority && r.ID != rule.ID {
+			return nil, domain.ErrPriorityConflict
+		}
 	}
 	if err := s.repo.Upsert(ctx, rule); err != nil {
 		return nil, err
