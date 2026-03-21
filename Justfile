@@ -73,6 +73,14 @@ dev-down:
 dev-reset:
     docker compose -f docker-compose.dev.yml down -v
 
+# Start the docs dev server (hot-reload preview at http://localhost:3000/cuttlegate/)
+docs-dev:
+    cd site && npm run start
+
+# Build the docs site (output to site/build/)
+docs-build:
+    cd site && npm ci && npm run build
+
 # Generate a codebase orientation index for AI sessions (writes to docs/codebase-index.md)
 # Read this file at the start of a new session instead of grepping individual files.
 index:
