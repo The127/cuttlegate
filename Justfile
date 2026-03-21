@@ -87,6 +87,10 @@ dev:
     cd web && npm run dev &
     wait
 
+# Smoke test the full docker-compose stack: boot, verify endpoints, tear down
+smoke:
+    ./scripts/smoke.sh
+
 # Start the full stack (server + Postgres + Dex) via docker-compose
 up:
     docker compose up --build
