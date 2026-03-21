@@ -66,6 +66,13 @@ func checkRule(t *testing.T, from, imp string) {
 		strings.HasPrefix(imp, pkg("cmd")) {
 		t.Errorf("IMPORT VIOLATION: %s\n\timports %s\n\treason: adapters must not import cmd", from, imp)
 	}
+
+	// Rule 4: app layer allows stdlib and internal/domain/* only — no adapters, no third-party.
+	if strings.HasPrefix(from, pkg("internal/app")) {
+		if !isStdlib(imp) && !strings.HasPrefix(imp, pkg("internal/domain")) {
+			t.Errorf("IMPORT VIOLATION: %s\n\timports %s\n\treason: internal/app allows stdlib and internal/domain/* only", from, imp)
+		}
+	}
 }
 
 // adapterDir returns the immediate subdirectory name under internal/adapters/.
