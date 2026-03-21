@@ -1,9 +1,14 @@
-// Package dbadapter provides SQL implementations of the repository ports defined in
-// domain/ports.
+// Package dbadapter provides PostgreSQL implementations of the repository interfaces
+// defined in domain/ports.
 //
-// This package translates between the port interfaces and the underlying database.
-// It knows about SQL and database drivers; it does not know about HTTP or business rules.
+// Each repository struct (e.g. PostgresFlagRepository) implements one port interface
+// using SQL queries against a *sql.DB connection. Integration tests in this package
+// run against a real Postgres instance via testcontainers.
 //
-// Allowed imports: domain/ports, domain, stdlib, and database libraries.
-// Must not import sibling adapter packages (e.g. httpadapter).
+// This package does not contain business logic or HTTP handling. It translates between
+// port interfaces and SQL — nothing more. Adapters here must not import sibling adapter
+// packages (e.g. httpadapter).
+//
+// Start here: [PostgresFlagRepository] for the most-used repository, or [postgres.go]
+// for the shared database connection helper.
 package dbadapter

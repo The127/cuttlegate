@@ -1,8 +1,14 @@
-// Package httpadapter implements the HTTP entry points for the application.
+// Package httpadapter implements the HTTP handlers and middleware that expose the
+// application layer over HTTP.
 //
-// This package contains HTTP handlers and middleware. It translates HTTP requests
-// into app-layer calls and maps responses back to HTTP.
+// Handlers translate incoming HTTP requests into app-service calls and map the results
+// back to JSON responses. Middleware handles cross-cutting concerns like authentication
+// (OIDC token verification), CORS, and rate limiting.
 //
-// Allowed imports: app, domain/ports, domain, stdlib, HTTP and OIDC/OAuth2 client libraries.
-// Must not import sibling adapter packages (e.g. dbadapter).
+// This package does not contain business logic or database queries. Business rules live
+// in the domain package; persistence lives in adapters/db. Handlers must not import
+// sibling adapter packages — they talk to the app layer only.
+//
+// Start here: [FlagHandler] for the flag management API, or [EvaluationHandler] for
+// the SDK-facing flag evaluation endpoint.
 package httpadapter

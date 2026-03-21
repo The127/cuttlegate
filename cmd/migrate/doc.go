@@ -1,7 +1,12 @@
-// Package main is the standalone database migration runner.
+// Package main is the standalone database migration runner for Cuttlegate.
 //
-// This binary applies or rolls back SQL migrations in db/migrations. It is separate
-// from the server binary so migrations can be run independently in CI and production.
+// This binary applies or rolls back SQL migrations from db/migrations/ against a
+// PostgreSQL database. It runs independently of the server binary so that migrations
+// can be executed separately in CI and production deployments.
 //
-// Allowed imports: dbadapter, stdlib, and migration libraries. No app or HTTP packages.
+// This package does not serve HTTP, run business logic, or interact with any application
+// service. If you need to change a database schema, add a new migration file in
+// db/migrations/ — do not modify this package.
+//
+// Start here: main.go for the migration execution logic.
 package main

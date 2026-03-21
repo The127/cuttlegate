@@ -1,8 +1,13 @@
-// Package domain contains entities and value objects for the cuttlegate application.
+// Package domain contains the core business entities, value objects, and rules for Cuttlegate.
 //
-// This package defines the core business concepts — the things the system knows about
-// and the rules that govern them. It has no knowledge of persistence, HTTP, or any
-// infrastructure concern.
+// This is where projects, flags, environments, rules, and evaluation logic live as
+// plain Go structs and functions. Everything here is pure — no database, no HTTP, no
+// external dependencies. Only the standard library is allowed.
 //
-// Allowed imports: stdlib only. No external or internal packages outside domain.
+// This package does not define how entities are stored or served. Persistence interfaces
+// live in domain/ports; HTTP and SQL live in adapters. If you need to add a new business
+// concept, it belongs here. If you need to add a new way to store or fetch one, it does not.
+//
+// Start here: [Flag] is the central entity. Most other types exist to support flag
+// evaluation — see [EvalContext] and [EvalResult] for the evaluation contract.
 package domain
