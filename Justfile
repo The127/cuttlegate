@@ -5,9 +5,21 @@ install-hooks:
     git config core.hooksPath .githooks
     @echo "Hooks installed."
 
-# Run the linter
+# Run the linter (Go only — for SDK linting use just lint-sdk)
 lint:
     golangci-lint run ./...
+
+# Run ESLint over the JS/TS SDK
+lint-sdk:
+    cd sdk/js && npm run lint
+
+# Build the JS/TS SDK
+build-sdk:
+    cd sdk/js && npm run build
+
+# Run the JS/TS SDK tests
+test-sdk:
+    cd sdk/js && npm test
 
 # Build the server binary into build/server
 build:

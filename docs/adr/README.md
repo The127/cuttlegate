@@ -37,3 +37,4 @@ See `template.md`. Status values: `Proposed`, `Accepted`, `Deprecated`, `Superse
 | [0006](0006-cuttlegate-as-pure-resource-server.md) | Cuttlegate is a pure resource server — Keyline owns all auth | Accepted |
 | [0007](0007-api-versioning-strategy.md) | API versioning strategy — URL prefix `/api/v1/` | Accepted |
 | [0008](0008-rbac-in-app-layer.md) | RBAC enforced in the app layer, not the HTTP adapter | Accepted |
+| [0009](0009-js-sdk-single-package.md) | JS/TS SDK: single package with dual entry points | Accepted |
