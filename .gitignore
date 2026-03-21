@@ -3,11 +3,13 @@
 *.out
 *.prof
 /server
+/migrate
 build/
 
 # Environment / secrets
 .env
 .env.*
+!.env.example
 *.env
 *.pem
 *.key

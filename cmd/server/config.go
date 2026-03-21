@@ -14,6 +14,7 @@ type Config struct {
 	OIDCRoleClaim       string        // JWT claim name carrying the Cuttlegate role (default: "role")
 	OIDCClientID        string        // OIDC client_id for the SPA (returned by /api/v1/config)
 	OIDCRedirectURI     string        // OIDC redirect_uri for the SPA (returned by /api/v1/config)
+	OIDCSPAAuthority    string        // OIDC authority URL for the SPA (browser-reachable); defaults to OIDCIssuer
 	Addr                string        // listen address (default: :8080)
 	DSN                 string        // postgres DATABASE_URL; required when AutoMigrate is true
 	AutoMigrate         bool          // run migrations at startup — dev/test only; unsafe in production (rolling restarts can race between old pods and a migrated schema)
@@ -45,12 +46,15 @@ func Load() (Config, error) {
 		}
 	}
 
+	spaAuthority := os.Getenv("OIDC_SPA_AUTHORITY")
+
 	cfg := Config{
 		OIDCIssuer:          os.Getenv("OIDC_ISSUER"),
 		OIDCAudience:        os.Getenv("OIDC_AUDIENCE"),
 		OIDCRoleClaim:       roleClaim,
 		OIDCClientID:        os.Getenv("OIDC_CLIENT_ID"),
 		OIDCRedirectURI:     os.Getenv("OIDC_REDIRECT_URI"),
+		OIDCSPAAuthority:    spaAuthority,
 		Addr:                addr,
 		DSN:                 os.Getenv("DATABASE_URL"),
 		AutoMigrate:         os.Getenv("AUTO_MIGRATE") == "true",

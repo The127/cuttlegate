@@ -70,8 +70,12 @@ func run() error {
 	requireBearer := httpadapter.RequireBearer(verifier)
 
 	// Public: SPA OIDC config — no auth required.
+	spaAuthority := cfg.OIDCSPAAuthority
+	if spaAuthority == "" {
+		spaAuthority = cfg.OIDCIssuer
+	}
 	clientCfg := spaClientConfig{
-		Authority:   cfg.OIDCIssuer,
+		Authority:   spaAuthority,
 		ClientID:    cfg.OIDCClientID,
 		RedirectURI: cfg.OIDCRedirectURI,
 	}
@@ -80,14 +84,19 @@ func run() error {
 		json.NewEncoder(w).Encode(clientCfg) //nolint:errcheck
 	})
 
-	// Authenticated API routes — wired when DATABASE_URL is available.
+	// ── Database connection ──────────────────────────────────────────────────
+
+	var conn *sql.DB
 	if cfg.DSN != "" {
-		conn, err := sql.Open("postgres", cfg.DSN)
+		conn, err = sql.Open("postgres", cfg.DSN)
 		if err != nil {
 			return fmt.Errorf("db: %w", err)
 		}
 		defer conn.Close() //nolint:errcheck
+	}
 
+	// Authenticated API routes — wired when DATABASE_URL is available.
+	if conn != nil {
 		projRepo := dbadapter.NewPostgresProjectRepository(conn)
 		envRepo := dbadapter.NewPostgresEnvironmentRepository(conn)
 		memberRepo := dbadapter.NewPostgresProjectMemberRepository(conn)
@@ -124,9 +133,29 @@ func run() error {
 		httpadapter.NewSSEHandler(broker, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
 	}
 
-	// Health check — public, no auth required.
+	// Health checks — public, no auth required.
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"ok"}`)) //nolint:errcheck
+	})
+
+	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if conn == nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Write([]byte(`{"status":"not_ready","reason":"no database configured"}`)) //nolint:errcheck
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancel()
+		if err := conn.PingContext(ctx); err != nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Write([]byte(`{"status":"not_ready","reason":"database unreachable"}`)) //nolint:errcheck
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"ok"}`)) //nolint:errcheck
 	})
 
 	// SPA static files — registered last so /api/v1/* routes take precedence.

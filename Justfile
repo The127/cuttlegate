@@ -72,7 +72,7 @@ migrate-down:
 dev:
     #!/usr/bin/env bash
     set -euo pipefail
-    docker compose -f docker-compose.dev.yml up -d
+    docker compose up -d db
     echo "Waiting for Postgres..."
     until bash -c 'echo > /dev/tcp/localhost/5432' 2>/dev/null; do sleep 1; done
     trap 'kill 0' EXIT
@@ -85,13 +85,17 @@ dev:
     cd web && npm run dev &
     wait
 
-# Stop the dev Postgres container
-dev-down:
-    docker compose -f docker-compose.dev.yml down
+# Start the full stack (server + Postgres + Dex) via docker-compose
+up:
+    docker compose up --build
 
-# Wipe the dev database volume and stop containers (use when migrations are dirty)
-dev-reset:
-    docker compose -f docker-compose.dev.yml down -v
+# Stop all containers
+down:
+    docker compose down
+
+# Wipe the database volume and stop containers (use when migrations are dirty)
+reset:
+    docker compose down -v
 
 # Start the docs dev server (hot-reload preview at http://localhost:3000/cuttlegate/)
 docs-dev:
