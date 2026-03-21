@@ -16,8 +16,9 @@ import (
 
 // fakeFlagEnvService is a test double for the flagEnvService interface.
 type fakeFlagEnvService struct {
-	views []*app.FlagEnvironmentView
-	err   error
+	views      []*app.FlagEnvironmentView
+	singleView *app.FlagEnvironmentView
+	err        error
 }
 
 func (f *fakeFlagEnvService) ListByEnvironment(_ context.Context, _, _ string) ([]*app.FlagEnvironmentView, error) {
@@ -25,6 +26,13 @@ func (f *fakeFlagEnvService) ListByEnvironment(_ context.Context, _, _ string) (
 		return nil, f.err
 	}
 	return f.views, nil
+}
+
+func (f *fakeFlagEnvService) GetByKeyAndEnvironment(_ context.Context, _, _, _ string) (*app.FlagEnvironmentView, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	return f.singleView, nil
 }
 
 func (f *fakeFlagEnvService) SetEnabled(_ context.Context, _, _, _ string, _ bool) error {
@@ -205,6 +213,44 @@ func TestFlagEnvironmentHandler_SetEnabled_NotFound_Returns404(t *testing.T) {
 	}
 }
 
+// ── GET single flag with env state ───────────────────────────────────────────
+
+func TestFlagEnvironmentHandler_GetByKey_ReturnsFlag(t *testing.T) {
+	svc := &fakeFlagEnvService{
+		singleView: boolFlag("flag-1", "dark-mode", true),
+	}
+	mux := newFlagEnvMux(svc, noopAuth)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/projects/acme/environments/prod/flags/dark-mode", nil)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status: got %d, want 200", rec.Code)
+	}
+	var body map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if body["key"] != "dark-mode" {
+		t.Errorf("key: got %v", body["key"])
+	}
+	if body["enabled"] != true {
+		t.Errorf("enabled: got %v, want true", body["enabled"])
+	}
+}
+
+func TestFlagEnvironmentHandler_GetByKey_NotFound_Returns404(t *testing.T) {
+	svc := &fakeFlagEnvService{err: domain.ErrNotFound}
+	mux := newFlagEnvMux(svc, noopAuth)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/projects/acme/environments/prod/flags/ghost", nil)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status: got %d, want 404", rec.Code)
+	}
+}
+
 // ── Auth: all routes require authentication ───────────────────────────────────
 
 func TestFlagEnvironmentHandler_Unauthenticated_Returns401(t *testing.T) {
@@ -212,6 +258,7 @@ func TestFlagEnvironmentHandler_Unauthenticated_Returns401(t *testing.T) {
 		method, path, body string
 	}{
 		{http.MethodGet, "/api/v1/projects/acme/environments/prod/flags", ""},
+		{http.MethodGet, "/api/v1/projects/acme/environments/prod/flags/dark-mode", ""},
 		{http.MethodPatch, "/api/v1/projects/acme/environments/prod/flags/dark-mode", `{"enabled":true}`},
 	}
 	mux := newFlagEnvMux(&fakeFlagEnvService{}, requireAuth401)
