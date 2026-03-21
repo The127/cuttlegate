@@ -29,9 +29,18 @@ func NewFlagService(repo ports.FlagRepository, envRepo ports.EnvironmentReposito
 	return &FlagService{repo: repo, envRepo: envRepo, stateRepo: stateRepo, publisher: publisher, auditRepo: auditRepo}
 }
 
+type auditEntry struct {
+	Action    string
+	EntityID  string
+	EntityKey string
+	ProjectID string
+	Before    string
+	After     string
+}
+
 // recordAudit persists an audit event on a best-effort basis.
 // Failures are logged but never block the calling mutation.
-func (s *FlagService) recordAudit(ctx context.Context, action, entityID, entityKey, projectID, before, after string) {
+func (s *FlagService) recordAudit(ctx context.Context, entry auditEntry) {
 	ac, _ := domain.AuthContextFrom(ctx)
 	id, err := newUUID()
 	if err != nil {
@@ -40,18 +49,18 @@ func (s *FlagService) recordAudit(ctx context.Context, action, entityID, entityK
 	}
 	event := &domain.AuditEvent{
 		ID:          id,
-		ProjectID:   projectID,
+		ProjectID:   entry.ProjectID,
 		ActorID:     ac.UserID,
-		Action:      action,
+		Action:      entry.Action,
 		EntityType:  "flag",
-		EntityID:    entityID,
-		EntityKey:   entityKey,
-		BeforeState: before,
-		AfterState:  after,
+		EntityID:    entry.EntityID,
+		EntityKey:   entry.EntityKey,
+		BeforeState: entry.Before,
+		AfterState:  entry.After,
 		OccurredAt:  time.Now().UTC(),
 	}
 	if err := s.auditRepo.Record(ctx, event); err != nil {
-		log.Printf("audit: failed to record %s for %s/%s: %v", action, projectID, entityKey, err)
+		log.Printf("audit: failed to record %s for %s/%s: %v", entry.Action, entry.ProjectID, entry.EntityKey, err)
 	}
 }
 
@@ -81,7 +90,7 @@ func (s *FlagService) Create(ctx context.Context, flag *domain.Flag) error {
 		return err
 	}
 	if len(envs) == 0 {
-		s.recordAudit(ctx, "flag.created", flag.ID, flag.Key, flag.ProjectID, "", flag.Key)
+		s.recordAudit(ctx, auditEntry{Action: "flag.created", EntityID: flag.ID, EntityKey: flag.Key, ProjectID: flag.ProjectID, After: flag.Key})
 		return nil
 	}
 	states := make([]*domain.FlagEnvironmentState, len(envs))
@@ -96,7 +105,7 @@ func (s *FlagService) Create(ctx context.Context, flag *domain.Flag) error {
 		_ = s.repo.Delete(ctx, flag.ID)
 		return err
 	}
-	s.recordAudit(ctx, "flag.created", flag.ID, flag.Key, flag.ProjectID, "", flag.Key)
+	s.recordAudit(ctx, auditEntry{Action: "flag.created", EntityID: flag.ID, EntityKey: flag.Key, ProjectID: flag.ProjectID, After: flag.Key})
 	return nil
 }
 
@@ -165,7 +174,7 @@ func (s *FlagService) AddVariant(ctx context.Context, projectID, flagKey string,
 	if err := s.repo.Update(ctx, f); err != nil {
 		return nil, err
 	}
-	s.recordAudit(ctx, "flag.variant_added", f.ID, f.Key, f.ProjectID, "", v.Key)
+	s.recordAudit(ctx, auditEntry{Action: "flag.variant_added", EntityID: f.ID, EntityKey: f.Key, ProjectID: f.ProjectID, After: v.Key})
 	return f, nil
 }
 
@@ -197,7 +206,7 @@ func (s *FlagService) RenameVariant(ctx context.Context, projectID, flagKey, var
 	if err := s.repo.Update(ctx, f); err != nil {
 		return nil, err
 	}
-	s.recordAudit(ctx, "flag.variant_renamed", f.ID, f.Key, f.ProjectID, variantKey, newName)
+	s.recordAudit(ctx, auditEntry{Action: "flag.variant_renamed", EntityID: f.ID, EntityKey: f.Key, ProjectID: f.ProjectID, Before: variantKey, After: newName})
 	return f, nil
 }
 
@@ -239,7 +248,7 @@ func (s *FlagService) DeleteVariant(ctx context.Context, projectID, flagKey, var
 	if err := s.repo.Update(ctx, f); err != nil {
 		return nil, err
 	}
-	s.recordAudit(ctx, "flag.variant_deleted", f.ID, f.Key, f.ProjectID, variantKey, "")
+	s.recordAudit(ctx, auditEntry{Action: "flag.variant_deleted", EntityID: f.ID, EntityKey: f.Key, ProjectID: f.ProjectID, Before: variantKey})
 	return f, nil
 }
 
@@ -255,7 +264,7 @@ func (s *FlagService) Update(ctx context.Context, flag *domain.Flag) error {
 	if err := s.repo.Update(ctx, flag); err != nil {
 		return err
 	}
-	s.recordAudit(ctx, "flag.updated", flag.ID, flag.Key, flag.ProjectID, "", "")
+	s.recordAudit(ctx, auditEntry{Action: "flag.updated", EntityID: flag.ID, EntityKey: flag.Key, ProjectID: flag.ProjectID})
 	return nil
 }
 
@@ -312,7 +321,7 @@ func (s *FlagService) SetEnabled(ctx context.Context, params SetEnabledParams) e
 		before = "enabled"
 		after = "disabled"
 	}
-	s.recordAudit(ctx, "flag.state_changed", f.ID, params.FlagKey, params.ProjectID, before, after)
+	s.recordAudit(ctx, auditEntry{Action: "flag.state_changed", EntityID: f.ID, EntityKey: params.FlagKey, ProjectID: params.ProjectID, Before: before, After: after})
 	return nil
 }
 
@@ -325,7 +334,7 @@ func (s *FlagService) Delete(ctx context.Context, id string) error {
 	if err := s.repo.Delete(ctx, id); err != nil {
 		return err
 	}
-	s.recordAudit(ctx, "flag.deleted", id, "", "", "", "")
+	s.recordAudit(ctx, auditEntry{Action: "flag.deleted", EntityID: id})
 	return nil
 }
 
@@ -342,6 +351,6 @@ func (s *FlagService) DeleteByKey(ctx context.Context, projectID, key string) er
 	if err := s.repo.Delete(ctx, f.ID); err != nil {
 		return err
 	}
-	s.recordAudit(ctx, "flag.deleted", f.ID, f.Key, f.ProjectID, f.Key, "")
+	s.recordAudit(ctx, auditEntry{Action: "flag.deleted", EntityID: f.ID, EntityKey: f.Key, ProjectID: f.ProjectID, Before: f.Key})
 	return nil
 }
