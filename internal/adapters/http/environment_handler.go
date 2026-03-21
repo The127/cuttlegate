@@ -11,7 +11,7 @@ import (
 
 // environmentService is the use-case interface required by EnvironmentHandler.
 type environmentService interface {
-	Create(ctx context.Context, projectSlug, name, envSlug string) (*domain.Environment, error)
+	Create(ctx context.Context, projectID, name, envSlug string) (*domain.Environment, error)
 	GetBySlug(ctx context.Context, projectID, slug string) (*domain.Environment, error)
 	ListByProject(ctx context.Context, projectID string) ([]*domain.Environment, error)
 	DeleteBySlug(ctx context.Context, projectID, slug string) error
@@ -86,7 +86,12 @@ func (h *EnvironmentHandler) create(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, newBadRequest("name and slug are required"))
 		return
 	}
-	e, err := h.svc.Create(r.Context(), r.PathValue("slug"), body.Name, body.Slug)
+	proj, err := h.projects.GetBySlug(r.Context(), r.PathValue("slug"))
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+	e, err := h.svc.Create(r.Context(), proj.ID, body.Name, body.Slug)
 	if err != nil {
 		WriteError(w, err)
 		return

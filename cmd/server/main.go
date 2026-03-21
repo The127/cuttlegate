@@ -93,7 +93,7 @@ func run() error {
 		segmentRepo := dbadapter.NewFakeSegmentRepository()
 
 		projSvc := app.NewProjectService(projRepo)
-		envSvc := app.NewEnvironmentService(envRepo, projRepo)
+		envSvc := app.NewEnvironmentService(envRepo)
 		memberSvc := app.NewProjectMemberService(memberRepo, projRepo)
 		flagSvc := app.NewFlagService(flagRepo, envRepo, stateRepo)
 		ruleSvc := app.NewRuleService(ruleRepo)

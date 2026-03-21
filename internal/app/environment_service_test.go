@@ -65,21 +65,15 @@ func (f *fakeEnvironmentRepository) Delete(_ context.Context, id string) error {
 	return nil
 }
 
-func newEnvironmentService() (*app.EnvironmentService, *fakeProjectRepository) {
-	projRepo := newFakeProjectRepository()
-	envRepo := newFakeEnvironmentRepository()
-	return app.NewEnvironmentService(envRepo, projRepo), projRepo
+func newEnvironmentService() *app.EnvironmentService {
+	return app.NewEnvironmentService(newFakeEnvironmentRepository())
 }
 
 func TestEnvironmentService_Create_Succeeds(t *testing.T) {
-	svc, projRepo := newEnvironmentService()
+	svc := newEnvironmentService()
 	ctx := authCtx("editor-1", domain.RoleEditor)
 
-	proj := domain.Project{ID: "proj-1", Name: "Proj One", Slug: "proj-one"}
-	projRepo.bySlug["proj-one"] = &proj
-	projRepo.byID["proj-1"] = &proj
-
-	e, err := svc.Create(ctx, "proj-one", "Staging", "staging")
+	e, err := svc.Create(ctx, "proj-1", "Staging", "staging")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -97,52 +91,33 @@ func TestEnvironmentService_Create_Succeeds(t *testing.T) {
 	}
 }
 
-func TestEnvironmentService_Create_NonExistentProject_ReturnsErrNotFound(t *testing.T) {
-	svc, _ := newEnvironmentService()
-	_, err := svc.Create(authCtx("editor-1", domain.RoleEditor), "ghost-proj", "Staging", "staging")
-	if !errors.Is(err, domain.ErrNotFound) {
-		t.Errorf("expected ErrNotFound, got %v", err)
-	}
-}
-
 func TestEnvironmentService_Create_DuplicateSlug_ReturnsErrConflict(t *testing.T) {
-	svc, projRepo := newEnvironmentService()
+	svc := newEnvironmentService()
 	ctx := authCtx("editor-1", domain.RoleEditor)
 
-	proj := domain.Project{ID: "proj-1", Name: "Proj One", Slug: "proj-one"}
-	projRepo.bySlug["proj-one"] = &proj
-	projRepo.byID["proj-1"] = &proj
-
-	if _, err := svc.Create(ctx, "proj-one", "Staging", "staging"); err != nil {
+	if _, err := svc.Create(ctx, "proj-1", "Staging", "staging"); err != nil {
 		t.Fatalf("first create: %v", err)
 	}
-	_, err := svc.Create(ctx, "proj-one", "Staging Dup", "staging")
+	_, err := svc.Create(ctx, "proj-1", "Staging Dup", "staging")
 	if !errors.Is(err, domain.ErrConflict) {
 		t.Errorf("expected ErrConflict, got %v", err)
 	}
 }
 
 func TestEnvironmentService_Create_SameSlugDifferentProjects_Succeeds(t *testing.T) {
-	svc, projRepo := newEnvironmentService()
+	svc := newEnvironmentService()
 	ctx := authCtx("editor-1", domain.RoleEditor)
 
-	p1 := domain.Project{ID: "proj-1", Name: "Proj One", Slug: "proj-one"}
-	p2 := domain.Project{ID: "proj-2", Name: "Proj Two", Slug: "proj-two"}
-	projRepo.bySlug["proj-one"] = &p1
-	projRepo.byID["proj-1"] = &p1
-	projRepo.bySlug["proj-two"] = &p2
-	projRepo.byID["proj-2"] = &p2
-
-	if _, err := svc.Create(ctx, "proj-one", "Staging", "staging"); err != nil {
-		t.Fatalf("create under proj-one: %v", err)
+	if _, err := svc.Create(ctx, "proj-1", "Staging", "staging"); err != nil {
+		t.Fatalf("create under proj-1: %v", err)
 	}
-	if _, err := svc.Create(ctx, "proj-two", "Staging", "staging"); err != nil {
+	if _, err := svc.Create(ctx, "proj-2", "Staging", "staging"); err != nil {
 		t.Errorf("expected success for same slug under different project, got %v", err)
 	}
 }
 
 func TestEnvironmentService_GetBySlug_NotFound_ReturnsErrNotFound(t *testing.T) {
-	svc, _ := newEnvironmentService()
+	svc := newEnvironmentService()
 	_, err := svc.GetBySlug(context.Background(), "proj-1", "ghost")
 	if !errors.Is(err, domain.ErrNotFound) {
 		t.Errorf("expected ErrNotFound, got %v", err)
@@ -150,7 +125,7 @@ func TestEnvironmentService_GetBySlug_NotFound_ReturnsErrNotFound(t *testing.T) 
 }
 
 func TestEnvironmentService_ListByProject_EmptyReturnsEmptySlice(t *testing.T) {
-	svc, _ := newEnvironmentService()
+	svc := newEnvironmentService()
 	list, err := svc.ListByProject(context.Background(), "proj-1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -164,7 +139,7 @@ func TestEnvironmentService_ListByProject_EmptyReturnsEmptySlice(t *testing.T) {
 }
 
 func TestEnvironmentService_Delete_NotFound_ReturnsErrNotFound(t *testing.T) {
-	svc, _ := newEnvironmentService()
+	svc := newEnvironmentService()
 	err := svc.Delete(authCtx("editor-1", domain.RoleEditor), "00000000-0000-0000-0000-000000000000")
 	if !errors.Is(err, domain.ErrNotFound) {
 		t.Errorf("expected ErrNotFound, got %v", err)
@@ -172,14 +147,10 @@ func TestEnvironmentService_Delete_NotFound_ReturnsErrNotFound(t *testing.T) {
 }
 
 func TestEnvironmentService_DeleteBySlug_Succeeds(t *testing.T) {
-	svc, projRepo := newEnvironmentService()
+	svc := newEnvironmentService()
 	ctx := authCtx("editor-1", domain.RoleEditor)
 
-	proj := domain.Project{ID: "proj-1", Name: "Proj One", Slug: "proj-one"}
-	projRepo.bySlug["proj-one"] = &proj
-	projRepo.byID["proj-1"] = &proj
-
-	if _, err := svc.Create(ctx, "proj-one", "Staging", "staging"); err != nil {
+	if _, err := svc.Create(ctx, "proj-1", "Staging", "staging"); err != nil {
 		t.Fatalf("create: %v", err)
 	}
 	if err := svc.DeleteBySlug(ctx, "proj-1", "staging"); err != nil {
@@ -192,7 +163,7 @@ func TestEnvironmentService_DeleteBySlug_Succeeds(t *testing.T) {
 }
 
 func TestEnvironmentService_DeleteBySlug_NotFound_ReturnsErrNotFound(t *testing.T) {
-	svc, _ := newEnvironmentService()
+	svc := newEnvironmentService()
 	err := svc.DeleteBySlug(authCtx("editor-1", domain.RoleEditor), "proj-1", "ghost")
 	if !errors.Is(err, domain.ErrNotFound) {
 		t.Errorf("expected ErrNotFound, got %v", err)
@@ -202,19 +173,15 @@ func TestEnvironmentService_DeleteBySlug_NotFound_ReturnsErrNotFound(t *testing.
 // ── RBAC ──────────────────────────────────────────────────────────────────────
 
 func TestEnvironmentService_Create_ViewerForbidden(t *testing.T) {
-	svc, projRepo := newEnvironmentService()
-	proj := domain.Project{ID: "proj-1", Name: "Proj One", Slug: "proj-one"}
-	projRepo.bySlug["proj-one"] = &proj
-	projRepo.byID["proj-1"] = &proj
-
-	_, err := svc.Create(authCtx("viewer-1", domain.RoleViewer), "proj-one", "Staging", "staging")
+	svc := newEnvironmentService()
+	_, err := svc.Create(authCtx("viewer-1", domain.RoleViewer), "proj-1", "Staging", "staging")
 	if !errors.Is(err, domain.ErrForbidden) {
 		t.Errorf("expected ErrForbidden, got %v", err)
 	}
 }
 
 func TestEnvironmentService_DeleteBySlug_ViewerForbidden(t *testing.T) {
-	svc, _ := newEnvironmentService()
+	svc := newEnvironmentService()
 	err := svc.DeleteBySlug(authCtx("viewer-1", domain.RoleViewer), "proj-1", "staging")
 	if !errors.Is(err, domain.ErrForbidden) {
 		t.Errorf("expected ErrForbidden, got %v", err)
@@ -222,12 +189,8 @@ func TestEnvironmentService_DeleteBySlug_ViewerForbidden(t *testing.T) {
 }
 
 func TestEnvironmentService_Create_NoAuthContextForbidden(t *testing.T) {
-	svc, projRepo := newEnvironmentService()
-	proj := domain.Project{ID: "proj-1", Name: "Proj One", Slug: "proj-one"}
-	projRepo.bySlug["proj-one"] = &proj
-	projRepo.byID["proj-1"] = &proj
-
-	_, err := svc.Create(context.Background(), "proj-one", "Staging", "staging")
+	svc := newEnvironmentService()
+	_, err := svc.Create(context.Background(), "proj-1", "Staging", "staging")
 	if !errors.Is(err, domain.ErrForbidden) {
 		t.Errorf("expected ErrForbidden, got %v", err)
 	}

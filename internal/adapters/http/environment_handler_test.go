@@ -17,39 +17,29 @@ import (
 type fakeEnvironmentService struct {
 	envs      map[string]*domain.Environment // key: projectID+"/"+slug
 	byID      map[string]*domain.Environment
-	projects  map[string]string // slug → ID (for Create)
-	mutateErr error             // if set, mutating methods return this error
+	mutateErr error // if set, mutating methods return this error
 }
 
-func newFakeEnvironmentService(projectSlugs ...string) *fakeEnvironmentService {
-	svc := &fakeEnvironmentService{
-		envs:     make(map[string]*domain.Environment),
-		byID:     make(map[string]*domain.Environment),
-		projects: make(map[string]string),
+func newFakeEnvironmentService() *fakeEnvironmentService {
+	return &fakeEnvironmentService{
+		envs: make(map[string]*domain.Environment),
+		byID: make(map[string]*domain.Environment),
 	}
-	for _, s := range projectSlugs {
-		svc.projects[s] = "proj-" + s
-	}
-	return svc
 }
 
 func ek(projectID, slug string) string { return projectID + "/" + slug }
 
-func (f *fakeEnvironmentService) Create(_ context.Context, projectSlug, name, envSlug string) (*domain.Environment, error) {
+func (f *fakeEnvironmentService) Create(_ context.Context, projectID, name, envSlug string) (*domain.Environment, error) {
 	if f.mutateErr != nil {
 		return nil, f.mutateErr
 	}
-	projID, ok := f.projects[projectSlug]
-	if !ok {
-		return nil, domain.ErrNotFound
-	}
-	k := ek(projID, envSlug)
+	k := ek(projectID, envSlug)
 	if _, exists := f.envs[k]; exists {
 		return nil, domain.ErrConflict
 	}
 	e := &domain.Environment{
 		ID:        "env-" + envSlug,
-		ProjectID: projID,
+		ProjectID: projectID,
 		Name:      name,
 		Slug:      envSlug,
 		CreatedAt: time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC),
@@ -102,7 +92,7 @@ func newEnvMux(svc *fakeEnvironmentService, resolver *fakeFlagProjectResolver, a
 // ── List ─────────────────────────────────────────────────────────────────────
 
 func TestEnvironmentHandler_List_EmptyReturnsWrappedArray(t *testing.T) {
-	mux := newEnvMux(newFakeEnvironmentService("acme"), newFakeResolver("acme"), noopAuth)
+	mux := newEnvMux(newFakeEnvironmentService(), newFakeResolver("acme"), noopAuth)
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/projects/acme/environments", nil)
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
@@ -137,7 +127,7 @@ func TestEnvironmentHandler_List_UnknownProject_Returns404(t *testing.T) {
 // ── Create ────────────────────────────────────────────────────────────────────
 
 func TestEnvironmentHandler_Create_Succeeds(t *testing.T) {
-	mux := newEnvMux(newFakeEnvironmentService("acme"), newFakeResolver("acme"), noopAuth)
+	mux := newEnvMux(newFakeEnvironmentService(), newFakeResolver("acme"), noopAuth)
 	body := `{"name":"Production","slug":"prod"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/projects/acme/environments", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -162,7 +152,7 @@ func TestEnvironmentHandler_Create_Succeeds(t *testing.T) {
 }
 
 func TestEnvironmentHandler_Create_DuplicateSlug_Returns409(t *testing.T) {
-	svc := newFakeEnvironmentService("acme")
+	svc := newFakeEnvironmentService()
 	mux := newEnvMux(svc, newFakeResolver("acme"), noopAuth)
 	body := `{"name":"Production","slug":"prod"}`
 	for i := 0; i < 2; i++ {
@@ -177,7 +167,7 @@ func TestEnvironmentHandler_Create_DuplicateSlug_Returns409(t *testing.T) {
 }
 
 func TestEnvironmentHandler_Create_SameSlugDifferentProjects_Returns201(t *testing.T) {
-	svc := newFakeEnvironmentService("acme", "other")
+	svc := newFakeEnvironmentService()
 	resolver := newFakeResolver("acme", "other")
 	mux := newEnvMux(svc, resolver, noopAuth)
 	body := `{"name":"Production","slug":"prod"}`
@@ -208,7 +198,7 @@ func TestEnvironmentHandler_Create_UnknownProject_Returns404(t *testing.T) {
 // ── Get ───────────────────────────────────────────────────────────────────────
 
 func TestEnvironmentHandler_Get_Succeeds(t *testing.T) {
-	svc := newFakeEnvironmentService("acme")
+	svc := newFakeEnvironmentService()
 	resolver := newFakeResolver("acme")
 	mux := newEnvMux(svc, resolver, noopAuth)
 
@@ -227,7 +217,7 @@ func TestEnvironmentHandler_Get_Succeeds(t *testing.T) {
 }
 
 func TestEnvironmentHandler_Get_UnknownEnvSlug_Returns404(t *testing.T) {
-	mux := newEnvMux(newFakeEnvironmentService("acme"), newFakeResolver("acme"), noopAuth)
+	mux := newEnvMux(newFakeEnvironmentService(), newFakeResolver("acme"), noopAuth)
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/projects/acme/environments/ghost", nil)
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
@@ -239,7 +229,7 @@ func TestEnvironmentHandler_Get_UnknownEnvSlug_Returns404(t *testing.T) {
 // ── Delete ────────────────────────────────────────────────────────────────────
 
 func TestEnvironmentHandler_Delete_Returns204(t *testing.T) {
-	svc := newFakeEnvironmentService("acme")
+	svc := newFakeEnvironmentService()
 	resolver := newFakeResolver("acme")
 	mux := newEnvMux(svc, resolver, noopAuth)
 
@@ -257,7 +247,7 @@ func TestEnvironmentHandler_Delete_Returns204(t *testing.T) {
 }
 
 func TestEnvironmentHandler_Delete_UnknownEnv_Returns404(t *testing.T) {
-	mux := newEnvMux(newFakeEnvironmentService("acme"), newFakeResolver("acme"), noopAuth)
+	mux := newEnvMux(newFakeEnvironmentService(), newFakeResolver("acme"), noopAuth)
 	req := httptest.NewRequest(http.MethodDelete, "/api/v1/projects/acme/environments/ghost", nil)
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
@@ -275,7 +265,7 @@ func TestEnvironmentHandler_Unauthenticated_Returns401(t *testing.T) {
 		{http.MethodGet, "/api/v1/projects/acme/environments/prod"},
 		{http.MethodDelete, "/api/v1/projects/acme/environments/prod"},
 	}
-	mux := newEnvMux(newFakeEnvironmentService("acme"), newFakeResolver("acme"), requireAuth401)
+	mux := newEnvMux(newFakeEnvironmentService(), newFakeResolver("acme"), requireAuth401)
 	for _, tc := range routes {
 		req := httptest.NewRequest(tc.method, tc.path, strings.NewReader("{}"))
 		rec := httptest.NewRecorder()
@@ -289,7 +279,7 @@ func TestEnvironmentHandler_Unauthenticated_Returns401(t *testing.T) {
 // ── RBAC ──────────────────────────────────────────────────────────────────────
 
 func TestEnvironmentHandler_Create_Forbidden_Returns403(t *testing.T) {
-	svc := newFakeEnvironmentService("acme")
+	svc := newFakeEnvironmentService()
 	svc.mutateErr = domain.ErrForbidden
 	mux := newEnvMux(svc, newFakeResolver("acme"), noopAuth)
 
@@ -312,7 +302,7 @@ func TestEnvironmentHandler_Create_Forbidden_Returns403(t *testing.T) {
 }
 
 func TestEnvironmentHandler_Delete_Forbidden_Returns403(t *testing.T) {
-	svc := newFakeEnvironmentService("acme")
+	svc := newFakeEnvironmentService()
 	svc.mutateErr = domain.ErrForbidden
 	mux := newEnvMux(svc, newFakeResolver("acme"), noopAuth)
 
@@ -328,7 +318,7 @@ func TestEnvironmentHandler_Delete_Forbidden_Returns403(t *testing.T) {
 // ── PATCH → 405 ───────────────────────────────────────────────────────────────
 
 func TestEnvironmentHandler_Patch_Returns405(t *testing.T) {
-	mux := newEnvMux(newFakeEnvironmentService("acme"), newFakeResolver("acme"), noopAuth)
+	mux := newEnvMux(newFakeEnvironmentService(), newFakeResolver("acme"), noopAuth)
 	req := httptest.NewRequest(http.MethodPatch, "/api/v1/projects/acme/environments/prod",
 		strings.NewReader(`{"name":"x"}`))
 	rec := httptest.NewRecorder()
