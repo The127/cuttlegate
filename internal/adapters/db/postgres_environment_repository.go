@@ -25,8 +25,8 @@ var _ ports.EnvironmentRepository = (*PostgresEnvironmentRepository)(nil)
 
 func (r *PostgresEnvironmentRepository) Create(ctx context.Context, env domain.Environment) error {
 	_, err := r.db.ExecContext(ctx,
-		`INSERT INTO environments (id, project_id, name, slug, created_at, updated_at)
-		 VALUES ($1, $2, $3, $4, $5, $5)`,
+		`INSERT INTO environments (id, project_id, name, slug, created_at)
+		 VALUES ($1, $2, $3, $4, $5)`,
 		env.ID, env.ProjectID, env.Name, env.Slug, env.CreatedAt,
 	)
 	if err != nil {
