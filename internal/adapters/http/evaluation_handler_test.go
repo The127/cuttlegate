@@ -160,7 +160,8 @@ func TestEvaluationHandler_Evaluate_MalformedBody(t *testing.T) {
 	}
 }
 
-func TestEvaluationHandler_Evaluate_ProjectNotFound(t *testing.T) {
+// Scenario A: nonexistent project slug must return 403, not 404 — existence oracle fix.
+func TestEvaluationHandler_Evaluate_ProjectNotFound_Returns403(t *testing.T) {
 	svc := &fakeEvaluationService{}
 	mux := newEvalMux(svc, noopAuth)
 
@@ -171,8 +172,25 @@ func TestEvaluationHandler_Evaluate_ProjectNotFound(t *testing.T) {
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
-	if w.Code != http.StatusNotFound {
-		t.Fatalf("expected 404, got %d", w.Code)
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("expected 403, got %d", w.Code)
+	}
+}
+
+// Scenario B: valid project but nonexistent env slug must return 403, not 404 — existence oracle fix.
+func TestEvaluationHandler_Evaluate_EnvNotFound_Returns403(t *testing.T) {
+	svc := &fakeEvaluationService{}
+	mux := newEvalMux(svc, noopAuth)
+
+	body := `{"context":{"user_id":"u_1","attributes":{}}}`
+	req := httptest.NewRequest(http.MethodPost,
+		"/api/v1/projects/my-project/environments/nonexistent/flags/my-flag/evaluate",
+		strings.NewReader(body))
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("expected 403, got %d", w.Code)
 	}
 }
 
