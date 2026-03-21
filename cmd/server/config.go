@@ -14,7 +14,7 @@ type Config struct {
 	OIDCRedirectURI string // OIDC redirect_uri for the SPA (returned by /api/v1/config)
 	Addr            string // listen address (default: :8080)
 	DSN             string // postgres DATABASE_URL; required when AutoMigrate is true
-	AutoMigrate     bool   // run migrations at startup (dev/test only — set AUTO_MIGRATE=true)
+	AutoMigrate     bool   // run migrations at startup — dev/test only; unsafe in production (rolling restarts can race between old pods and a migrated schema)
 }
 
 // Load reads configuration from environment variables.
