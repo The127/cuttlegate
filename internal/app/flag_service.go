@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"github.com/karo/cuttlegate/internal/domain"
@@ -19,11 +20,12 @@ type FlagService struct {
 	repo      ports.FlagRepository
 	envRepo   ports.EnvironmentRepository
 	stateRepo ports.FlagEnvironmentStateRepository
+	publisher ports.EventPublisher
 }
 
 // NewFlagService constructs a FlagService.
-func NewFlagService(repo ports.FlagRepository, envRepo ports.EnvironmentRepository, stateRepo ports.FlagEnvironmentStateRepository) *FlagService {
-	return &FlagService{repo: repo, envRepo: envRepo, stateRepo: stateRepo}
+func NewFlagService(repo ports.FlagRepository, envRepo ports.EnvironmentRepository, stateRepo ports.FlagEnvironmentStateRepository, publisher ports.EventPublisher) *FlagService {
+	return &FlagService{repo: repo, envRepo: envRepo, stateRepo: stateRepo, publisher: publisher}
 }
 
 // Create validates the flag, assigns a UUID and creation timestamp, persists it, then
@@ -241,8 +243,9 @@ func (s *FlagService) GetByKeyAndEnvironment(ctx context.Context, projectID, env
 
 // SetEnabled enables or disables a flag in a specific environment.
 // Returns ErrNotFound if no state row exists (flag created before this environment).
+// On success, publishes a FlagStateChangedEvent. Publish failure is logged, not returned.
 // Requires at least editor role.
-func (s *FlagService) SetEnabled(ctx context.Context, projectID, environmentID, flagKey string, enabled bool) error {
+func (s *FlagService) SetEnabled(ctx context.Context, projectID, environmentID, flagKey string, enabled bool, projectSlug, envSlug string) error {
 	if _, err := requireRole(ctx, domain.RoleEditor); err != nil {
 		return err
 	}
@@ -250,7 +253,20 @@ func (s *FlagService) SetEnabled(ctx context.Context, projectID, environmentID, 
 	if err != nil {
 		return err
 	}
-	return s.stateRepo.SetEnabled(ctx, f.ID, environmentID, enabled)
+	if err := s.stateRepo.SetEnabled(ctx, f.ID, environmentID, enabled); err != nil {
+		return err
+	}
+	event := domain.FlagStateChangedEvent{
+		ProjectSlug:     projectSlug,
+		EnvironmentSlug: envSlug,
+		FlagKey:         flagKey,
+		Enabled:         enabled,
+		Timestamp:       time.Now().UTC(),
+	}
+	if err := s.publisher.Publish(ctx, event); err != nil {
+		log.Printf("failed to publish FlagStateChangedEvent for %s/%s/%s: %v", projectSlug, envSlug, flagKey, err)
+	}
+	return nil
 }
 
 // Delete removes a flag by ID.

@@ -100,7 +100,7 @@ func run() error {
 		projSvc := app.NewProjectService(projRepo)
 		envSvc := app.NewEnvironmentService(envRepo, projRepo)
 		memberSvc := app.NewProjectMemberService(memberRepo, projRepo)
-		flagSvc := app.NewFlagService(flagRepo, envRepo, stateRepo)
+		flagSvc := app.NewFlagService(flagRepo, envRepo, stateRepo, broker)
 		ruleSvc := app.NewRuleService(ruleRepo)
 		segmentSvc := app.NewSegmentService(segmentRepo)
 		evalSvc := app.NewEvaluationService(flagRepo, stateRepo, ruleRepo, segmentRepo)

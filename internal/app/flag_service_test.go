@@ -4,10 +4,32 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/karo/cuttlegate/internal/app"
 	"github.com/karo/cuttlegate/internal/domain"
+	"github.com/karo/cuttlegate/internal/domain/ports"
 )
+
+// noOpPublisher is an EventPublisher that does nothing. Used by existing tests
+// that don't care about event publishing.
+type noOpPublisher struct{}
+
+func (noOpPublisher) Publish(_ context.Context, _ ports.DomainEvent) error { return nil }
+
+// spyPublisher records all published events for assertion.
+type spyPublisher struct {
+	events []ports.DomainEvent
+	err    error // if set, Publish returns this error
+}
+
+func (s *spyPublisher) Publish(_ context.Context, event ports.DomainEvent) error {
+	if s.err != nil {
+		return s.err
+	}
+	s.events = append(s.events, event)
+	return nil
+}
 
 // fakeFlagEnvironmentStateRepository is an in-memory implementation of ports.FlagEnvironmentStateRepository.
 type fakeFlagEnvironmentStateRepository struct {
@@ -64,7 +86,7 @@ func (f *fakeFlagEnvironmentStateRepository) SetEnabled(_ context.Context, flagI
 
 // newFlagSvc constructs a FlagService with in-memory fakes. Repos are discarded when not needed.
 func newFlagSvc() *app.FlagService {
-	return app.NewFlagService(newFakeFlagRepository(), newFakeEnvironmentRepository(), newFakeFlagEnvironmentStateRepository())
+	return app.NewFlagService(newFakeFlagRepository(), newFakeEnvironmentRepository(), newFakeFlagEnvironmentStateRepository(), noOpPublisher{})
 }
 
 var testVariants = []domain.Variant{
@@ -327,7 +349,7 @@ func TestFlagService_Create_AutoCreatesStateRowsForAllEnvironments(t *testing.T)
 	flagRepo := newFakeFlagRepository()
 	envRepo := newFakeEnvironmentRepository()
 	stateRepo := newFakeFlagEnvironmentStateRepository()
-	svc := app.NewFlagService(flagRepo, envRepo, stateRepo)
+	svc := app.NewFlagService(flagRepo, envRepo, stateRepo, noOpPublisher{})
 	ctx := authCtx("admin-1", domain.RoleAdmin)
 
 	// Seed two environments for the project.
@@ -363,7 +385,7 @@ func TestFlagService_Create_StateRowFailureCompensatesFlag(t *testing.T) {
 	envRepo := newFakeEnvironmentRepository()
 	stateRepo := newFakeFlagEnvironmentStateRepository()
 	stateRepo.batchErr = errors.New("db: insert failed")
-	svc := app.NewFlagService(flagRepo, envRepo, stateRepo)
+	svc := app.NewFlagService(flagRepo, envRepo, stateRepo, noOpPublisher{})
 	ctx := authCtx("admin-1", domain.RoleAdmin)
 
 	// Seed one environment so CreateBatch is actually called.
@@ -389,7 +411,7 @@ func TestFlagService_SetEnabled_IsolatedPerEnvironment(t *testing.T) {
 	flagRepo := newFakeFlagRepository()
 	envRepo := newFakeEnvironmentRepository()
 	stateRepo := newFakeFlagEnvironmentStateRepository()
-	svc := app.NewFlagService(flagRepo, envRepo, stateRepo)
+	svc := app.NewFlagService(flagRepo, envRepo, stateRepo, noOpPublisher{})
 	ctx := authCtx("editor-1", domain.RoleEditor)
 
 	// Seed flag and state rows directly.
@@ -400,7 +422,7 @@ func TestFlagService_SetEnabled_IsolatedPerEnvironment(t *testing.T) {
 	stateRepo.states[stateKey("flag-1", "env-dev")] = &domain.FlagEnvironmentState{FlagID: "flag-1", EnvironmentID: "env-dev", Enabled: false}
 	stateRepo.states[stateKey("flag-1", "env-prod")] = &domain.FlagEnvironmentState{FlagID: "flag-1", EnvironmentID: "env-prod", Enabled: false}
 
-	if err := svc.SetEnabled(ctx, "proj-1", "env-dev", "dark-mode", true); err != nil {
+	if err := svc.SetEnabled(ctx, "proj-1", "env-dev", "dark-mode", true, "alpha", "dev"); err != nil {
 		t.Fatalf("SetEnabled: %v", err)
 	}
 
@@ -432,14 +454,14 @@ func TestFlagService_SetEnabled_MissingStateRow_ReturnsErrNotFound(t *testing.T)
 	flagRepo := newFakeFlagRepository()
 	envRepo := newFakeEnvironmentRepository()
 	stateRepo := newFakeFlagEnvironmentStateRepository()
-	svc := app.NewFlagService(flagRepo, envRepo, stateRepo)
+	svc := app.NewFlagService(flagRepo, envRepo, stateRepo, noOpPublisher{})
 
 	f := validBoolFlag("proj-1")
 	f.ID = "flag-1"
 	flagRepo.byKey[flagKey("proj-1", "dark-mode")] = f
 	flagRepo.byID["flag-1"] = f
 
-	err := svc.SetEnabled(authCtx("editor-1", domain.RoleEditor), "proj-1", "env-new", "dark-mode", true)
+	err := svc.SetEnabled(authCtx("editor-1", domain.RoleEditor), "proj-1", "env-new", "dark-mode", true, "alpha", "new")
 	if !errors.Is(err, domain.ErrNotFound) {
 		t.Errorf("expected ErrNotFound, got %v", err)
 	}
@@ -476,7 +498,7 @@ func seedBoolFlag(flagRepo *fakeFlagRepository) *domain.Flag {
 // Scenario 1: add variant to string flag succeeds
 func TestFlagService_AddVariant_StringFlag_Succeeds(t *testing.T) {
 	flagRepo := newFakeFlagRepository()
-	svc := app.NewFlagService(flagRepo, newFakeEnvironmentRepository(), newFakeFlagEnvironmentStateRepository())
+	svc := app.NewFlagService(flagRepo, newFakeEnvironmentRepository(), newFakeFlagEnvironmentStateRepository(), noOpPublisher{})
 	seedStringFlag(flagRepo)
 	ctx := authCtx("editor-1", domain.RoleEditor)
 
@@ -492,7 +514,7 @@ func TestFlagService_AddVariant_StringFlag_Succeeds(t *testing.T) {
 // Scenario 2: add variant to bool flag returns ErrImmutableVariants
 func TestFlagService_AddVariant_BoolFlag_ReturnsErrImmutableVariants(t *testing.T) {
 	flagRepo := newFakeFlagRepository()
-	svc := app.NewFlagService(flagRepo, newFakeEnvironmentRepository(), newFakeFlagEnvironmentStateRepository())
+	svc := app.NewFlagService(flagRepo, newFakeEnvironmentRepository(), newFakeFlagEnvironmentStateRepository(), noOpPublisher{})
 	seedBoolFlag(flagRepo)
 
 	_, err := svc.AddVariant(authCtx("editor-1", domain.RoleEditor), "proj-1", "dark-mode", domain.Variant{Key: "maybe", Name: "Maybe"})
@@ -504,7 +526,7 @@ func TestFlagService_AddVariant_BoolFlag_ReturnsErrImmutableVariants(t *testing.
 // Scenario 3: rename variant updates only the name
 func TestFlagService_RenameVariant_UpdatesName(t *testing.T) {
 	flagRepo := newFakeFlagRepository()
-	svc := app.NewFlagService(flagRepo, newFakeEnvironmentRepository(), newFakeFlagEnvironmentStateRepository())
+	svc := app.NewFlagService(flagRepo, newFakeEnvironmentRepository(), newFakeFlagEnvironmentStateRepository(), noOpPublisher{})
 	seedStringFlag(flagRepo)
 	ctx := authCtx("editor-1", domain.RoleEditor)
 
@@ -526,7 +548,7 @@ func TestFlagService_RenameVariant_UpdatesName(t *testing.T) {
 // Scenario 5: delete non-default variant succeeds
 func TestFlagService_DeleteVariant_NonDefault_Succeeds(t *testing.T) {
 	flagRepo := newFakeFlagRepository()
-	svc := app.NewFlagService(flagRepo, newFakeEnvironmentRepository(), newFakeFlagEnvironmentStateRepository())
+	svc := app.NewFlagService(flagRepo, newFakeEnvironmentRepository(), newFakeFlagEnvironmentStateRepository(), noOpPublisher{})
 	// Three-variant flag so we can delete one without hitting ErrLastVariant
 	f := seedStringFlag(flagRepo)
 	f.Variants = append(f.Variants, domain.Variant{Key: "system", Name: "System"})
@@ -544,7 +566,7 @@ func TestFlagService_DeleteVariant_NonDefault_Succeeds(t *testing.T) {
 // Scenario 6: delete default variant returns ErrDefaultVariant
 func TestFlagService_DeleteVariant_DefaultVariant_ReturnsErrDefaultVariant(t *testing.T) {
 	flagRepo := newFakeFlagRepository()
-	svc := app.NewFlagService(flagRepo, newFakeEnvironmentRepository(), newFakeFlagEnvironmentStateRepository())
+	svc := app.NewFlagService(flagRepo, newFakeEnvironmentRepository(), newFakeFlagEnvironmentStateRepository(), noOpPublisher{})
 	seedStringFlag(flagRepo)
 
 	_, err := svc.DeleteVariant(authCtx("editor-1", domain.RoleEditor), "proj-1", "theme", "light")
@@ -556,7 +578,7 @@ func TestFlagService_DeleteVariant_DefaultVariant_ReturnsErrDefaultVariant(t *te
 // Scenario 7: delete variant from bool flag returns ErrImmutableVariants
 func TestFlagService_DeleteVariant_BoolFlag_ReturnsErrImmutableVariants(t *testing.T) {
 	flagRepo := newFakeFlagRepository()
-	svc := app.NewFlagService(flagRepo, newFakeEnvironmentRepository(), newFakeFlagEnvironmentStateRepository())
+	svc := app.NewFlagService(flagRepo, newFakeEnvironmentRepository(), newFakeFlagEnvironmentStateRepository(), noOpPublisher{})
 	seedBoolFlag(flagRepo)
 
 	_, err := svc.DeleteVariant(authCtx("editor-1", domain.RoleEditor), "proj-1", "dark-mode", "true")
@@ -568,7 +590,7 @@ func TestFlagService_DeleteVariant_BoolFlag_ReturnsErrImmutableVariants(t *testi
 // Scenario 8: add duplicate variant key returns ErrConflict
 func TestFlagService_AddVariant_DuplicateKey_ReturnsErrConflict(t *testing.T) {
 	flagRepo := newFakeFlagRepository()
-	svc := app.NewFlagService(flagRepo, newFakeEnvironmentRepository(), newFakeFlagEnvironmentStateRepository())
+	svc := app.NewFlagService(flagRepo, newFakeEnvironmentRepository(), newFakeFlagEnvironmentStateRepository(), noOpPublisher{})
 	seedStringFlag(flagRepo)
 
 	_, err := svc.AddVariant(authCtx("editor-1", domain.RoleEditor), "proj-1", "theme", domain.Variant{Key: "light", Name: "Light Dup"})
@@ -580,7 +602,7 @@ func TestFlagService_AddVariant_DuplicateKey_ReturnsErrConflict(t *testing.T) {
 // Scenario 9: viewer attempting variant mutation returns ErrForbidden
 func TestFlagService_AddVariant_ViewerReturnsForbidden(t *testing.T) {
 	flagRepo := newFakeFlagRepository()
-	svc := app.NewFlagService(flagRepo, newFakeEnvironmentRepository(), newFakeFlagEnvironmentStateRepository())
+	svc := app.NewFlagService(flagRepo, newFakeEnvironmentRepository(), newFakeFlagEnvironmentStateRepository(), noOpPublisher{})
 	seedStringFlag(flagRepo)
 
 	_, err := svc.AddVariant(authCtx("viewer-1", domain.RoleViewer), "proj-1", "theme", domain.Variant{Key: "system", Name: "System"})
@@ -592,7 +614,7 @@ func TestFlagService_AddVariant_ViewerReturnsForbidden(t *testing.T) {
 // ErrLastVariant invariant
 func TestFlagService_DeleteVariant_LastVariant_ReturnsErrLastVariant(t *testing.T) {
 	flagRepo := newFakeFlagRepository()
-	svc := app.NewFlagService(flagRepo, newFakeEnvironmentRepository(), newFakeFlagEnvironmentStateRepository())
+	svc := app.NewFlagService(flagRepo, newFakeEnvironmentRepository(), newFakeFlagEnvironmentStateRepository(), noOpPublisher{})
 	// Single non-default variant flag
 	f := &domain.Flag{
 		ID:                "flag-single",
@@ -614,4 +636,139 @@ func TestFlagService_DeleteVariant_LastVariant_ReturnsErrLastVariant(t *testing.
 	if !errors.Is(err, domain.ErrDefaultVariant) {
 		t.Errorf("expected ErrDefaultVariant (default check fires before last-variant check), got %v", err)
 	}
+}
+
+// ── Flag state change propagation scenarios (#48) ────────────────────────────
+
+func seedFlagWithState(flagRepo *fakeFlagRepository, stateRepo *fakeFlagEnvironmentStateRepository) {
+	f := validBoolFlag("proj-1")
+	f.ID = "flag-1"
+	flagRepo.byKey[flagKey("proj-1", "dark-mode")] = f
+	flagRepo.byID["flag-1"] = f
+	stateRepo.states[stateKey("flag-1", "env-staging")] = &domain.FlagEnvironmentState{
+		FlagID: "flag-1", EnvironmentID: "env-staging", Enabled: false,
+	}
+}
+
+// BDD Scenario 1: Enabling a flag publishes a state changed event
+func TestFlagService_SetEnabled_PublishesEventOnEnable(t *testing.T) {
+	flagRepo := newFakeFlagRepository()
+	stateRepo := newFakeFlagEnvironmentStateRepository()
+	spy := &spyPublisher{}
+	svc := app.NewFlagService(flagRepo, newFakeEnvironmentRepository(), stateRepo, spy)
+	seedFlagWithState(flagRepo, stateRepo)
+
+	err := svc.SetEnabled(authCtx("editor-1", domain.RoleEditor), "proj-1", "env-staging", "dark-mode", true, "alpha", "staging")
+	if err != nil {
+		t.Fatalf("SetEnabled: %v", err)
+	}
+	if len(spy.events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(spy.events))
+	}
+	evt, ok := spy.events[0].(domain.FlagStateChangedEvent)
+	if !ok {
+		t.Fatalf("expected FlagStateChangedEvent, got %T", spy.events[0])
+	}
+	if evt.EventType() != "flag.state_changed" {
+		t.Errorf("event type: got %q", evt.EventType())
+	}
+	if evt.ProjectSlug != "alpha" {
+		t.Errorf("project slug: got %q", evt.ProjectSlug)
+	}
+	if evt.EnvironmentSlug != "staging" {
+		t.Errorf("environment slug: got %q", evt.EnvironmentSlug)
+	}
+	if evt.FlagKey != "dark-mode" {
+		t.Errorf("flag key: got %q", evt.FlagKey)
+	}
+	if !evt.Enabled {
+		t.Error("expected enabled=true")
+	}
+}
+
+// BDD Scenario 2: Disabling a flag publishes a state changed event
+func TestFlagService_SetEnabled_PublishesEventOnDisable(t *testing.T) {
+	flagRepo := newFakeFlagRepository()
+	stateRepo := newFakeFlagEnvironmentStateRepository()
+	spy := &spyPublisher{}
+	svc := app.NewFlagService(flagRepo, newFakeEnvironmentRepository(), stateRepo, spy)
+	seedFlagWithState(flagRepo, stateRepo)
+	// Enable first so we can disable.
+	stateRepo.states[stateKey("flag-1", "env-staging")].Enabled = true
+
+	err := svc.SetEnabled(authCtx("editor-1", domain.RoleEditor), "proj-1", "env-staging", "dark-mode", false, "alpha", "staging")
+	if err != nil {
+		t.Fatalf("SetEnabled: %v", err)
+	}
+	if len(spy.events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(spy.events))
+	}
+	evt := spy.events[0].(domain.FlagStateChangedEvent)
+	if evt.Enabled {
+		t.Error("expected enabled=false")
+	}
+}
+
+// BDD Scenario 3: SetEnabled failure does not publish an event
+func TestFlagService_SetEnabled_NoEventOnFailure(t *testing.T) {
+	flagRepo := newFakeFlagRepository()
+	stateRepo := newFakeFlagEnvironmentStateRepository()
+	spy := &spyPublisher{}
+	svc := app.NewFlagService(flagRepo, newFakeEnvironmentRepository(), stateRepo, spy)
+	// Flag exists but no state row → SetEnabled returns ErrNotFound.
+	f := validBoolFlag("proj-1")
+	f.ID = "flag-1"
+	flagRepo.byKey[flagKey("proj-1", "dark-mode")] = f
+	flagRepo.byID["flag-1"] = f
+
+	err := svc.SetEnabled(authCtx("editor-1", domain.RoleEditor), "proj-1", "env-missing", "dark-mode", true, "alpha", "missing")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if len(spy.events) != 0 {
+		t.Errorf("expected 0 events on failure, got %d", len(spy.events))
+	}
+}
+
+// BDD Scenario 4: Publish failure does not fail the state change
+func TestFlagService_SetEnabled_PublishFailureDoesNotFailRequest(t *testing.T) {
+	flagRepo := newFakeFlagRepository()
+	stateRepo := newFakeFlagEnvironmentStateRepository()
+	spy := &spyPublisher{err: errors.New("broker down")}
+	svc := app.NewFlagService(flagRepo, newFakeEnvironmentRepository(), stateRepo, spy)
+	seedFlagWithState(flagRepo, stateRepo)
+
+	err := svc.SetEnabled(authCtx("editor-1", domain.RoleEditor), "proj-1", "env-staging", "dark-mode", true, "alpha", "staging")
+	if err != nil {
+		t.Fatalf("SetEnabled should succeed despite publish failure, got %v", err)
+	}
+	// State should be updated even though publish failed.
+	if !stateRepo.states[stateKey("flag-1", "env-staging")].Enabled {
+		t.Error("state should be enabled despite publish failure")
+	}
+}
+
+// BDD Scenario 5: FlagStateChangedEvent satisfies DomainEvent interface
+func TestFlagStateChangedEvent_SatisfiesDomainEvent(t *testing.T) {
+	evt := domain.FlagStateChangedEvent{
+		ProjectSlug:     "my-project",
+		EnvironmentSlug: "production",
+		FlagKey:         "dark-mode",
+		Enabled:         true,
+		Timestamp:       mustParseTime("2026-03-21T12:00:00Z"),
+	}
+	if evt.EventType() != "flag.state_changed" {
+		t.Errorf("EventType: got %q", evt.EventType())
+	}
+	if !evt.OccurredAt().Equal(mustParseTime("2026-03-21T12:00:00Z")) {
+		t.Errorf("OccurredAt: got %v", evt.OccurredAt())
+	}
+}
+
+func mustParseTime(s string) (t time.Time) {
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		panic(err)
+	}
+	return t
 }
