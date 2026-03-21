@@ -89,13 +89,16 @@ func run() error {
 		flagRepo := dbadapter.NewPostgresFlagRepository(conn)
 		stateRepo := dbadapter.NewPostgresFlagEnvironmentStateRepository(conn)
 		ruleRepo := dbadapter.NewPostgresRuleRepository(conn)
+		// TODO(#42): replace with PostgresSegmentRepository once migration 000005/000006 lands.
+		segmentRepo := dbadapter.NewFakeSegmentRepository()
 
 		projSvc := app.NewProjectService(projRepo)
 		envSvc := app.NewEnvironmentService(envRepo, projRepo)
 		memberSvc := app.NewProjectMemberService(memberRepo, projRepo)
 		flagSvc := app.NewFlagService(flagRepo, envRepo, stateRepo)
 		ruleSvc := app.NewRuleService(ruleRepo)
-		evalSvc := app.NewEvaluationService(flagRepo, stateRepo, ruleRepo)
+		segmentSvc := app.NewSegmentService(segmentRepo)
+		evalSvc := app.NewEvaluationService(flagRepo, stateRepo, ruleRepo, segmentRepo)
 
 		httpadapter.NewProjectHandler(projSvc).RegisterRoutes(mux, requireBearer)
 		httpadapter.NewEnvironmentHandler(envSvc, projSvc).RegisterRoutes(mux, requireBearer)
@@ -104,6 +107,7 @@ func run() error {
 		httpadapter.NewFlagVariantHandler(flagSvc, projSvc).RegisterRoutes(mux, requireBearer)
 		httpadapter.NewFlagEnvironmentHandler(flagSvc, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
 		httpadapter.NewRuleHandler(ruleSvc, projSvc, flagSvc, envSvc).RegisterRoutes(mux, requireBearer)
+		httpadapter.NewSegmentHandler(segmentSvc, projSvc).RegisterRoutes(mux, requireBearer)
 		httpadapter.NewEvaluationHandler(evalSvc, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
 	}
 

@@ -6,22 +6,26 @@ import "time"
 type Operator string
 
 const (
-	OperatorEq         Operator = "eq"
-	OperatorNeq        Operator = "neq"
-	OperatorContains   Operator = "contains"
-	OperatorStartsWith Operator = "starts_with"
-	OperatorEndsWith   Operator = "ends_with"
-	OperatorIn         Operator = "in"
-	OperatorNotIn      Operator = "not_in"
+	OperatorEq           Operator = "eq"
+	OperatorNeq          Operator = "neq"
+	OperatorContains     Operator = "contains"
+	OperatorStartsWith   Operator = "starts_with"
+	OperatorEndsWith     Operator = "ends_with"
+	OperatorIn           Operator = "in"
+	OperatorNotIn        Operator = "not_in"
+	OperatorInSegment    Operator = "in_segment"
+	OperatorNotInSegment Operator = "not_in_segment"
 )
 
 // scalarOperators require exactly one value.
 var scalarOperators = map[Operator]bool{
-	OperatorEq:         true,
-	OperatorNeq:        true,
-	OperatorContains:   true,
-	OperatorStartsWith: true,
-	OperatorEndsWith:   true,
+	OperatorEq:           true,
+	OperatorNeq:          true,
+	OperatorContains:     true,
+	OperatorStartsWith:   true,
+	OperatorEndsWith:     true,
+	OperatorInSegment:    true, // Values[0] is the segment slug
+	OperatorNotInSegment: true, // Values[0] is the segment slug
 }
 
 // listOperators require one or more values.
@@ -40,7 +44,9 @@ type Condition struct {
 
 // Validate returns an error if the condition is not well-formed.
 func (c Condition) Validate() error {
-	if c.Attribute == "" {
+	// Segment operators reference a slug in Values[0]; Attribute is unused.
+	isSegmentOp := c.Operator == OperatorInSegment || c.Operator == OperatorNotInSegment
+	if !isSegmentOp && c.Attribute == "" {
 		return &ValidationError{Field: "attribute", Message: "must not be empty"}
 	}
 	if scalarOperators[c.Operator] {
