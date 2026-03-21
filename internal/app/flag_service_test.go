@@ -431,7 +431,10 @@ func TestFlagService_SetEnabled_IsolatedPerEnvironment(t *testing.T) {
 	stateRepo.states[stateKey("flag-1", "env-dev")] = &domain.FlagEnvironmentState{FlagID: "flag-1", EnvironmentID: "env-dev", Enabled: false}
 	stateRepo.states[stateKey("flag-1", "env-prod")] = &domain.FlagEnvironmentState{FlagID: "flag-1", EnvironmentID: "env-prod", Enabled: false}
 
-	if err := svc.SetEnabled(ctx, "proj-1", "env-dev", "dark-mode", true, "alpha", "dev"); err != nil {
+	if err := svc.SetEnabled(ctx, app.SetEnabledParams{
+		ProjectID: "proj-1", EnvironmentID: "env-dev", FlagKey: "dark-mode",
+		Enabled: true, ProjectSlug: "alpha", EnvSlug: "dev",
+	}); err != nil {
 		t.Fatalf("SetEnabled: %v", err)
 	}
 
@@ -470,7 +473,10 @@ func TestFlagService_SetEnabled_MissingStateRow_ReturnsErrNotFound(t *testing.T)
 	flagRepo.byKey[flagKey("proj-1", "dark-mode")] = f
 	flagRepo.byID["flag-1"] = f
 
-	err := svc.SetEnabled(authCtx("editor-1", domain.RoleEditor), "proj-1", "env-new", "dark-mode", true, "alpha", "new")
+	err := svc.SetEnabled(authCtx("editor-1", domain.RoleEditor), app.SetEnabledParams{
+		ProjectID: "proj-1", EnvironmentID: "env-new", FlagKey: "dark-mode",
+		Enabled: true, ProjectSlug: "alpha", EnvSlug: "new",
+	})
 	if !errors.Is(err, domain.ErrNotFound) {
 		t.Errorf("expected ErrNotFound, got %v", err)
 	}
@@ -667,7 +673,10 @@ func TestFlagService_SetEnabled_PublishesEventOnEnable(t *testing.T) {
 	svc := app.NewFlagService(flagRepo, newFakeEnvironmentRepository(), stateRepo, spy, noOpAuditRepository{})
 	seedFlagWithState(flagRepo, stateRepo)
 
-	err := svc.SetEnabled(authCtx("editor-1", domain.RoleEditor), "proj-1", "env-staging", "dark-mode", true, "alpha", "staging")
+	err := svc.SetEnabled(authCtx("editor-1", domain.RoleEditor), app.SetEnabledParams{
+		ProjectID: "proj-1", EnvironmentID: "env-staging", FlagKey: "dark-mode",
+		Enabled: true, ProjectSlug: "alpha", EnvSlug: "staging",
+	})
 	if err != nil {
 		t.Fatalf("SetEnabled: %v", err)
 	}
@@ -705,7 +714,10 @@ func TestFlagService_SetEnabled_PublishesEventOnDisable(t *testing.T) {
 	// Enable first so we can disable.
 	stateRepo.states[stateKey("flag-1", "env-staging")].Enabled = true
 
-	err := svc.SetEnabled(authCtx("editor-1", domain.RoleEditor), "proj-1", "env-staging", "dark-mode", false, "alpha", "staging")
+	err := svc.SetEnabled(authCtx("editor-1", domain.RoleEditor), app.SetEnabledParams{
+		ProjectID: "proj-1", EnvironmentID: "env-staging", FlagKey: "dark-mode",
+		Enabled: false, ProjectSlug: "alpha", EnvSlug: "staging",
+	})
 	if err != nil {
 		t.Fatalf("SetEnabled: %v", err)
 	}
@@ -730,7 +742,10 @@ func TestFlagService_SetEnabled_NoEventOnFailure(t *testing.T) {
 	flagRepo.byKey[flagKey("proj-1", "dark-mode")] = f
 	flagRepo.byID["flag-1"] = f
 
-	err := svc.SetEnabled(authCtx("editor-1", domain.RoleEditor), "proj-1", "env-missing", "dark-mode", true, "alpha", "missing")
+	err := svc.SetEnabled(authCtx("editor-1", domain.RoleEditor), app.SetEnabledParams{
+		ProjectID: "proj-1", EnvironmentID: "env-missing", FlagKey: "dark-mode",
+		Enabled: true, ProjectSlug: "alpha", EnvSlug: "missing",
+	})
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -747,7 +762,10 @@ func TestFlagService_SetEnabled_PublishFailureDoesNotFailRequest(t *testing.T) {
 	svc := app.NewFlagService(flagRepo, newFakeEnvironmentRepository(), stateRepo, spy, noOpAuditRepository{})
 	seedFlagWithState(flagRepo, stateRepo)
 
-	err := svc.SetEnabled(authCtx("editor-1", domain.RoleEditor), "proj-1", "env-staging", "dark-mode", true, "alpha", "staging")
+	err := svc.SetEnabled(authCtx("editor-1", domain.RoleEditor), app.SetEnabledParams{
+		ProjectID: "proj-1", EnvironmentID: "env-staging", FlagKey: "dark-mode",
+		Enabled: true, ProjectSlug: "alpha", EnvSlug: "staging",
+	})
 	if err != nil {
 		t.Fatalf("SetEnabled should succeed despite publish failure, got %v", err)
 	}
