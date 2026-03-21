@@ -15,19 +15,6 @@ services:
       timeout: 5s
       retries: 10
 
-  dex:
-    image: dexidp/dex:v2.41.1
-    command: ["dex", "serve", "/etc/dex/config.yaml"]
-    volumes:
-      - ./deploy/dex/config.yaml:/etc/dex/config.yaml:ro
-    ports:
-      - "5556:5556"
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5556/dex/.well-known/openid-configuration"]
-      interval: 2s
-      timeout: 5s
-      retries: 10
-
   migrate:
     build:
       context: .
@@ -50,15 +37,15 @@ services:
       - "localhost:host-gateway"
     environment:
       DATABASE_URL: postgres://cuttlegate:cuttlegate@db:5432/cuttlegate?sslmode=disable
-      OIDC_ISSUER: http://localhost:5556/dex
+      OIDC_ISSUER: http://localhost:5002/oidc/keyline
       OIDC_CLIENT_ID: cuttlegate
-      OIDC_REDIRECT_URI: http://localhost:8080/callback
+      OIDC_REDIRECT_URI: http://localhost:8080/auth/callback
       OIDC_ROLE_CLAIM: name
       ADDR: ":8080"
     depends_on:
       migrate:
         condition: service_completed_successfully
-      dex:
+      keyline:
         condition: service_healthy
 
   keyline-db:
@@ -82,6 +69,17 @@ services:
       interval: 2s
       timeout: 5s
       retries: 10
+
+  keyline-ui:
+    image: ghcr.io/the127/keyline-ui:v0.2.2
+    environment:
+      KEYLINE_API_URL: "http://localhost:5002"
+      KEYLINE_HOST: "http://localhost:5003"
+    ports:
+      - "5003:80"
+    depends_on:
+      keyline:
+        condition: service_healthy
 
   keyline:
     image: ghcr.io/the127/keyline:v0.2.2

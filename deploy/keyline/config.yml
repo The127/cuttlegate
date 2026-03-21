@@ -5,9 +5,9 @@ server:
   host: "0.0.0.0"
   port: 8080
   externalUrl: "http://localhost:5002"
-  allowedOrigins: ["http://localhost:5173", "http://localhost:8080"]
+  allowedOrigins: ["http://localhost:5173", "http://localhost:8080", "http://localhost:5002", "http://localhost:5003"]
 frontend:
-  externalUrl: "http://localhost:5002"
+  externalUrl: "http://localhost:5003"
 database:
   mode: postgres
   postgres:
@@ -21,7 +21,7 @@ initialVirtualServer:
   createAdmin: true
   admin:
     username: admin
-    displayName: Admin
+    displayName: admin
     primaryEmail: admin@example.com
     # argon2id hash of "password"
     passwordHash: "$argon2id$v=19$m=16,t=2,p=1$MTIzNDU2Nzg$QWu7e+sjG5knAdNLoKdLDg"
@@ -34,8 +34,10 @@ initialVirtualServer:
       type: "public"
       redirectUris:
       - "http://localhost:5173/auth/callback"
+      - "http://localhost:8080/auth/callback"
       postLogoutRedirectUris:
       - "http://localhost:5173/logout-callback"
+      - "http://localhost:8080/logout-callback"
 keyStore:
   mode: "directory"
   directory:
