@@ -118,7 +118,7 @@ export function ProjectSwitcher() {
               onChange={(e) => {
                 if (e.target.value && projectSlug) {
                   void navigate({
-                    to: '/projects/$slug/environments/$envSlug',
+                    to: '/projects/$slug/environments/$envSlug/flags',
                     params: { slug: projectSlug, envSlug: e.target.value },
                   })
                 }

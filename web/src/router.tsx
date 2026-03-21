@@ -5,11 +5,12 @@ import { indexRoute } from './routes/index'
 import { callbackRoute } from './routes/auth/callback'
 import { projectRoute } from './routes/projects/$slug'
 import { projectEnvRoute } from './routes/projects/$slug.environments.$envSlug'
+import { flagListRoute } from './routes/projects/$slug.environments.$envSlug.flags'
 
 const routeTree = rootRoute.addChildren([
   authenticatedRoute.addChildren([
     indexRoute,
-    projectRoute.addChildren([projectEnvRoute]),
+    projectRoute.addChildren([projectEnvRoute.addChildren([flagListRoute])]),
   ]),
   callbackRoute,
 ])
