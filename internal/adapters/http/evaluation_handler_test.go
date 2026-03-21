@@ -24,17 +24,16 @@ func (f *fakeEvaluationService) Evaluate(_ context.Context, _, _, _ string, _ do
 	return f.view, f.err
 }
 
-func newEvalMux(svc *fakeEvaluationService) *http.ServeMux {
+func newEvalMux(svc *fakeEvaluationService, auth func(http.Handler) http.Handler) *http.ServeMux {
 	proj := &domain.Project{ID: "proj-1", Slug: "my-project", Name: "My Project", CreatedAt: time.Now()}
 	env := &domain.Environment{ID: "env-1", ProjectID: "proj-1", Slug: "production", Name: "Production"}
 
 	mux := http.NewServeMux()
-	noAuth := func(h http.Handler) http.Handler { return h }
 	httpadapter.NewEvaluationHandler(
 		svc,
 		&fakeProjResolver{projects: map[string]*domain.Project{proj.Slug: proj}},
 		&fakeEnvResolver{envs: map[string]*domain.Environment{"proj-1/production": env}},
-	).RegisterRoutes(mux, noAuth)
+	).RegisterRoutes(mux, auth)
 	return mux
 }
 
@@ -46,7 +45,7 @@ func TestEvaluationHandler_Evaluate_Disabled(t *testing.T) {
 		Reason:  domain.ReasonDisabled,
 		Type:    domain.FlagTypeBool,
 	}}
-	mux := newEvalMux(svc)
+	mux := newEvalMux(svc, noopAuth)
 
 	body := `{"context":{"user_id":"u_1","attributes":{}}}`
 	req := httptest.NewRequest(http.MethodPost,
@@ -84,7 +83,7 @@ func TestEvaluationHandler_Evaluate_RuleMatch(t *testing.T) {
 		Reason:  domain.ReasonRuleMatch,
 		Type:    domain.FlagTypeString,
 	}}
-	mux := newEvalMux(svc)
+	mux := newEvalMux(svc, noopAuth)
 
 	body := `{"context":{"user_id":"u_1","attributes":{"plan":"pro"}}}`
 	req := httptest.NewRequest(http.MethodPost,
@@ -111,7 +110,7 @@ func TestEvaluationHandler_Evaluate_RuleMatch(t *testing.T) {
 
 func TestEvaluationHandler_Evaluate_FlagNotFound(t *testing.T) {
 	svc := &fakeEvaluationService{err: domain.ErrNotFound}
-	mux := newEvalMux(svc)
+	mux := newEvalMux(svc, noopAuth)
 
 	body := `{"context":{"user_id":"u_1","attributes":{}}}`
 	req := httptest.NewRequest(http.MethodPost,
@@ -127,7 +126,7 @@ func TestEvaluationHandler_Evaluate_FlagNotFound(t *testing.T) {
 
 func TestEvaluationHandler_Evaluate_MissingContext(t *testing.T) {
 	svc := &fakeEvaluationService{}
-	mux := newEvalMux(svc)
+	mux := newEvalMux(svc, noopAuth)
 
 	body := `{}`
 	req := httptest.NewRequest(http.MethodPost,
@@ -148,7 +147,7 @@ func TestEvaluationHandler_Evaluate_MissingContext(t *testing.T) {
 
 func TestEvaluationHandler_Evaluate_MalformedBody(t *testing.T) {
 	svc := &fakeEvaluationService{}
-	mux := newEvalMux(svc)
+	mux := newEvalMux(svc, noopAuth)
 
 	req := httptest.NewRequest(http.MethodPost,
 		"/api/v1/projects/my-project/environments/production/flags/my-flag/evaluate",
@@ -163,7 +162,7 @@ func TestEvaluationHandler_Evaluate_MalformedBody(t *testing.T) {
 
 func TestEvaluationHandler_Evaluate_ProjectNotFound(t *testing.T) {
 	svc := &fakeEvaluationService{}
-	mux := newEvalMux(svc)
+	mux := newEvalMux(svc, noopAuth)
 
 	body := `{"context":{"user_id":"u_1","attributes":{}}}`
 	req := httptest.NewRequest(http.MethodPost,
@@ -174,5 +173,47 @@ func TestEvaluationHandler_Evaluate_ProjectNotFound(t *testing.T) {
 
 	if w.Code != http.StatusNotFound {
 		t.Fatalf("expected 404, got %d", w.Code)
+	}
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+func TestEvaluationHandler_Unauthenticated_Returns401(t *testing.T) {
+	svc := &fakeEvaluationService{}
+	mux := newEvalMux(svc, requireAuth401)
+
+	body := `{"context":{"user_id":"u_1","attributes":{}}}`
+	req := httptest.NewRequest(http.MethodPost,
+		"/api/v1/projects/my-project/environments/production/flags/my-flag/evaluate",
+		strings.NewReader(body))
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", w.Code)
+	}
+}
+
+// ── RBAC ──────────────────────────────────────────────────────────────────────
+
+func TestEvaluationHandler_Evaluate_Forbidden_Returns403(t *testing.T) {
+	svc := &fakeEvaluationService{err: domain.ErrForbidden}
+	mux := newEvalMux(svc, noopAuth)
+
+	body := `{"context":{"user_id":"u_1","attributes":{}}}`
+	req := httptest.NewRequest(http.MethodPost,
+		"/api/v1/projects/my-project/environments/production/flags/my-flag/evaluate",
+		strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("expected 403, got %d", w.Code)
+	}
+	var b map[string]any
+	json.NewDecoder(w.Body).Decode(&b) //nolint:errcheck
+	if b["error"] != "forbidden" {
+		t.Errorf("error code: got %v, want forbidden", b["error"])
 	}
 }

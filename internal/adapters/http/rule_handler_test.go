@@ -323,3 +323,58 @@ func TestRuleHandler_Unauthenticated_Returns401(t *testing.T) {
 		}
 	}
 }
+
+// ── RBAC ──────────────────────────────────────────────────────────────────────
+
+func TestRuleHandler_Create_Forbidden_Returns403(t *testing.T) {
+	svc := newFakeRuleService()
+	svc.err = domain.ErrForbidden
+	mux := newRuleMux(svc, noopAuth)
+
+	body := `{"conditions":[{"attribute":"plan","operator":"eq","values":["pro"]}],"variantKey":"on","priority":0}`
+	req := httptest.NewRequest(http.MethodPost, ruleBase, strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status: got %d, want 403", rec.Code)
+	}
+	var b map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&b); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if b["error"] != "forbidden" {
+		t.Errorf("error code: got %v, want forbidden", b["error"])
+	}
+}
+
+func TestRuleHandler_Update_Forbidden_Returns403(t *testing.T) {
+	svc := newFakeRuleService()
+	svc.err = domain.ErrForbidden
+	mux := newRuleMux(svc, noopAuth)
+
+	body := `{"conditions":[{"attribute":"plan","operator":"eq","values":["pro"]}],"variantKey":"on","priority":0,"enabled":true}`
+	req := httptest.NewRequest(http.MethodPatch, ruleBase+"/rule-1", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status: got %d, want 403", rec.Code)
+	}
+}
+
+func TestRuleHandler_Delete_Forbidden_Returns403(t *testing.T) {
+	svc := newFakeRuleService()
+	svc.err = domain.ErrForbidden
+	mux := newRuleMux(svc, noopAuth)
+
+	req := httptest.NewRequest(http.MethodDelete, ruleBase+"/rule-1", nil)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status: got %d, want 403", rec.Code)
+	}
+}

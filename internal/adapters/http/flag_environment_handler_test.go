@@ -271,3 +271,27 @@ func TestFlagEnvironmentHandler_Unauthenticated_Returns401(t *testing.T) {
 		}
 	}
 }
+
+// ── RBAC ──────────────────────────────────────────────────────────────────────
+
+func TestFlagEnvironmentHandler_SetEnabled_Forbidden_Returns403(t *testing.T) {
+	svc := &fakeFlagEnvService{err: domain.ErrForbidden}
+	mux := newFlagEnvMux(svc, noopAuth)
+
+	req := httptest.NewRequest(http.MethodPatch, "/api/v1/projects/acme/environments/prod/flags/dark-mode",
+		strings.NewReader(`{"enabled":true}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status: got %d, want 403", rec.Code)
+	}
+	var b map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&b); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if b["error"] != "forbidden" {
+		t.Errorf("error code: got %v, want forbidden", b["error"])
+	}
+}
