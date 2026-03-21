@@ -142,12 +142,21 @@ function RulesPage() {
     )
   }
 
-  function handleAdd(rule: Omit<Rule, 'id' | 'createdAt'>) {
-    createMutation.mutate(rule, { onSuccess: () => setAddingNew(false) })
+  function handleAdd(
+    rule: Omit<Rule, 'id' | 'createdAt'>,
+    opts?: { onSuccess?: () => void; onError?: (err: Error) => void },
+  ) {
+    createMutation.mutate(rule, {
+      onSuccess: () => { setAddingNew(false); opts?.onSuccess?.() },
+      onError: opts?.onError,
+    })
   }
 
-  function handleUpdate(rule: Omit<Rule, 'createdAt'>) {
-    updateMutation.mutate(rule)
+  function handleUpdate(
+    rule: Omit<Rule, 'createdAt'>,
+    opts?: { onSuccess?: () => void; onError?: (err: Error) => void },
+  ) {
+    updateMutation.mutate(rule, opts)
   }
 
   function handleDelete(id: string) {
@@ -187,7 +196,7 @@ function RulesPage() {
               rule={rule}
               variants={variants}
               segments={segments}
-              onSave={handleUpdate}
+              onSave={(r, opts) => handleUpdate(r, opts)}
               onDelete={handleDelete}
               isSaving={updateMutation.isPending && updateMutation.variables?.id === rule.id}
               isDeleting={deleteMutation.isPending && deleteMutation.variables === rule.id}
@@ -199,7 +208,7 @@ function RulesPage() {
               variants={variants}
               segments={segments}
               nextPriority={rules.length > 0 ? Math.max(...rules.map((r) => r.priority)) + 1 : 1}
-              onSave={handleAdd}
+              onSave={(r, opts) => handleAdd(r, opts)}
               onCancel={() => setAddingNew(false)}
               isSaving={createMutation.isPending}
             />
@@ -242,7 +251,7 @@ function RuleRow({
   rule: Rule
   variants: { key: string; name: string }[]
   segments: Segment[]
-  onSave: (rule: Omit<Rule, 'createdAt'>) => void
+  onSave: (rule: Omit<Rule, 'createdAt'>, opts?: { onSuccess?: () => void; onError?: (err: Error) => void }) => void
   onDelete: (id: string) => void
   isSaving: boolean
   isDeleting: boolean
@@ -275,11 +284,10 @@ function RuleRow({
 
   function save() {
     setSaveError(null)
-    onSave(
-      { id: rule.id, ...draft },
-    )
-    // optimistically close — parent invalidates cache; error surfaced via mutation
-    setEditing(false)
+    onSave({ id: rule.id, ...draft }, {
+      onSuccess: () => setEditing(false),
+      onError: (err) => setSaveError(err instanceof APIError ? err.message : 'Save failed. Please try again.'),
+    })
   }
 
   function confirmDelete() {
@@ -404,7 +412,7 @@ function NewRuleRow({
   variants: { key: string; name: string }[]
   segments: Segment[]
   nextPriority: number
-  onSave: (rule: Omit<Rule, 'id' | 'createdAt'>) => void
+  onSave: (rule: Omit<Rule, 'id' | 'createdAt'>, opts?: { onSuccess?: () => void; onError?: (err: Error) => void }) => void
   onCancel: () => void
   isSaving: boolean
 }) {
@@ -414,6 +422,7 @@ function NewRuleRow({
     variantKey: variants[0]?.key ?? '',
     enabled: true,
   })
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   return (
     <div className="bg-white border border-blue-200 rounded-lg px-4 py-4 space-y-4">
@@ -421,7 +430,12 @@ function NewRuleRow({
       <RuleEditor draft={draft} segments={segments} variants={variants} onChange={setDraft} />
       <div className="flex items-center gap-3">
         <button
-          onClick={() => onSave(draft)}
+          onClick={() => {
+            setSaveError(null)
+            onSave(draft, {
+              onError: (err) => setSaveError(err instanceof APIError ? err.message : 'Save failed. Please try again.'),
+            })
+          }}
           disabled={isSaving}
           className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
@@ -434,6 +448,7 @@ function NewRuleRow({
         >
           Cancel
         </button>
+        {saveError && <p className="text-xs text-red-600">{saveError}</p>}
       </div>
     </div>
   )
