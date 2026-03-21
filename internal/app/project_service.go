@@ -36,6 +36,9 @@ func (s *ProjectService) Create(ctx context.Context, name, slug string) (*domain
 		Slug:      slug,
 		CreatedAt: time.Now().UTC(),
 	}
+	if err := p.Validate(); err != nil {
+		return nil, err
+	}
 	if err := s.repo.Create(ctx, p); err != nil {
 		return nil, err
 	}
@@ -62,10 +65,13 @@ func (s *ProjectService) UpdateName(ctx context.Context, slug, name string) (*do
 	if err != nil {
 		return nil, err
 	}
+	p.Name = name
+	if err := p.Validate(); err != nil {
+		return nil, err
+	}
 	if err := s.repo.UpdateName(ctx, p.ID, name); err != nil {
 		return nil, err
 	}
-	p.Name = name
 	return p, nil
 }
 

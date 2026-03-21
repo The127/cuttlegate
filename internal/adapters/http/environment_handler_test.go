@@ -43,20 +43,20 @@ func (f *fakeEnvironmentService) Create(_ context.Context, projectSlug, name, en
 	if !ok {
 		return nil, domain.ErrNotFound
 	}
+	env := domain.Environment{Name: name, Slug: envSlug}
+	if err := env.Validate(); err != nil {
+		return nil, err
+	}
 	k := ek(projID, envSlug)
 	if _, exists := f.envs[k]; exists {
 		return nil, domain.ErrConflict
 	}
-	e := &domain.Environment{
-		ID:        "env-" + envSlug,
-		ProjectID: projID,
-		Name:      name,
-		Slug:      envSlug,
-		CreatedAt: time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC),
-	}
-	f.envs[k] = e
-	f.byID[e.ID] = e
-	return e, nil
+	env.ID = "env-" + envSlug
+	env.ProjectID = projID
+	env.CreatedAt = time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC)
+	f.envs[k] = &env
+	f.byID[env.ID] = &env
+	return &env, nil
 }
 
 func (f *fakeEnvironmentService) GetBySlug(_ context.Context, projectID, slug string) (*domain.Environment, error) {

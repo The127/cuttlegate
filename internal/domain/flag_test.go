@@ -14,6 +14,7 @@ func TestFlagValidate(t *testing.T) {
 			name: "valid_bool_flag",
 			flag: Flag{
 				Key:               "my-flag",
+				Name:              "My Flag",
 				Type:              FlagTypeBool,
 				Variants:          []Variant{{Key: "true", Name: "On"}, {Key: "false", Name: "Off"}},
 				DefaultVariantKey: "false",
@@ -24,11 +25,23 @@ func TestFlagValidate(t *testing.T) {
 			name: "valid_string_flag",
 			flag: Flag{
 				Key:               "color-scheme",
+				Name:              "Color Scheme",
 				Type:              FlagTypeString,
 				Variants:          []Variant{{Key: "blue", Name: "Blue"}, {Key: "green", Name: "Green"}, {Key: "red", Name: "Red"}},
 				DefaultVariantKey: "blue",
 			},
 			wantErr: false,
+		},
+		{
+			name: "empty_name",
+			flag: Flag{
+				Key:               "my-flag",
+				Name:              "",
+				Type:              FlagTypeString,
+				Variants:          []Variant{{Key: "a", Name: "A"}},
+				DefaultVariantKey: "a",
+			},
+			wantErr: true,
 		},
 		{
 			name: "bool_flag_one_variant",

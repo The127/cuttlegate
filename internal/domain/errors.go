@@ -1,6 +1,20 @@
 package domain
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
+
+// ValidationError is returned when a domain entity fails its invariants.
+// Field names the invalid field; Message describes the constraint violation.
+type ValidationError struct {
+	Field   string
+	Message string
+}
+
+func (e *ValidationError) Error() string {
+	return fmt.Sprintf("%s: %s", e.Field, e.Message)
+}
 
 // ErrNotFound is returned when a requested entity does not exist.
 var ErrNotFound = errors.New("not found")
