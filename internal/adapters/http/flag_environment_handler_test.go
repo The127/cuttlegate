@@ -35,7 +35,7 @@ func (f *fakeFlagEnvService) GetByKeyAndEnvironment(_ context.Context, _, _, _ s
 	return f.singleView, nil
 }
 
-func (f *fakeFlagEnvService) SetEnabled(_ context.Context, _, _, _ string, _ bool) error {
+func (f *fakeFlagEnvService) SetEnabled(_ context.Context, _, _, _ string, _ bool, _, _ string) error {
 	return f.err
 }
 

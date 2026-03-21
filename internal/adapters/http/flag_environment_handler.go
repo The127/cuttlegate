@@ -13,7 +13,7 @@ import (
 type flagEnvService interface {
 	ListByEnvironment(ctx context.Context, projectID, environmentID string) ([]*app.FlagEnvironmentView, error)
 	GetByKeyAndEnvironment(ctx context.Context, projectID, environmentID, flagKey string) (*app.FlagEnvironmentView, error)
-	SetEnabled(ctx context.Context, projectID, environmentID, flagKey string, enabled bool) error
+	SetEnabled(ctx context.Context, projectID, environmentID, flagKey string, enabled bool, projectSlug, envSlug string) error
 }
 
 // environmentResolver resolves an environment slug within a project to a domain.Environment.
@@ -131,7 +131,7 @@ func (h *FlagEnvironmentHandler) setEnabled(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err := h.svc.SetEnabled(r.Context(), proj.ID, env.ID, r.PathValue("key"), *body.Enabled); err != nil {
+	if err := h.svc.SetEnabled(r.Context(), proj.ID, env.ID, r.PathValue("key"), *body.Enabled, proj.Slug, env.Slug); err != nil {
 		WriteError(w, err)
 		return
 	}
