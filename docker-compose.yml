@@ -53,6 +53,7 @@ services:
       OIDC_ISSUER: http://localhost:5556/dex
       OIDC_CLIENT_ID: cuttlegate
       OIDC_REDIRECT_URI: http://localhost:8080/callback
+      OIDC_ROLE_CLAIM: name
       ADDR: ":8080"
     depends_on:
       migrate:
