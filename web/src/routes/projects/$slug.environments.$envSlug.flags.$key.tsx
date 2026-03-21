@@ -1,4 +1,4 @@
-import { createRoute, useNavigate } from '@tanstack/react-router'
+import { createRoute, useNavigate, Link } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, type ChangeEvent } from 'react'
 import { projectEnvRoute } from './$slug.environments.$envSlug'
@@ -101,6 +101,16 @@ function FlagDetailPage() {
         onDeleteIntent={() => setPendingDelete(true)}
         onSaved={() => void queryClient.invalidateQueries({ queryKey })}
       />
+
+      <div className="mt-4">
+        <Link
+          to="/projects/$slug/environments/$envSlug/flags/$key/rules"
+          params={{ slug, envSlug, key }}
+          className="text-sm text-blue-600 hover:underline"
+        >
+          Targeting rules →
+        </Link>
+      </div>
 
       {pendingDelete && (
         <DeleteConfirmModal

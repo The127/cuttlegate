@@ -7,12 +7,13 @@ import { projectRoute } from './routes/projects/$slug'
 import { projectEnvRoute } from './routes/projects/$slug.environments.$envSlug'
 import { flagListRoute } from './routes/projects/$slug.environments.$envSlug.flags'
 import { flagDetailRoute } from './routes/projects/$slug.environments.$envSlug.flags.$key'
+import { flagRulesRoute } from './routes/projects/$slug.environments.$envSlug.flags.$key.rules'
 
 const routeTree = rootRoute.addChildren([
   authenticatedRoute.addChildren([
     indexRoute,
     projectRoute.addChildren([
-      projectEnvRoute.addChildren([flagListRoute, flagDetailRoute]),
+      projectEnvRoute.addChildren([flagListRoute, flagDetailRoute, flagRulesRoute]),
     ]),
   ]),
   callbackRoute,
