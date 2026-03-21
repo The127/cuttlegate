@@ -4,6 +4,14 @@ End-to-end tests for Cuttlegate, using Playwright against the full stack.
 
 ## Running locally
 
+First-time setup (installs Playwright browser binaries, once per machine):
+
+```
+cd e2e && npx playwright install chromium
+```
+
+Then:
+
 ```
 just test-e2e
 ```
