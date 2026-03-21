@@ -6,10 +6,12 @@ import { CuttlegateError } from './client.js';
 export interface StreamOptions {
   /** Called when a flag state changes. */
   onFlagChange: (event: FlagStateChangedEvent) => void;
-  /** Called on connection error or parse failure. Optional. */
+  /** Called when retries are exhausted or a terminal error occurs (401/403). */
   onError?: (error: CuttlegateError) => void;
-  /** Called when the SSE connection is established. Optional. */
-  onConnected?: () => void;
+  /** Called when the SSE connection is established (first or reconnect). */
+  onConnected?: (reconnect: boolean) => void;
+  /** Called when the connection drops. */
+  onDisconnect?: () => void;
 }
 
 /** A flag state change event received from the SSE stream. */
@@ -38,12 +40,16 @@ const FlagStateChangedWireSchema = z.object({
   occurred_at: z.string(),
 });
 
+const INITIAL_BACKOFF_MS = 1000;
+const MAX_BACKOFF_MS = 30_000;
+const HEARTBEAT_TIMEOUT_MS = 90_000;
+
 /**
  * Connect to the SSE stream for real-time flag state updates.
  *
  * Uses a fetch-based SSE reader with Authorization header — no EventSource,
- * no token in URL. Requires a runtime with ReadableStream support (Node 20+,
- * all modern browsers).
+ * no token in URL. Automatically reconnects with exponential backoff on
+ * transient failures. Auth errors (401/403) are terminal.
  */
 export function connectStream(
   config: CuttlegateConfig,
@@ -70,7 +76,7 @@ export function connectStream(
 
   const controller = new AbortController();
 
-  startStream(url, config.token, fetchFn, controller.signal, options);
+  runConnectionLoop(url, config.token, fetchFn, controller.signal, options);
 
   return {
     close() {
@@ -79,13 +85,72 @@ export function connectStream(
   };
 }
 
-async function startStream(
+/** Compute backoff delay with full jitter. */
+function backoffDelay(attempt: number): number {
+  const base = Math.min(INITIAL_BACKOFF_MS * 2 ** attempt, MAX_BACKOFF_MS);
+  return Math.random() * base;
+}
+
+/**
+ * Result of a single stream attempt.
+ * - 'reconnect': transient failure, should retry
+ * - 'terminal': auth error, stop retrying
+ * - 'closed': consumer called close(), stop
+ */
+type StreamResult = 'reconnect' | 'terminal' | 'closed';
+
+async function runConnectionLoop(
   url: string,
   token: string,
   fetchFn: typeof fetch,
   signal: AbortSignal,
   options: StreamOptions,
 ): Promise<void> {
+  let attempt = 0;
+  let hasConnectedBefore = false;
+
+  while (!signal.aborted) {
+    if (attempt > 0) {
+      const delay = backoffDelay(attempt - 1);
+      await new Promise<void>((resolve) => {
+        const timer = setTimeout(resolve, delay);
+        const onAbort = () => {
+          clearTimeout(timer);
+          resolve();
+        };
+        signal.addEventListener('abort', onAbort, { once: true });
+      });
+      if (signal.aborted) break;
+    }
+
+    const result = await attemptStream(
+      url,
+      token,
+      fetchFn,
+      signal,
+      options,
+      hasConnectedBefore,
+    );
+
+    if (result === 'closed' || result === 'terminal') break;
+
+    // Transient failure — reconnect
+    if (hasConnectedBefore) {
+      options.onDisconnect?.();
+    }
+    attempt++;
+    hasConnectedBefore = true;
+  }
+}
+
+async function attemptStream(
+  url: string,
+  token: string,
+  fetchFn: typeof fetch,
+  signal: AbortSignal,
+  options: StreamOptions,
+  isReconnect: boolean,
+): Promise<StreamResult> {
   let res: Response;
   try {
     res = await fetchFn(url, {
@@ -97,46 +162,39 @@ async function startStream(
       signal,
     });
   } catch (err: unknown) {
-    if (signal.aborted) return;
-    options.onError?.(
-      new CuttlegateError(
-        'network_error',
-        err instanceof Error ? err.message : 'Failed to connect to SSE stream',
-      ),
-    );
-    return;
+    if (signal.aborted) return 'closed';
+    return 'reconnect';
   }
 
-  if (!res.ok) {
+  if (res.status === 401 || res.status === 403) {
     options.onError?.(
       new CuttlegateError(
-        res.status === 401 ? 'unauthorized' : 'network_error',
+        res.status === 401 ? 'unauthorized' : 'forbidden',
         `Server returned ${res.status}`,
       ),
     );
-    return;
+    return 'terminal';
+  }
+
+  if (!res.ok) {
+    return 'reconnect';
   }
 
   if (!res.body) {
-    options.onError?.(
-      new CuttlegateError('network_error', 'Response body is not readable'),
-    );
-    return;
+    return 'reconnect';
   }
 
-  options.onConnected?.();
+  options.onConnected?.(isReconnect);
 
   try {
     await readSSEStream(res.body, signal, options);
   } catch (err: unknown) {
-    if (signal.aborted) return;
-    options.onError?.(
-      new CuttlegateError(
-        'network_error',
-        err instanceof Error ? err.message : 'SSE stream read failed',
-      ),
-    );
+    if (signal.aborted) return 'closed';
   }
+
+  // Stream ended (server closed connection or heartbeat timeout) — reconnect
+  if (signal.aborted) return 'closed';
+  return 'reconnect';
 }
 
 async function readSSEStream(
@@ -148,20 +206,32 @@ async function readSSEStream(
   const decoder = new TextDecoder();
   let buffer = '';
 
-  // Cancel the reader when the abort signal fires — this unblocks any
-  // pending reader.read() call that would otherwise wait indefinitely.
-  const onAbort = () => reader.cancel();
+  // Heartbeat timeout: if no data arrives within 90s, throw to trigger reconnect.
+  let heartbeatTimer: ReturnType<typeof setTimeout> | undefined;
+  const resetHeartbeat = () => {
+    if (heartbeatTimer !== undefined) clearTimeout(heartbeatTimer);
+    heartbeatTimer = setTimeout(() => {
+      reader.cancel();
+    }, HEARTBEAT_TIMEOUT_MS);
+  };
+
+  // Cancel the reader when the abort signal fires.
+  const onAbort = () => {
+    if (heartbeatTimer !== undefined) clearTimeout(heartbeatTimer);
+    reader.cancel();
+  };
   signal.addEventListener('abort', onAbort);
+  resetHeartbeat();
 
   try {
     while (!signal.aborted) {
       const { done, value } = await reader.read();
       if (done || signal.aborted) break;
 
+      resetHeartbeat();
       buffer += decoder.decode(value, { stream: true });
 
       // SSE events are terminated by a blank line (\n\n).
-      // Process all complete events in the buffer.
       let boundary: number;
       while ((boundary = buffer.indexOf('\n\n')) !== -1) {
         const block = buffer.slice(0, boundary);
@@ -171,6 +241,7 @@ async function readSSEStream(
       }
     }
   } finally {
+    if (heartbeatTimer !== undefined) clearTimeout(heartbeatTimer);
     signal.removeEventListener('abort', onAbort);
     reader.releaseLock();
   }

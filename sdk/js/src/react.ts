@@ -82,6 +82,23 @@ export function CuttlegateProvider({
           return { flags: next, loading: prev.loading };
         });
       },
+      onConnected: (reconnect) => {
+        if (closed || !reconnect) return;
+        // Re-fetch current flag state on reconnect to close the missed-events gap.
+        client.evaluate({ user_id: '', attributes: {} }).then(
+          (results) => {
+            if (closed) return;
+            const flags = new Map<string, EvaluationResult>();
+            for (const r of results) {
+              flags.set(r.key, r);
+            }
+            setState((prev) => ({ flags, loading: prev.loading }));
+          },
+          () => {
+            // Silently ignore — stream will still deliver future updates.
+          },
+        );
+      },
     });
 
     return () => {
