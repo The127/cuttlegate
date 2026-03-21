@@ -47,16 +47,18 @@ func TestBucket_Distribution(t *testing.T) {
 }
 
 func TestBucket_RolloutSemantics(t *testing.T) {
+	// Bucket("my-flag", "user-123") == 82 (FNV-1a 32-bit, verified).
+	// Use this known value to pin exact rollout boundary behaviour.
 	tests := []struct {
 		flagKey    string
 		userKey    string
 		rollout    int
 		wantServed bool
 	}{
-		// Bucket("flag", "user-in") must be < rollout for served=true.
-		// We find a deterministic pair by inspecting the hash.
-		{"flag-a", "user-1", 100, true}, // 100% rollout always serves
-		{"flag-a", "user-1", 0, false},  // 0% rollout never serves
+		{"flag-a", "user-1", 100, true},    // 100% rollout always serves
+		{"flag-a", "user-1", 0, false},     // 0% rollout never serves
+		{"my-flag", "user-123", 83, true},  // bucket(82) < 83 → served
+		{"my-flag", "user-123", 82, false}, // bucket(82) is not < 82 → not served
 	}
 
 	for _, tt := range tests {
