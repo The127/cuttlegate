@@ -83,6 +83,43 @@ func adapterDir(pkgPath string) string {
 	return parts[0]
 }
 
+// TestCompositionRootExclusivity enforces that only cmd/server (the composition root)
+// may import both internal/adapters and internal/app. Any other package doing so
+// is wiring adapters and services outside the composition root.
+func TestCompositionRootExclusivity(t *testing.T) {
+	cfg := &packages.Config{
+		Mode: packages.NeedName | packages.NeedImports,
+	}
+	pkgs, err := packages.Load(cfg, module+"/...")
+	if err != nil {
+		t.Fatalf("load packages: %v", err)
+	}
+	if packages.PrintErrors(pkgs) > 0 {
+		t.FailNow()
+	}
+
+	for _, p := range pkgs {
+		if strings.HasPrefix(p.PkgPath, pkg("cmd/server")) {
+			continue
+		}
+
+		importsAdapters := false
+		importsApp := false
+		for imp := range p.Imports {
+			if strings.HasPrefix(imp, pkg("internal/adapters")) {
+				importsAdapters = true
+			}
+			if strings.HasPrefix(imp, pkg("internal/app")) {
+				importsApp = true
+			}
+		}
+
+		if importsAdapters && importsApp {
+			t.Errorf("COMPOSITION ROOT VIOLATION: %s\n\timports both internal/adapters and internal/app\n\treason: only cmd/server may wire adapters and services together", p.PkgPath)
+		}
+	}
+}
+
 // isStdlib reports whether imp is a standard library package.
 // Stdlib packages have no dot in their first path element (e.g. "context", "net/http").
 func isStdlib(imp string) bool {
