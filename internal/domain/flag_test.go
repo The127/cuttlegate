@@ -1,14 +1,17 @@
 package domain
 
 import (
+	"errors"
+	"strings"
 	"testing"
 )
 
 func TestFlagValidate(t *testing.T) {
 	tests := []struct {
-		name    string
-		flag    Flag
-		wantErr bool
+		name      string
+		flag      Flag
+		wantErr   bool
+		wantField string
 	}{
 		{
 			name: "valid_bool_flag",
@@ -38,7 +41,8 @@ func TestFlagValidate(t *testing.T) {
 				Variants:          []Variant{{Key: "true", Name: "On"}},
 				DefaultVariantKey: "true",
 			},
-			wantErr: true,
+			wantErr:   true,
+			wantField: "variants",
 		},
 		{
 			name: "bool_flag_three_variants",
@@ -48,7 +52,8 @@ func TestFlagValidate(t *testing.T) {
 				Variants:          []Variant{{Key: "true", Name: "On"}, {Key: "false", Name: "Off"}, {Key: "maybe", Name: "Maybe"}},
 				DefaultVariantKey: "true",
 			},
-			wantErr: true,
+			wantErr:   true,
+			wantField: "variants",
 		},
 		{
 			name: "bool_flag_wrong_variant_keys",
@@ -58,7 +63,8 @@ func TestFlagValidate(t *testing.T) {
 				Variants:          []Variant{{Key: "on", Name: "On"}, {Key: "off", Name: "Off"}},
 				DefaultVariantKey: "on",
 			},
-			wantErr: true,
+			wantErr:   true,
+			wantField: "variants",
 		},
 		{
 			name: "empty_variants",
@@ -68,7 +74,8 @@ func TestFlagValidate(t *testing.T) {
 				Variants:          []Variant{},
 				DefaultVariantKey: "",
 			},
-			wantErr: true,
+			wantErr:   true,
+			wantField: "variants",
 		},
 		{
 			name: "duplicate_variant_keys",
@@ -78,7 +85,8 @@ func TestFlagValidate(t *testing.T) {
 				Variants:          []Variant{{Key: "a", Name: "A"}, {Key: "a", Name: "A2"}},
 				DefaultVariantKey: "a",
 			},
-			wantErr: true,
+			wantErr:   true,
+			wantField: "variants",
 		},
 		{
 			name: "default_variant_key_not_in_variants",
@@ -88,7 +96,8 @@ func TestFlagValidate(t *testing.T) {
 				Variants:          []Variant{{Key: "a", Name: "A"}, {Key: "b", Name: "B"}},
 				DefaultVariantKey: "c",
 			},
-			wantErr: true,
+			wantErr:   true,
+			wantField: "default_variant_key",
 		},
 		{
 			name: "invalid_type",
@@ -98,7 +107,8 @@ func TestFlagValidate(t *testing.T) {
 				Variants:          []Variant{{Key: "a", Name: "A"}},
 				DefaultVariantKey: "a",
 			},
-			wantErr: true,
+			wantErr:   true,
+			wantField: "type",
 		},
 		{
 			name: "empty_type",
@@ -108,7 +118,8 @@ func TestFlagValidate(t *testing.T) {
 				Variants:          []Variant{{Key: "a", Name: "A"}},
 				DefaultVariantKey: "a",
 			},
-			wantErr: true,
+			wantErr:   true,
+			wantField: "type",
 		},
 		{
 			name: "key_with_space",
@@ -118,7 +129,8 @@ func TestFlagValidate(t *testing.T) {
 				Variants:          []Variant{{Key: "a", Name: "A"}},
 				DefaultVariantKey: "a",
 			},
-			wantErr: true,
+			wantErr:   true,
+			wantField: "key",
 		},
 		{
 			name: "key_starting_with_hyphen",
@@ -128,7 +140,8 @@ func TestFlagValidate(t *testing.T) {
 				Variants:          []Variant{{Key: "a", Name: "A"}},
 				DefaultVariantKey: "a",
 			},
-			wantErr: true,
+			wantErr:   true,
+			wantField: "key",
 		},
 		{
 			name: "empty_key",
@@ -138,7 +151,29 @@ func TestFlagValidate(t *testing.T) {
 				Variants:          []Variant{{Key: "a", Name: "A"}},
 				DefaultVariantKey: "a",
 			},
-			wantErr: true,
+			wantErr:   true,
+			wantField: "key",
+		},
+		{
+			name: "key_too_long",
+			flag: Flag{
+				Key:               strings.Repeat("a", 129),
+				Type:              FlagTypeString,
+				Variants:          []Variant{{Key: "a", Name: "A"}},
+				DefaultVariantKey: "a",
+			},
+			wantErr:   true,
+			wantField: "key",
+		},
+		{
+			name: "key_exactly_max_length",
+			flag: Flag{
+				Key:               strings.Repeat("a", MaxKeyLength),
+				Type:              FlagTypeString,
+				Variants:          []Variant{{Key: "a", Name: "A"}},
+				DefaultVariantKey: "a",
+			},
+			wantErr: false,
 		},
 	}
 
@@ -147,6 +182,14 @@ func TestFlagValidate(t *testing.T) {
 			err := tt.flag.Validate()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErr && err != nil {
+				var valErr *ValidationError
+				if !errors.As(err, &valErr) {
+					t.Errorf("Validate() error type = %T, want *ValidationError", err)
+				} else if tt.wantField != "" && valErr.Field != tt.wantField {
+					t.Errorf("Validate() error field = %q, want %q", valErr.Field, tt.wantField)
+				}
 			}
 		})
 	}

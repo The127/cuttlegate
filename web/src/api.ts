@@ -4,6 +4,7 @@ export class APIError extends Error {
   constructor(
     public readonly status: number,
     message: string,
+    public readonly code: string = '',
   ) {
     super(message)
     this.name = 'APIError'
@@ -24,15 +25,19 @@ async function authedFetch(path: string, init?: RequestInit): Promise<Response> 
 async function throwIfNotOk(res: Response): Promise<void> {
   if (res.ok) return
   let message = `${res.status} ${res.statusText}`
+  let code = ''
   try {
     const body = JSON.parse(await res.text())
     if (typeof body.message === 'string') {
       message = body.message
     }
+    if (typeof body.error === 'string') {
+      code = body.error
+    }
   } catch {
     // Response is not valid JSON — keep the status text fallback.
   }
-  throw new APIError(res.status, message)
+  throw new APIError(res.status, message, code)
 }
 
 export async function fetchJSON<T>(path: string): Promise<T> {

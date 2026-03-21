@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"errors"
 	"regexp"
 	"time"
 )
@@ -33,42 +32,47 @@ type Flag struct {
 
 var keyRe = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
 
+const MaxKeyLength = 128
+
 func (f *Flag) Validate() error {
 	// type
 	switch f.Type {
 	case FlagTypeBool, FlagTypeString, FlagTypeNumber, FlagTypeJSON:
 	default:
-		return errors.New("invalid flag type: " + string(f.Type))
+		return &ValidationError{Field: "type", Message: "invalid flag type: " + string(f.Type)}
 	}
 	// key
+	if len(f.Key) > MaxKeyLength {
+		return &ValidationError{Field: "key", Message: "flag key must be 128 characters or fewer"}
+	}
 	if !keyRe.MatchString(f.Key) {
-		return errors.New("flag key must match [a-z0-9][a-z0-9-]*")
+		return &ValidationError{Field: "key", Message: "flag key must start with a letter or digit and contain only lowercase letters, digits, and hyphens"}
 	}
 	// variants non-empty
 	if len(f.Variants) == 0 {
-		return errors.New("flag must have at least one variant")
+		return &ValidationError{Field: "variants", Message: "flag must have at least one variant"}
 	}
 	// duplicate variant keys
 	seen := make(map[string]struct{}, len(f.Variants))
 	for _, v := range f.Variants {
 		if _, dup := seen[v.Key]; dup {
-			return errors.New("duplicate variant key: " + v.Key)
+			return &ValidationError{Field: "variants", Message: "duplicate variant key: " + v.Key}
 		}
 		seen[v.Key] = struct{}{}
 	}
 	// bool invariant
 	if f.Type == FlagTypeBool {
 		if len(f.Variants) != 2 {
-			return errors.New("bool flag must have exactly two variants")
+			return &ValidationError{Field: "variants", Message: "bool flag must have exactly two variants"}
 		}
 		keys := map[string]bool{f.Variants[0].Key: true, f.Variants[1].Key: true}
 		if !keys["true"] || !keys["false"] {
-			return errors.New(`bool flag variant keys must be "true" and "false"`)
+			return &ValidationError{Field: "variants", Message: `bool flag variant keys must be "true" and "false"`}
 		}
 	}
 	// default variant key present
 	if _, ok := seen[f.DefaultVariantKey]; !ok {
-		return errors.New("default_variant_key does not match any variant key")
+		return &ValidationError{Field: "default_variant_key", Message: "default_variant_key does not match any variant key"}
 	}
 	return nil
 }
