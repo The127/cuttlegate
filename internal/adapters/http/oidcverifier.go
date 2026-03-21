@@ -3,17 +3,41 @@ package httpadapter
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	gooidc "github.com/coreos/go-oidc/v3/oidc"
 
 	"github.com/karo/cuttlegate/internal/domain"
 )
 
+// claimsVerifier is an internal seam that verifies a raw token and returns its claims.
+// The production implementation wraps *gooidc.IDTokenVerifier; tests inject a stub.
+type claimsVerifier interface {
+	verifyClaims(ctx context.Context, rawToken string) (map[string]any, error)
+}
+
+// goOIDCAdapter wraps *gooidc.IDTokenVerifier to implement claimsVerifier.
+type goOIDCAdapter struct {
+	v *gooidc.IDTokenVerifier
+}
+
+func (a *goOIDCAdapter) verifyClaims(ctx context.Context, rawToken string) (map[string]any, error) {
+	idToken, err := a.v.Verify(ctx, rawToken)
+	if err != nil {
+		return nil, err
+	}
+	var claims map[string]any
+	if err := idToken.Claims(&claims); err != nil {
+		return nil, errors.New("oidc: failed to extract claims")
+	}
+	return claims, nil
+}
+
 // OIDCVerifier implements ports.TokenVerifier by validating Bearer tokens
 // against the OIDC provider's JWKS. JWKS keys are fetched on first use and
 // cached automatically by the go-oidc library.
 type OIDCVerifier struct {
-	verifier  *gooidc.IDTokenVerifier
+	verifier  claimsVerifier
 	roleClaim string
 }
 
@@ -32,22 +56,22 @@ func NewOIDCVerifier(ctx context.Context, issuer, audience, roleClaim string) (*
 		cfg.SkipClientIDCheck = true
 	}
 	return &OIDCVerifier{
-		verifier:  provider.Verifier(cfg),
+		verifier:  &goOIDCAdapter{v: provider.Verifier(cfg)},
 		roleClaim: roleClaim,
 	}, nil
 }
 
 // Verify validates the token signature, expiry, and audience, then extracts
-// domain claims. Returns an error if the token is invalid for any reason.
+// domain claims. Returns an error if the token is invalid or if the role claim
+// configured via roleClaim is absent or does not map to a recognised role.
+//
+// Fail-closed: an absent or unrecognised role claim is an error, not a
+// silent downgrade to RoleViewer. A token without an explicit role must not
+// be granted any access.
 func (v *OIDCVerifier) Verify(ctx context.Context, token string) (domain.User, error) {
-	idToken, err := v.verifier.Verify(ctx, token)
+	claims, err := v.verifier.verifyClaims(ctx, token)
 	if err != nil {
 		return domain.User{}, err
-	}
-
-	var claims map[string]any
-	if err := idToken.Claims(&claims); err != nil {
-		return domain.User{}, errors.New("oidc: failed to extract claims")
 	}
 
 	sub, _ := claims["sub"].(string)
@@ -57,11 +81,10 @@ func (v *OIDCVerifier) Verify(ctx context.Context, token string) (domain.User, e
 	email, _ := claims["email"].(string)
 	name, _ := claims["name"].(string)
 
-	roleStr, _ := claims[v.roleClaim].(string)
-	role := domain.Role(roleStr)
-	if !role.Valid() {
-		role = domain.RoleViewer
+	roleStr, ok := claims[v.roleClaim].(string)
+	if !ok || !domain.Role(roleStr).Valid() {
+		return domain.User{}, fmt.Errorf("oidc: missing or invalid %q claim", v.roleClaim)
 	}
 
-	return domain.User{Sub: sub, Email: email, Name: name, Role: role}, nil
+	return domain.User{Sub: sub, Email: email, Name: name, Role: domain.Role(roleStr)}, nil
 }
