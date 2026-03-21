@@ -2,7 +2,7 @@ import { createRoute, Link } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import { projectEnvRoute } from './$slug.environments.$envSlug'
-import { fetchJSON, patchJSON, deleteRequest } from '../../api'
+import { fetchJSON, patchJSON, postJSON, deleteRequest, APIError } from '../../api'
 
 interface Variant {
   key: string
@@ -56,6 +56,7 @@ function FlagListPage() {
   })
 
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
+  const [showCreate, setShowCreate] = useState(false)
 
   if (isLoading) return <FlagListSkeleton />
   if (isError) return <FlagListError onRetry={() => void refetch()} />
@@ -66,18 +67,16 @@ function FlagListPage() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-lg font-semibold text-gray-900">Feature Flags</h1>
-        {/* TODO: navigate to flag creation once route exists */}
         <button
-          disabled
-          className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          title="Flag creation coming soon"
+          onClick={() => setShowCreate(true)}
+          className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           New flag
         </button>
       </div>
 
       {flags.length === 0 ? (
-        <EmptyState />
+        <EmptyState onCreateClick={() => setShowCreate(true)} />
       ) : (
         <ul className="divide-y divide-gray-100 border border-gray-200 rounded-lg bg-white">
           {flags.map((flag) => (
@@ -95,6 +94,17 @@ function FlagListPage() {
             />
           ))}
         </ul>
+      )}
+
+      {showCreate && (
+        <CreateFlagModal
+          slug={slug}
+          onCreated={() => {
+            setShowCreate(false)
+            void queryClient.invalidateQueries({ queryKey })
+          }}
+          onCancel={() => setShowCreate(false)}
+        />
       )}
 
       {pendingDelete && (
@@ -226,20 +236,213 @@ function FlagRow({
   )
 }
 
-function EmptyState() {
+function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
   return (
     <div className="text-center py-16 px-6">
       <p className="text-sm text-gray-500">
         No flags yet. Create your first flag to start targeting users.
       </p>
-      {/* TODO: navigate to flag creation once route exists */}
       <button
-        disabled
-        className="mt-4 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        title="Flag creation coming soon"
+        onClick={onCreateClick}
+        className="mt-4 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
         New flag
       </button>
+    </div>
+  )
+}
+
+const FLAG_KEY_RE = /^[a-z0-9][a-z0-9-]*$/
+const MAX_KEY_LENGTH = 128
+
+function validateKeyLocally(key: string): string | null {
+  if (key.length === 0) return null
+  if (key.length > MAX_KEY_LENGTH) return `Flag key must be ${MAX_KEY_LENGTH} characters or fewer`
+  if (!FLAG_KEY_RE.test(key))
+    return 'Flag key must start with a letter or digit and contain only lowercase letters, digits, and hyphens'
+  return null
+}
+
+function CreateFlagModal({
+  slug,
+  onCreated,
+  onCancel,
+}: {
+  slug: string
+  onCreated: () => void
+  onCancel: () => void
+}) {
+  const [key, setKey] = useState('')
+  const [name, setName] = useState('')
+  const [type, setType] = useState('bool')
+  const [keyError, setKeyError] = useState<string | null>(null)
+  const [serverError, setServerError] = useState<string | null>(null)
+  const [keyTouched, setKeyTouched] = useState(false)
+
+  const createMutation = useMutation({
+    mutationFn: () => {
+      const variants =
+        type === 'bool'
+          ? [{ key: 'true', name: 'On' }, { key: 'false', name: 'Off' }]
+          : [{ key: 'default', name: 'Default' }]
+      const default_variant_key = type === 'bool' ? 'false' : 'default'
+      return postJSON(`/api/v1/projects/${slug}/flags`, {
+        key,
+        name,
+        type,
+        variants,
+        default_variant_key,
+      })
+    },
+    onSuccess: () => onCreated(),
+    onError: (err) => {
+      if (err instanceof APIError) {
+        if (err.status === 409 || err.code === 'conflict') {
+          setKeyError('A flag with this key already exists in this project')
+          return
+        }
+        if (err.status === 400 && err.code === 'validation_error') {
+          setKeyError(err.message)
+          return
+        }
+      }
+      setServerError(
+        err instanceof APIError ? err.message : 'Something went wrong. Please try again.',
+      )
+    },
+  })
+
+  function handleKeyChange(value: string) {
+    setKey(value)
+    setKeyError(null)
+    setServerError(null)
+    if (keyTouched) {
+      setKeyError(validateKeyLocally(value))
+    }
+  }
+
+  function handleKeyBlur() {
+    setKeyTouched(true)
+    setKeyError(validateKeyLocally(key))
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const localError = validateKeyLocally(key)
+    if (localError) {
+      setKeyError(localError)
+      return
+    }
+    if (key.length === 0) {
+      setKeyError('Flag key is required')
+      return
+    }
+    setServerError(null)
+    createMutation.mutate()
+  }
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [onCancel])
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="create-dialog-title"
+    >
+      <div className="absolute inset-0 bg-black/30" onClick={onCancel} aria-hidden="true" />
+      <div className="relative bg-white rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
+        <h2 id="create-dialog-title" className="text-base font-semibold text-gray-900 mb-4">
+          Create flag
+        </h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="flag-key" className="block text-xs font-medium text-gray-500 mb-1">
+              Key
+            </label>
+            <input
+              id="flag-key"
+              type="text"
+              autoFocus
+              value={key}
+              onChange={(e) => handleKeyChange(e.target.value)}
+              onBlur={handleKeyBlur}
+              placeholder="my-feature-flag"
+              aria-invalid={!!keyError}
+              aria-describedby={keyError ? 'flag-key-error' : undefined}
+              className={`w-full font-mono text-sm border rounded px-2 py-1.5 focus:outline-none focus:ring-2 ${
+                keyError
+                  ? 'border-red-300 focus:ring-red-500'
+                  : 'border-gray-300 focus:ring-blue-500'
+              }`}
+            />
+            {keyError && (
+              <p id="flag-key-error" className="mt-1 text-xs text-red-600">
+                {keyError}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="flag-name" className="block text-xs font-medium text-gray-500 mb-1">
+              Name
+            </label>
+            <input
+              id="flag-name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="My Feature Flag"
+              className="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="flag-type" className="block text-xs font-medium text-gray-500 mb-1">
+              Type
+            </label>
+            <select
+              id="flag-type"
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+              className="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="bool">Boolean</option>
+              <option value="string">String</option>
+              <option value="number">Number</option>
+              <option value="json">JSON</option>
+            </select>
+          </div>
+
+          {serverError && (
+            <p className="text-xs text-red-600">{serverError}</p>
+          )}
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={createMutation.isPending}
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={createMutation.isPending || !!keyError}
+              className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {createMutation.isPending ? 'Creating\u2026' : 'Create'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }
