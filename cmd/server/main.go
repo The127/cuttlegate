@@ -60,6 +60,10 @@ func run() error {
 		return fmt.Errorf("oidc: %w", err)
 	}
 
+	// ── Event broker ─────────────────────────────────────────────────────────
+
+	broker := httpadapter.NewBroker(64)
+
 	// ── HTTP mux ──────────────────────────────────────────────────────────────
 
 	mux := http.NewServeMux()
@@ -112,6 +116,8 @@ func run() error {
 		evalRateLimiter := httpadapter.NewRateLimiter(cfg.EvalRateLimit, cfg.EvalRateLimitWindow)
 		evalAuth := func(h http.Handler) http.Handler { return requireBearer(evalRateLimiter.Limit(h)) }
 		httpadapter.NewEvaluationHandler(evalSvc, projSvc, envSvc).RegisterRoutes(mux, evalAuth)
+
+		httpadapter.NewSSEHandler(broker, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
 	}
 
 	// Health check — public, no auth required.
@@ -145,7 +151,9 @@ func run() error {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	return srv.Shutdown(shutdownCtx)
+	err = srv.Shutdown(shutdownCtx)
+	broker.Shutdown()
+	return err
 }
 
 // spaClientConfig is the public OIDC config returned to the SPA.
