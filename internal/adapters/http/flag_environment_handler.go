@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/karo/cuttlegate/internal/app"
-	"github.com/karo/cuttlegate/internal/domain"
 )
 
 // flagEnvService is the use-case interface required by FlagEnvironmentHandler.
@@ -14,11 +13,6 @@ type flagEnvService interface {
 	ListByEnvironment(ctx context.Context, projectID, environmentID string) ([]*app.FlagEnvironmentView, error)
 	GetByKeyAndEnvironment(ctx context.Context, projectID, environmentID, flagKey string) (*app.FlagEnvironmentView, error)
 	SetEnabled(ctx context.Context, params app.SetEnabledParams) error
-}
-
-// environmentResolver resolves an environment slug within a project to a domain.Environment.
-type environmentResolver interface {
-	GetBySlug(ctx context.Context, projectID, slug string) (*domain.Environment, error)
 }
 
 // FlagEnvironmentHandler handles HTTP requests for per-environment flag state.
@@ -69,22 +63,8 @@ func toFlagEnvResponse(v *app.FlagEnvironmentView) flagEnvResponse {
 	}
 }
 
-func (h *FlagEnvironmentHandler) resolveProjectAndEnv(ctx context.Context, w http.ResponseWriter, projSlug, envSlug string) (*domain.Project, *domain.Environment, bool) {
-	proj, err := h.projects.GetBySlug(ctx, projSlug)
-	if err != nil {
-		WriteError(w, err)
-		return nil, nil, false
-	}
-	env, err := h.envs.GetBySlug(ctx, proj.ID, envSlug)
-	if err != nil {
-		WriteError(w, err)
-		return nil, nil, false
-	}
-	return proj, env, true
-}
-
 func (h *FlagEnvironmentHandler) list(w http.ResponseWriter, r *http.Request) {
-	proj, env, ok := h.resolveProjectAndEnv(r.Context(), w, r.PathValue("slug"), r.PathValue("env_slug"))
+	proj, env, ok := resolveProjectAndEnv(r.Context(), w, h.projects, h.envs, r.PathValue("slug"), r.PathValue("env_slug"))
 	if !ok {
 		return
 	}
@@ -101,7 +81,7 @@ func (h *FlagEnvironmentHandler) list(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FlagEnvironmentHandler) getByKey(w http.ResponseWriter, r *http.Request) {
-	proj, env, ok := h.resolveProjectAndEnv(r.Context(), w, r.PathValue("slug"), r.PathValue("env_slug"))
+	proj, env, ok := resolveProjectAndEnv(r.Context(), w, h.projects, h.envs, r.PathValue("slug"), r.PathValue("env_slug"))
 	if !ok {
 		return
 	}
@@ -114,7 +94,7 @@ func (h *FlagEnvironmentHandler) getByKey(w http.ResponseWriter, r *http.Request
 }
 
 func (h *FlagEnvironmentHandler) setEnabled(w http.ResponseWriter, r *http.Request) {
-	proj, env, ok := h.resolveProjectAndEnv(r.Context(), w, r.PathValue("slug"), r.PathValue("env_slug"))
+	proj, env, ok := resolveProjectAndEnv(r.Context(), w, h.projects, h.envs, r.PathValue("slug"), r.PathValue("env_slug"))
 	if !ok {
 		return
 	}
