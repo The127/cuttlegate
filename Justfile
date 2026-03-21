@@ -32,6 +32,33 @@ migrate-up:
 migrate-down:
     go run ./cmd/migrate down
 
+# Start everything for local dev: Postgres, Go server (hot reload), and Vite (port 5173)
+# Requires: docker or podman-compose
+# Requires a 'cuttlegate' application registered in Keyline (https://keyline.karo.gay)
+dev:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    docker compose -f docker-compose.dev.yml up -d
+    echo "Waiting for Postgres..."
+    until bash -c 'echo > /dev/tcp/localhost/5432' 2>/dev/null; do sleep 1; done
+    trap 'kill 0' EXIT
+    OIDC_ISSUER=https://keyline-api.karo.gay/oidc/keyline \
+    OIDC_CLIENT_ID=cuttlegate \
+    OIDC_REDIRECT_URI=http://localhost:5173/auth/callback \
+    DATABASE_URL=postgres://cuttlegate:cuttlegate@localhost:5432/cuttlegate?sslmode=disable \
+    AUTO_MIGRATE=true \
+    go run github.com/air-verse/air@latest &
+    cd web && npm run dev &
+    wait
+
+# Stop the dev Postgres container
+dev-down:
+    docker compose -f docker-compose.dev.yml down
+
+# Wipe the dev database volume and stop containers (use when migrations are dirty)
+dev-reset:
+    docker compose -f docker-compose.dev.yml down -v
+
 # Generate a codebase orientation index for AI sessions (writes to docs/codebase-index.md)
 # Read this file at the start of a new session instead of grepping individual files.
 index:
