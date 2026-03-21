@@ -18,11 +18,6 @@ type flagService interface {
 	DeleteByKey(ctx context.Context, projectID, key string) error
 }
 
-// projectResolver resolves a project slug to a domain.Project.
-type projectResolver interface {
-	GetBySlug(ctx context.Context, slug string) (*domain.Project, error)
-}
-
 // FlagHandler handles HTTP requests for flag CRUD.
 type FlagHandler struct {
 	svc      flagService
