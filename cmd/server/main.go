@@ -39,6 +39,7 @@ func run() error {
 	// ── Auto-migrate (dev/test only) ──────────────────────────────────────────
 
 	if cfg.AutoMigrate {
+		log.Println("WARNING: AUTO_MIGRATE is enabled — this is not safe for production deployments")
 		if cfg.DSN == "" {
 			return errors.New("AUTO_MIGRATE=true requires DATABASE_URL")
 		}
