@@ -1,4 +1,4 @@
-import { createRoute } from '@tanstack/react-router'
+import { createRoute, Link } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import { projectEnvRoute } from './$slug.environments.$envSlug'
@@ -84,6 +84,8 @@ function FlagListPage() {
             <FlagRow
               key={flag.id}
               flag={flag}
+              slug={slug}
+              envSlug={envSlug}
               onToggle={(enabled) => toggleMutation.mutate({ key: flag.key, enabled })}
               onDeleteIntent={() => setPendingDelete(flag.key)}
               isToggling={
@@ -114,12 +116,16 @@ function FlagListPage() {
 
 function FlagRow({
   flag,
+  slug,
+  envSlug,
   onToggle,
   onDeleteIntent,
   isToggling,
   isToggleError,
 }: {
   flag: FlagItem
+  slug: string
+  envSlug: string
   onToggle: (enabled: boolean) => void
   onDeleteIntent: () => void
   isToggling: boolean
@@ -158,8 +164,14 @@ function FlagRow({
           )}
         </div>
 
-        {/* Flag name */}
-        <span className="text-sm text-gray-700 truncate">{flag.name}</span>
+        {/* Flag name — links to detail view */}
+        <Link
+          to="/projects/$slug/environments/$envSlug/flags/$key"
+          params={{ slug, envSlug, key: flag.key }}
+          className="text-sm text-gray-700 truncate hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+        >
+          {flag.name}
+        </Link>
 
         {/* Default variant badge */}
         <span className="font-mono text-xs text-gray-500 bg-gray-100 border border-gray-200 rounded px-1.5 py-0.5 shrink-0">

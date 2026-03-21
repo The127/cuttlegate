@@ -221,6 +221,24 @@ func (s *FlagService) Update(ctx context.Context, flag *domain.Flag) error {
 	return s.repo.Update(ctx, flag)
 }
 
+// GetByKeyAndEnvironment returns a flag combined with its enabled state for a specific environment.
+// If no state row exists the flag is returned with Enabled: false.
+func (s *FlagService) GetByKeyAndEnvironment(ctx context.Context, projectID, environmentID, flagKey string) (*FlagEnvironmentView, error) {
+	f, err := s.repo.GetByKey(ctx, projectID, flagKey)
+	if err != nil {
+		return nil, err
+	}
+	state, err := s.stateRepo.GetByFlagAndEnvironment(ctx, f.ID, environmentID)
+	if err != nil {
+		return nil, err
+	}
+	enabled := false
+	if state != nil {
+		enabled = state.Enabled
+	}
+	return &FlagEnvironmentView{Flag: f, Enabled: enabled}, nil
+}
+
 // SetEnabled enables or disables a flag in a specific environment.
 // Returns ErrNotFound if no state row exists (flag created before this environment).
 // Requires at least editor role.

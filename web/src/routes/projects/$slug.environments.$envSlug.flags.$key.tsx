@@ -1,0 +1,397 @@
+import { createRoute, useNavigate } from '@tanstack/react-router'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState, type ChangeEvent } from 'react'
+import { projectEnvRoute } from './$slug.environments.$envSlug'
+import { fetchJSON, patchJSON, deleteRequest, APIError } from '../../api'
+
+interface Variant {
+  key: string
+  name: string
+}
+
+interface FlagDetail {
+  id: string
+  key: string
+  name: string
+  type: string
+  variants: Variant[]
+  default_variant_key: string
+  enabled: boolean
+}
+
+export const flagDetailRoute = createRoute({
+  getParentRoute: () => projectEnvRoute,
+  path: '/flags/$key',
+  component: FlagDetailPage,
+})
+
+function FlagDetailPage() {
+  const { slug, envSlug, key } = flagDetailRoute.useParams()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const queryKey = ['flag', slug, envSlug, key]
+  const listQueryKey = ['flags', slug, envSlug]
+
+  const { data: flag, isLoading, error } = useQuery({
+    queryKey,
+    queryFn: () =>
+      fetchJSON<FlagDetail>(
+        `/api/v1/projects/${slug}/environments/${envSlug}/flags/${key}`,
+      ),
+    retry: (failureCount, err) => {
+      if (err instanceof APIError && err.status === 404) return false
+      return failureCount < 2
+    },
+  })
+
+  const toggleMutation = useMutation({
+    mutationFn: (enabled: boolean) =>
+      patchJSON(`/api/v1/projects/${slug}/environments/${envSlug}/flags/${key}`, { enabled }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey }),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteRequest(`/api/v1/projects/${slug}/flags/${key}`),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: listQueryKey })
+      void navigate({ to: '/projects/$slug/environments/$envSlug/flags', params: { slug, envSlug } })
+    },
+  })
+
+  const [pendingDelete, setPendingDelete] = useState(false)
+
+  if (isLoading) return <FlagDetailSkeleton />
+
+  if (error) {
+    const is404 = error instanceof APIError && error.status === 404
+    return (
+      <div className="p-6">
+        <p className="text-sm text-red-600">
+          {is404 ? 'Flag not found.' : 'Failed to load flag.'}
+        </p>
+        <a
+          href={`/projects/${slug}/environments/${envSlug}/flags`}
+          className="mt-2 inline-block text-sm text-blue-600 underline hover:no-underline"
+        >
+          Back to flags
+        </a>
+      </div>
+    )
+  }
+
+  if (!flag) return null
+
+  return (
+    <div className="p-6 max-w-2xl">
+      <div className="mb-4">
+        <a
+          href={`/projects/${slug}/environments/${envSlug}/flags`}
+          className="text-sm text-gray-500 hover:text-gray-700"
+        >
+          ← Flags
+        </a>
+      </div>
+
+      <FlagDetailCard
+        flag={flag}
+        slug={slug}
+        envSlug={envSlug}
+        isToggling={toggleMutation.isPending}
+        onToggle={(enabled) => toggleMutation.mutate(enabled)}
+        onDeleteIntent={() => setPendingDelete(true)}
+        onSaved={() => void queryClient.invalidateQueries({ queryKey })}
+      />
+
+      {pendingDelete && (
+        <DeleteConfirmModal
+          flagKey={flag.key}
+          isDeleting={deleteMutation.isPending}
+          deleteFailed={deleteMutation.isError}
+          onConfirm={() => deleteMutation.mutate()}
+          onCancel={() => setPendingDelete(false)}
+        />
+      )}
+    </div>
+  )
+}
+
+function FlagDetailCard({
+  flag,
+  slug,
+  envSlug,
+  isToggling,
+  onToggle,
+  onDeleteIntent,
+  onSaved,
+}: {
+  flag: FlagDetail
+  slug: string
+  envSlug: string
+  isToggling: boolean
+  onToggle: (enabled: boolean) => void
+  onDeleteIntent: () => void
+  onSaved: () => void
+}) {
+  const queryClient = useQueryClient()
+  const [editing, setEditing] = useState(false)
+  const [editName, setEditName] = useState(flag.name)
+  const [editVariants, setEditVariants] = useState<Variant[]>(flag.variants)
+  const [editDefaultVariantKey, setEditDefaultVariantKey] = useState(flag.default_variant_key)
+  const [saveError, setSaveError] = useState<string | null>(null)
+
+  const updateMutation = useMutation({
+    mutationFn: () =>
+      patchJSON(`/api/v1/projects/${slug}/flags/${flag.key}`, {
+        name: editName,
+        variants: editVariants,
+        default_variant_key: editDefaultVariantKey,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['flags', slug, envSlug] })
+      setEditing(false)
+      setSaveError(null)
+      onSaved()
+    },
+    onError: (err) => {
+      setSaveError(err instanceof APIError ? err.message : 'Save failed. Please try again.')
+    },
+  })
+
+  function cancelEdit() {
+    setEditName(flag.name)
+    setEditVariants(flag.variants)
+    setEditDefaultVariantKey(flag.default_variant_key)
+    setSaveError(null)
+    setEditing(false)
+  }
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg">
+      {/* Header */}
+      <div className="flex items-start justify-between px-5 py-4 border-b border-gray-100">
+        <div>
+          <span className="font-mono text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded px-2 py-0.5">
+            {flag.key}
+          </span>
+          <span className="ml-2 text-xs text-gray-400 bg-gray-100 rounded px-1.5 py-0.5">
+            {flag.type}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          {!editing && (
+            <button
+              onClick={() => setEditing(true)}
+              className="px-3 py-1 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
+            >
+              Edit
+            </button>
+          )}
+          <button
+            onClick={onDeleteIntent}
+            aria-label="Delete flag"
+            className="px-3 py-1 text-sm font-medium text-red-600 border border-red-200 rounded hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="px-5 py-4 space-y-5">
+        {/* Name */}
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Name</label>
+          {editing ? (
+            <input
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              className="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          ) : (
+            <p className="text-sm text-gray-900">{flag.name}</p>
+          )}
+        </div>
+
+        {/* Variants */}
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Variants</label>
+          <ul className="space-y-1">
+            {(editing ? editVariants : flag.variants).map((v: Variant, i: number) => (
+              <li key={v.key} className="flex items-center gap-2">
+                <span className="font-mono text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5 w-24 shrink-0">
+                  {v.key}
+                </span>
+                {editing ? (
+                  <input
+                    type="text"
+                    value={editVariants[i].name}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                      const updated = editVariants.map((ev: Variant, idx: number) =>
+                        idx === i ? { ...ev, name: e.target.value } : ev,
+                      )
+                      setEditVariants(updated)
+                    }}
+                    className="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    aria-label={`Variant name for ${v.key}`}
+                  />
+                ) : (
+                  <span className="text-sm text-gray-700">{v.name}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Default variant */}
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Default variant</label>
+          {editing ? (
+            <select
+              value={editDefaultVariantKey}
+              onChange={(e: ChangeEvent<HTMLSelectElement>) => setEditDefaultVariantKey(e.target.value)}
+              className="text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {editVariants.map((v: Variant) => (
+                <option key={v.key} value={v.key}>
+                  {v.key}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="font-mono text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5">
+              {flag.default_variant_key}
+            </span>
+          )}
+        </div>
+
+        {/* Enabled toggle */}
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">
+            Status in <span className="font-mono">{envSlug}</span>
+          </label>
+          <button
+            onClick={() => onToggle(!flag.enabled)}
+            disabled={isToggling}
+            aria-pressed={flag.enabled}
+            aria-label={flag.enabled ? 'Disable flag' : 'Enable flag'}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-60 ${
+              flag.enabled
+                ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 focus:ring-green-500'
+                : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200 focus:ring-gray-400'
+            }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${flag.enabled ? 'bg-green-500' : 'bg-gray-400'}`}
+              aria-hidden="true"
+            />
+            {flag.enabled ? 'Enabled' : 'Disabled'}
+          </button>
+        </div>
+      </div>
+
+      {/* Edit actions */}
+      {editing && (
+        <div className="px-5 py-3 border-t border-gray-100 flex items-center gap-3">
+          <button
+            onClick={() => updateMutation.mutate()}
+            disabled={updateMutation.isPending}
+            className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {updateMutation.isPending ? 'Saving…' : 'Save'}
+          </button>
+          <button
+            onClick={cancelEdit}
+            disabled={updateMutation.isPending}
+            className="px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
+          >
+            Cancel
+          </button>
+          {saveError && (
+            <p className="text-xs text-red-600">{saveError}</p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function DeleteConfirmModal({
+  flagKey,
+  isDeleting,
+  deleteFailed,
+  onConfirm,
+  onCancel,
+}: {
+  flagKey: string
+  isDeleting: boolean
+  deleteFailed: boolean
+  onConfirm: () => void
+  onCancel: () => void
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="delete-dialog-title"
+    >
+      <div className="absolute inset-0 bg-black/30" onClick={onCancel} aria-hidden="true" />
+      <div className="relative bg-white rounded-lg shadow-lg max-w-sm w-full mx-4 p-6">
+        <h2 id="delete-dialog-title" className="text-base font-semibold text-gray-900">
+          Delete flag?
+        </h2>
+        <p className="mt-2 text-sm text-gray-600">
+          This will permanently delete{' '}
+          <span className="font-mono text-gray-800">{flagKey}</span> from all environments.
+          This action cannot be undone.
+        </p>
+        {deleteFailed && (
+          <p className="mt-3 text-xs text-red-600">Failed to delete. Please try again.</p>
+        )}
+        <div className="mt-5 flex justify-end gap-3">
+          <button
+            autoFocus
+            onClick={onCancel}
+            disabled={isDeleting}
+            className="px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="px-3 py-1.5 text-sm font-medium bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500"
+          >
+            {isDeleting ? 'Deleting…' : 'Delete'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function FlagDetailSkeleton() {
+  return (
+    <div className="p-6 max-w-2xl">
+      <div className="h-4 w-16 bg-gray-100 rounded animate-pulse mb-4" />
+      <div className="bg-white border border-gray-200 rounded-lg">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div className="flex gap-2">
+            <div className="h-6 w-28 bg-gray-100 rounded animate-pulse" />
+            <div className="h-6 w-12 bg-gray-100 rounded animate-pulse" />
+          </div>
+          <div className="h-7 w-16 bg-gray-100 rounded animate-pulse" />
+        </div>
+        <div className="px-5 py-4 space-y-5">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i}>
+              <div className="h-3 w-16 bg-gray-100 rounded animate-pulse mb-1" />
+              <div className="h-5 w-48 bg-gray-100 rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}

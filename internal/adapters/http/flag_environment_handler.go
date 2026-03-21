@@ -12,6 +12,7 @@ import (
 // flagEnvService is the use-case interface required by FlagEnvironmentHandler.
 type flagEnvService interface {
 	ListByEnvironment(ctx context.Context, projectID, environmentID string) ([]*app.FlagEnvironmentView, error)
+	GetByKeyAndEnvironment(ctx context.Context, projectID, environmentID, flagKey string) (*app.FlagEnvironmentView, error)
 	SetEnabled(ctx context.Context, projectID, environmentID, flagKey string, enabled bool) error
 }
 
@@ -35,6 +36,7 @@ func NewFlagEnvironmentHandler(svc flagEnvService, projects projectResolver, env
 // RegisterRoutes registers environment-scoped flag routes on mux behind the provided auth middleware.
 func (h *FlagEnvironmentHandler) RegisterRoutes(mux *http.ServeMux, auth func(http.Handler) http.Handler) {
 	mux.Handle("GET /api/v1/projects/{slug}/environments/{env_slug}/flags", auth(http.HandlerFunc(h.list)))
+	mux.Handle("GET /api/v1/projects/{slug}/environments/{env_slug}/flags/{key}", auth(http.HandlerFunc(h.getByKey)))
 	mux.Handle("PATCH /api/v1/projects/{slug}/environments/{env_slug}/flags/{key}", auth(http.HandlerFunc(h.setEnabled)))
 }
 
@@ -96,6 +98,19 @@ func (h *FlagEnvironmentHandler) list(w http.ResponseWriter, r *http.Request) {
 		items = append(items, toFlagEnvResponse(v))
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"flags": items})
+}
+
+func (h *FlagEnvironmentHandler) getByKey(w http.ResponseWriter, r *http.Request) {
+	proj, env, ok := h.resolveProjectAndEnv(r.Context(), w, r.PathValue("slug"), r.PathValue("env_slug"))
+	if !ok {
+		return
+	}
+	view, err := h.svc.GetByKeyAndEnvironment(r.Context(), proj.ID, env.ID, r.PathValue("key"))
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, toFlagEnvResponse(view))
 }
 
 func (h *FlagEnvironmentHandler) setEnabled(w http.ResponseWriter, r *http.Request) {
