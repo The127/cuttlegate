@@ -54,18 +54,11 @@ func (h *SSEHandler) RegisterRoutes(mux *http.ServeMux, auth func(http.Handler) 
 }
 
 func (h *SSEHandler) stream(w http.ResponseWriter, r *http.Request) {
-	// Resolve project and environment from URL path.
 	projSlug := r.PathValue("slug")
 	envSlug := r.PathValue("env_slug")
 
-	proj, err := h.projects.GetBySlug(r.Context(), projSlug)
-	if err != nil {
-		WriteError(w, err)
-		return
-	}
-	_, err = h.envs.GetBySlug(r.Context(), proj.ID, envSlug)
-	if err != nil {
-		WriteError(w, err)
+	_, _, ok := resolveProjectAndEnv(r.Context(), w, h.projects, h.envs, projSlug, envSlug)
+	if !ok {
 		return
 	}
 

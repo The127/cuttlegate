@@ -52,14 +52,8 @@ type apiKeyCreateResponse struct {
 }
 
 func (h *APIKeyHandler) create(w http.ResponseWriter, r *http.Request) {
-	proj, err := h.projects.GetBySlug(r.Context(), r.PathValue("slug"))
-	if err != nil {
-		WriteError(w, err)
-		return
-	}
-	env, err := h.envs.GetBySlug(r.Context(), proj.ID, r.PathValue("env_slug"))
-	if err != nil {
-		WriteError(w, err)
+	proj, env, ok := resolveProjectAndEnv(r.Context(), w, h.projects, h.envs, r.PathValue("slug"), r.PathValue("env_slug"))
+	if !ok {
 		return
 	}
 
@@ -93,14 +87,8 @@ func (h *APIKeyHandler) create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *APIKeyHandler) list(w http.ResponseWriter, r *http.Request) {
-	proj, err := h.projects.GetBySlug(r.Context(), r.PathValue("slug"))
-	if err != nil {
-		WriteError(w, err)
-		return
-	}
-	env, err := h.envs.GetBySlug(r.Context(), proj.ID, r.PathValue("env_slug"))
-	if err != nil {
-		WriteError(w, err)
+	proj, env, ok := resolveProjectAndEnv(r.Context(), w, h.projects, h.envs, r.PathValue("slug"), r.PathValue("env_slug"))
+	if !ok {
 		return
 	}
 

@@ -94,17 +94,11 @@ func conditionsFromJSON(raw []conditionJSON) []domain.Condition {
 // resolveContext resolves project, flag, and environment from path values.
 // Returns false and writes an error response if any lookup fails.
 func (h *RuleHandler) resolveContext(ctx context.Context, w http.ResponseWriter, projSlug, flagKey, envSlug string) (*domain.Project, *domain.Flag, *domain.Environment, bool) {
-	proj, err := h.projects.GetBySlug(ctx, projSlug)
-	if err != nil {
-		WriteError(w, err)
+	proj, env, ok := resolveProjectAndEnv(ctx, w, h.projects, h.envs, projSlug, envSlug)
+	if !ok {
 		return nil, nil, nil, false
 	}
 	flag, err := h.flags.GetByKey(ctx, proj.ID, flagKey)
-	if err != nil {
-		WriteError(w, err)
-		return nil, nil, nil, false
-	}
-	env, err := h.envs.GetBySlug(ctx, proj.ID, envSlug)
 	if err != nil {
 		WriteError(w, err)
 		return nil, nil, nil, false
