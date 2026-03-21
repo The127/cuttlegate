@@ -88,12 +88,13 @@ func run() error {
 		memberRepo := dbadapter.NewPostgresProjectMemberRepository(conn)
 		flagRepo := dbadapter.NewPostgresFlagRepository(conn)
 		stateRepo := dbadapter.NewPostgresFlagEnvironmentStateRepository(conn)
-		ruleRepo := &dbadapter.NoOpRuleRepository{} // TODO: replace with postgres adapter once migration exists
+		ruleRepo := dbadapter.NewPostgresRuleRepository(conn)
 
 		projSvc := app.NewProjectService(projRepo)
 		envSvc := app.NewEnvironmentService(envRepo, projRepo)
 		memberSvc := app.NewProjectMemberService(memberRepo, projRepo)
 		flagSvc := app.NewFlagService(flagRepo, envRepo, stateRepo)
+		ruleSvc := app.NewRuleService(ruleRepo)
 		evalSvc := app.NewEvaluationService(flagRepo, stateRepo, ruleRepo)
 
 		httpadapter.NewProjectHandler(projSvc).RegisterRoutes(mux, requireBearer)
@@ -102,6 +103,7 @@ func run() error {
 		httpadapter.NewFlagHandler(flagSvc, projSvc).RegisterRoutes(mux, requireBearer)
 		httpadapter.NewFlagVariantHandler(flagSvc, projSvc).RegisterRoutes(mux, requireBearer)
 		httpadapter.NewFlagEnvironmentHandler(flagSvc, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
+		httpadapter.NewRuleHandler(ruleSvc, projSvc, flagSvc, envSvc).RegisterRoutes(mux, requireBearer)
 		httpadapter.NewEvaluationHandler(evalSvc, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
 	}
 

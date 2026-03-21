@@ -20,7 +20,10 @@ func WriteError(w http.ResponseWriter, err error) {
 	var status int
 	var code, message string
 
+	var valErr *domain.ValidationError
 	switch {
+	case errors.As(err, &valErr):
+		status, code, message = http.StatusBadRequest, "validation_error", err.Error()
 	case errors.Is(err, domain.ErrNotFound):
 		status, code, message = http.StatusNotFound, "not_found", "resource not found"
 	case errors.Is(err, domain.ErrImmutableVariants):
