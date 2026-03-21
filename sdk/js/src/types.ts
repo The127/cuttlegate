@@ -45,6 +45,8 @@ export interface CuttlegateConfig {
   baseUrl: string;
   /** Service account token for authentication. */
   token: string;
+  /** Project slug, e.g. "my-project". */
+  project: string;
   /** Environment slug to evaluate against, e.g. "production". */
   environment: string;
   /** Request timeout in milliseconds. Defaults to 5000. */
