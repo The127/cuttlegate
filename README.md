@@ -34,5 +34,6 @@ Then run:
 ```sh
 just lint   # run linter
 just test   # run tests
+just ci     # lint + all tests — mirrors CI exactly (requires Docker for postgres)
 ```
 

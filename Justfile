@@ -13,6 +13,9 @@ lint:
 build:
     go build -o build/server ./cmd/server
 
+# Run lint and all tests in sequence — mirrors CI exactly
+ci: lint test test-integration
+
 # Run all unit tests (includes architecture import rules)
 test:
     go test ./...
