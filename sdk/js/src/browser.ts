@@ -20,3 +20,6 @@ export type { CuttlegateClient, EvaluationResult, FlagResult } from './client.js
 
 export { connectStream } from './streaming.js';
 export type { StreamOptions, StreamConnection, FlagStateChangedEvent } from './streaming.js';
+
+export { CuttlegateProvider, useFlag, useFlagVariant } from './react.js';
+export type { CuttlegateProviderProps } from './react.js';

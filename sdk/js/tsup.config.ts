@@ -12,6 +12,7 @@ export default defineConfig([
     entry: { 'browser/index': 'src/browser.ts' },
     format: ['esm'],
     platform: 'browser',
+    external: ['react'],
     dts: true,
     sourcemap: true,
   },
