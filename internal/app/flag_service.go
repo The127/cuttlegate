@@ -277,38 +277,48 @@ func (s *FlagService) GetByKeyAndEnvironment(ctx context.Context, projectID, env
 	return &FlagEnvironmentView{Flag: f, Enabled: enabled}, nil
 }
 
+// SetEnabledParams holds the parameters for SetEnabled.
+type SetEnabledParams struct {
+	ProjectID     string
+	EnvironmentID string
+	FlagKey       string
+	Enabled       bool
+	ProjectSlug   string
+	EnvSlug       string
+}
+
 // SetEnabled enables or disables a flag in a specific environment.
 // Returns ErrNotFound if no state row exists (flag created before this environment).
 // On success, publishes a FlagStateChangedEvent. Publish failure is logged, not returned.
 // Requires at least editor role.
-func (s *FlagService) SetEnabled(ctx context.Context, projectID, environmentID, flagKey string, enabled bool, projectSlug, envSlug string) error {
+func (s *FlagService) SetEnabled(ctx context.Context, params SetEnabledParams) error {
 	if _, err := requireRole(ctx, domain.RoleEditor); err != nil {
 		return err
 	}
-	f, err := s.repo.GetByKey(ctx, projectID, flagKey)
+	f, err := s.repo.GetByKey(ctx, params.ProjectID, params.FlagKey)
 	if err != nil {
 		return err
 	}
-	if err := s.stateRepo.SetEnabled(ctx, f.ID, environmentID, enabled); err != nil {
+	if err := s.stateRepo.SetEnabled(ctx, f.ID, params.EnvironmentID, params.Enabled); err != nil {
 		return err
 	}
 	event := domain.FlagStateChangedEvent{
-		ProjectSlug:     projectSlug,
-		EnvironmentSlug: envSlug,
-		FlagKey:         flagKey,
-		Enabled:         enabled,
+		ProjectSlug:     params.ProjectSlug,
+		EnvironmentSlug: params.EnvSlug,
+		FlagKey:         params.FlagKey,
+		Enabled:         params.Enabled,
 		Timestamp:       time.Now().UTC(),
 	}
 	if err := s.publisher.Publish(ctx, event); err != nil {
-		log.Printf("failed to publish FlagStateChangedEvent for %s/%s/%s: %v", projectSlug, envSlug, flagKey, err)
+		log.Printf("failed to publish FlagStateChangedEvent for %s/%s/%s: %v", params.ProjectSlug, params.EnvSlug, params.FlagKey, err)
 	}
 	before := "disabled"
 	after := "enabled"
-	if !enabled {
+	if !params.Enabled {
 		before = "enabled"
 		after = "disabled"
 	}
-	s.recordAudit(ctx, "flag.state_changed", f.ID, flagKey, projectID, before, after)
+	s.recordAudit(ctx, "flag.state_changed", f.ID, params.FlagKey, params.ProjectID, before, after)
 	return nil
 }
 
