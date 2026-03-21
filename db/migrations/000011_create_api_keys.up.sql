@@ -1,7 +1,7 @@
 CREATE TABLE api_keys (
-    id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    project_id     UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    environment_id UUID NOT NULL REFERENCES environments(id) ON DELETE CASCADE,
+    id             TEXT PRIMARY KEY,
+    project_id     TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    environment_id TEXT NOT NULL REFERENCES environments(id) ON DELETE CASCADE,
     name           TEXT NOT NULL,
     key_hash       BYTEA NOT NULL,
     display_prefix TEXT NOT NULL,
