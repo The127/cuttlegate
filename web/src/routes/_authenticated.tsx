@@ -11,7 +11,7 @@ export const authenticatedRoute = createRoute({
     const user = await getUserManager().getUser()
     if (!user || user.expired) {
       await getUserManager().signinRedirect({
-        state: location.pathname + location.search,
+        state: location.pathname + location.searchStr,
       })
       // Hang until the browser navigation completes — prevents rendering.
       await new Promise<never>(() => {})

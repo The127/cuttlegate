@@ -33,10 +33,13 @@ build:
 ci: lint test test-integration
 
 # Run E2E tests against the full stack
-# Builds the server binary, then Playwright global setup starts Postgres, OIDC stub, and server.
+# Builds the SPA, embeds it into the server binary, then Playwright starts Postgres, OIDC stub, and server.
 # Requires Docker or Podman socket (same requirement as test-integration).
 test-e2e:
-    go build -o e2e/bin/server ./cmd/server
+    cd web && npm ci && npx vite build
+    rm -rf cmd/server/web && mkdir -p cmd/server/web && cp -r web/dist cmd/server/web/dist
+    go build -tags frontend -o e2e/bin/server ./cmd/server
+    rm -rf cmd/server/web
     cd e2e && npm ci && npx playwright test
 
 # Run all unit tests (includes architecture import rules)
