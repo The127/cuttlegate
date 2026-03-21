@@ -86,6 +86,8 @@ func (s *EvaluationService) Evaluate(ctx context.Context, projectID, environment
 // not_in_segment conditions in rules, resolves each slug to an ID, and returns
 // the set of segment slugs the given userKey belongs to.
 // Segments that no longer exist are silently skipped (treated as non-membership).
+// An empty userKey (unauthenticated caller) always resolves to an empty set —
+// IsMember returns false for "", so in_segment conditions always miss.
 func (s *EvaluationService) resolveSegments(ctx context.Context, projectID string, rules []*domain.Rule, userKey string) (map[string]struct{}, error) {
 	// Collect distinct segment slugs from rule conditions.
 	slugs := make(map[string]struct{})

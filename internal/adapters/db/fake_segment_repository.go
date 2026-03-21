@@ -9,7 +9,8 @@ import (
 )
 
 // FakeSegmentRepository is an in-memory implementation of ports.SegmentRepository.
-// Used for service and handler tests. Not safe for concurrent writes from multiple goroutines.
+// Exported from adapters/db so it can be shared between app-layer and handler-layer tests.
+// Safe for concurrent access — protected by an internal RWMutex.
 type FakeSegmentRepository struct {
 	mu      sync.RWMutex
 	byID    map[string]*domain.Segment     // segment ID → segment

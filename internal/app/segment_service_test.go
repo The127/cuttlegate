@@ -62,13 +62,24 @@ func TestSegmentService_Create_ViewerReturnsForbidden(t *testing.T) {
 
 // ── List / GetBySlug scenarios ────────────────────────────────────────────────
 
-func TestSegmentService_List_Empty_ReturnsNonNilSlice(t *testing.T) {
+func TestSegmentService_List_Empty_DoesNotError(t *testing.T) {
 	svc := newSegmentSvc()
-	// List returns nil for empty — callers should handle it; empty-array semantics
-	// are enforced at the HTTP handler layer.
 	_, err := svc.List(authCtx("viewer-1", domain.RoleViewer), "proj-1")
 	if err != nil {
 		t.Fatalf("List: %v", err)
+	}
+}
+
+func TestSegmentService_Create_DuplicateSlug_ReturnsConflict(t *testing.T) {
+	svc := newSegmentSvc()
+	ctx := authCtx("editor-1", domain.RoleEditor)
+	_, err := svc.Create(ctx, "proj-1", "beta", "Beta Users")
+	if err != nil {
+		t.Fatalf("first Create: %v", err)
+	}
+	_, err = svc.Create(ctx, "proj-1", "beta", "Beta Users Again")
+	if !errors.Is(err, domain.ErrConflict) {
+		t.Errorf("expected ErrConflict for duplicate slug, got %v", err)
 	}
 }
 

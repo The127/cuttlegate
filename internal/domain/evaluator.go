@@ -74,9 +74,15 @@ func matchesAll(conditions []Condition, ctx EvalContext, segmentSlugs map[string
 func matchesCondition(c Condition, ctx EvalContext, segmentSlugs map[string]struct{}) bool {
 	switch c.Operator {
 	case OperatorInSegment:
+		if len(c.Values) == 0 {
+			return false
+		}
 		_, ok := segmentSlugs[c.Values[0]]
 		return ok
 	case OperatorNotInSegment:
+		if len(c.Values) == 0 {
+			return false
+		}
 		_, ok := segmentSlugs[c.Values[0]]
 		return !ok
 	}
