@@ -6,8 +6,9 @@ export default defineConfig({
   globalTeardown: './global-teardown',
   use: {
     baseURL: 'http://localhost:8082',
-    trace: 'on-first-retry',
+    trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
   },
   reporter: [['html', { open: 'never' }], ['list']],
   timeout: 60_000,
