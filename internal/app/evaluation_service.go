@@ -14,6 +14,7 @@ type EvalView struct {
 	Enabled bool
 	Value   *string // nil for bool flags
 	Reason  domain.EvalReason
+	Type    domain.FlagType
 }
 
 // EvaluationService orchestrates flag evaluation use cases.
@@ -75,6 +76,7 @@ func (s *EvaluationService) Evaluate(ctx context.Context, projectID, environment
 		Key:     flag.Key,
 		Enabled: result.Reason != domain.ReasonDisabled,
 		Reason:  result.Reason,
+		Type:    flag.Type,
 	}
 	if flag.Type != domain.FlagTypeBool {
 		view.Value = &result.VariantKey

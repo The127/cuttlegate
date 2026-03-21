@@ -44,6 +44,7 @@ func TestEvaluationHandler_Evaluate_Disabled(t *testing.T) {
 		Enabled: false,
 		Value:   nil,
 		Reason:  domain.ReasonDisabled,
+		Type:    domain.FlagTypeBool,
 	}}
 	mux := newEvalMux(svc)
 
@@ -69,6 +70,9 @@ func TestEvaluationHandler_Evaluate_Disabled(t *testing.T) {
 	if _, hasValue := resp["value"]; !hasValue {
 		t.Errorf("value field must be present (as null)")
 	}
+	if resp["type"] != "bool" {
+		t.Errorf("expected type=bool, got %v", resp["type"])
+	}
 }
 
 func TestEvaluationHandler_Evaluate_RuleMatch(t *testing.T) {
@@ -78,6 +82,7 @@ func TestEvaluationHandler_Evaluate_RuleMatch(t *testing.T) {
 		Enabled: true,
 		Value:   &variant,
 		Reason:  domain.ReasonRuleMatch,
+		Type:    domain.FlagTypeString,
 	}}
 	mux := newEvalMux(svc)
 
@@ -98,6 +103,9 @@ func TestEvaluationHandler_Evaluate_RuleMatch(t *testing.T) {
 	}
 	if resp["value"] != "variant-a" {
 		t.Errorf("expected value=variant-a, got %v", resp["value"])
+	}
+	if resp["type"] != "string" {
+		t.Errorf("expected type=string, got %v", resp["type"])
 	}
 }
 

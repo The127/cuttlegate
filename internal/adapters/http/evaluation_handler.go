@@ -46,6 +46,7 @@ type evaluateResponse struct {
 	Enabled bool    `json:"enabled"`
 	Value   *string `json:"value"`
 	Reason  string  `json:"reason"`
+	Type    string  `json:"type"`
 }
 
 func (h *EvaluationHandler) evaluate(w http.ResponseWriter, r *http.Request) {
@@ -90,5 +91,6 @@ func (h *EvaluationHandler) evaluate(w http.ResponseWriter, r *http.Request) {
 		Enabled: view.Enabled,
 		Value:   view.Value,
 		Reason:  string(view.Reason),
+		Type:    string(view.Type),
 	})
 }
