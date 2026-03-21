@@ -2,6 +2,7 @@ package httpadapter
 
 import (
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -45,7 +46,7 @@ func (rl *RateLimiter) Limit(next http.Handler) http.Handler {
 		}
 
 		if !rl.allow(ac.UserID) {
-			w.Header().Set("Retry-After", rl.windowSize.String())
+			w.Header().Set("Retry-After", strconv.Itoa(int(rl.windowSize.Seconds())))
 			w.WriteHeader(http.StatusTooManyRequests)
 			return
 		}
