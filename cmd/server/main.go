@@ -106,15 +106,17 @@ func run() error {
 		// TODO(#42): replace with PostgresSegmentRepository once migration 000005/000006 lands.
 		segmentRepo := dbadapter.NewFakeSegmentRepository()
 		apiKeyRepo := dbadapter.NewPostgresAPIKeyRepository(conn)
+		auditRepo := dbadapter.NewPostgresAuditRepository(conn)
 
 		projSvc := app.NewProjectService(projRepo)
 		envSvc := app.NewEnvironmentService(envRepo, projRepo)
 		memberSvc := app.NewProjectMemberService(memberRepo, projRepo)
-		flagSvc := app.NewFlagService(flagRepo, envRepo, stateRepo, broker)
+		flagSvc := app.NewFlagService(flagRepo, envRepo, stateRepo, broker, auditRepo)
 		ruleSvc := app.NewRuleService(ruleRepo)
 		segmentSvc := app.NewSegmentService(segmentRepo)
 		evalSvc := app.NewEvaluationService(flagRepo, stateRepo, ruleRepo, segmentRepo)
 		apiKeySvc := app.NewAPIKeyService(apiKeyRepo)
+		auditSvc := app.NewAuditService(auditRepo)
 
 		httpadapter.NewProjectHandler(projSvc).RegisterRoutes(mux, requireBearer)
 		httpadapter.NewEnvironmentHandler(envSvc, projSvc).RegisterRoutes(mux, requireBearer)
@@ -131,6 +133,7 @@ func run() error {
 		httpadapter.NewEvaluationHandler(evalSvc, projSvc, envSvc).RegisterRoutes(mux, evalAuth)
 
 		httpadapter.NewSSEHandler(broker, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
+		httpadapter.NewAuditHandler(auditSvc, projSvc).RegisterRoutes(mux, requireBearer)
 	}
 
 	// Health checks — public, no auth required.
