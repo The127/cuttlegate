@@ -71,43 +71,32 @@ jobs:
       - name: Test
         run: npm test
 
-  docs-build:
+  e2e:
+    needs: test
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: site
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
 
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-          cache-dependency-path: site/package-lock.json
 
-      - name: Install dependencies
-        run: npm ci
+      - uses: extractions/setup-just@v2
 
-      - name: Build docs site
-        run: npm run build
+      - name: Install Playwright browsers
+        run: cd e2e && npm ci && npx playwright install --with-deps chromium
 
-      - name: Upload pages artifact
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: actions/upload-pages-artifact@v3
+      - name: E2E tests
+        run: just test-e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          path: site/build
-
-  pages:
-    needs: docs-build
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 7
