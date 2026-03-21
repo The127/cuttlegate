@@ -18,7 +18,6 @@ const (
 	ReasonDisabled  EvalReason = "disabled"
 	ReasonDefault   EvalReason = "default"
 	ReasonRuleMatch EvalReason = "rule_match"
-	ReasonRollout   EvalReason = "rollout" // reserved — not used until #43/#44
 )
 
 // EvalResult is the outcome of evaluating a flag for a given context.
