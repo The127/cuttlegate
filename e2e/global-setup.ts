@@ -55,11 +55,25 @@ export default async function globalSetup(): Promise<void> {
     } catch {
       return false;
     }
-  }, 30_000, 'Postgres');
+  }, 30_000, 'Postgres (container)');
+
+  // Verify host-side connectivity by running a real SQL query via psql.
+  // pg_isready inside the container can pass before the port mapping is stable.
+  await poll(() => {
+    try {
+      execFileSync('docker', [
+        'exec', pgContainerId,
+        'psql', '-U', 'cuttlegate', '-d', 'cuttlegate_e2e', '-c', 'SELECT 1',
+      ], { stdio: 'ignore' });
+      return true;
+    } catch {
+      return false;
+    }
+  }, 15_000, 'Postgres (query)');
 
   console.log(`[setup] Postgres ready (${pgContainerId.slice(0, 12)})`);
   const dbUrl =
-    `postgres://cuttlegate:cuttlegate@localhost:${PG_PORT}/cuttlegate_e2e?sslmode=disable`;
+    `postgres://cuttlegate:cuttlegate@127.0.0.1:${PG_PORT}/cuttlegate_e2e?sslmode=disable`;
 
   // ── 2. OIDC stub ──────────────────────────────────────────────────────────
 

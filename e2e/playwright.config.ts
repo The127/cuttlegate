@@ -43,5 +43,14 @@ export default defineConfig({
         storageState: STORAGE_STATE_PATH,
       },
     },
+    // SSE live update test — authenticated, tests full reactive vertical.
+    {
+      name: 'flag-sse',
+      testMatch: 'flag-sse.spec.ts',
+      dependencies: ['auth-setup'],
+      use: {
+        storageState: STORAGE_STATE_PATH,
+      },
+    },
   ],
 });

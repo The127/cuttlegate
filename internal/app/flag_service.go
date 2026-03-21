@@ -292,13 +292,7 @@ func (s *FlagService) SetEnabled(ctx context.Context, projectID, environmentID, 
 	if err := s.stateRepo.SetEnabled(ctx, f.ID, environmentID, enabled); err != nil {
 		return err
 	}
-	event := domain.FlagStateChangedEvent{
-		ProjectSlug:     projectSlug,
-		EnvironmentSlug: envSlug,
-		FlagKey:         flagKey,
-		Enabled:         enabled,
-		Timestamp:       time.Now().UTC(),
-	}
+	event := domain.NewFlagStateChangedEvent(projectSlug, envSlug, flagKey, enabled)
 	if err := s.publisher.Publish(ctx, event); err != nil {
 		log.Printf("failed to publish FlagStateChangedEvent for %s/%s/%s: %v", projectSlug, envSlug, flagKey, err)
 	}
