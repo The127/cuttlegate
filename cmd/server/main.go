@@ -114,6 +114,11 @@ func run() error {
 		httpadapter.NewEvaluationHandler(evalSvc, projSvc, envSvc).RegisterRoutes(mux, evalAuth)
 	}
 
+	// Health check — public, no auth required.
+	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
 	// SPA static files — registered last so /api/v1/* routes take precedence.
 	serveSPA(mux)
 

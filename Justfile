@@ -28,6 +28,13 @@ build:
 # Run lint and all tests in sequence — mirrors CI exactly
 ci: lint test test-integration
 
+# Run E2E tests against the full stack
+# Builds the server binary, then Playwright global setup starts Postgres, OIDC stub, and server.
+# Requires Docker or Podman socket (same requirement as test-integration).
+test-e2e:
+    go build -o e2e/bin/server ./cmd/server
+    cd e2e && npm ci && npx playwright test
+
 # Run all unit tests (includes architecture import rules)
 test:
     go test ./...
