@@ -109,7 +109,9 @@ func run() error {
 		httpadapter.NewFlagEnvironmentHandler(flagSvc, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
 		httpadapter.NewRuleHandler(ruleSvc, projSvc, flagSvc, envSvc).RegisterRoutes(mux, requireBearer)
 		httpadapter.NewSegmentHandler(segmentSvc, projSvc).RegisterRoutes(mux, requireBearer)
-		httpadapter.NewEvaluationHandler(evalSvc, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
+		evalRateLimiter := httpadapter.NewRateLimiter(cfg.EvalRateLimit, cfg.EvalRateLimitWindow)
+		evalAuth := func(h http.Handler) http.Handler { return requireBearer(evalRateLimiter.Limit(h)) }
+		httpadapter.NewEvaluationHandler(evalSvc, projSvc, envSvc).RegisterRoutes(mux, evalAuth)
 	}
 
 	// SPA static files — registered last so /api/v1/* routes take precedence.

@@ -3,6 +3,7 @@ package httpadapter
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/karo/cuttlegate/internal/app"
@@ -52,11 +53,19 @@ type evaluateResponse struct {
 func (h *EvaluationHandler) evaluate(w http.ResponseWriter, r *http.Request) {
 	proj, err := h.projects.GetBySlug(r.Context(), r.PathValue("slug"))
 	if err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
+			WriteError(w, domain.ErrForbidden)
+			return
+		}
 		WriteError(w, err)
 		return
 	}
 	env, err := h.envs.GetBySlug(r.Context(), proj.ID, r.PathValue("env_slug"))
 	if err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
+			WriteError(w, domain.ErrForbidden)
+			return
+		}
 		WriteError(w, err)
 		return
 	}
