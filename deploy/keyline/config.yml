@@ -1,0 +1,56 @@
+# Keyline OIDC provider configuration for local development.
+# Provides a local identity provider with a pre-seeded admin user.
+
+server:
+  host: "0.0.0.0"
+  port: 8080
+  externalUrl: "http://localhost:5002"
+  allowedOrigins: ["http://localhost:5173", "http://localhost:8080"]
+frontend:
+  externalUrl: "http://localhost:5002"
+database:
+  mode: postgres
+  postgres:
+    host: "keyline-db"
+    port: 5432
+    username: "keyline"
+    password: "keyline"
+    sslMode: "disable"
+initialVirtualServer:
+  enableRegistration: false
+  createAdmin: true
+  admin:
+    username: admin
+    displayName: Admin
+    primaryEmail: admin@example.com
+    # argon2id hash of "password"
+    passwordHash: "$argon2id$v=19$m=16,t=2,p=1$MTIzNDU2Nzg$QWu7e+sjG5knAdNLoKdLDg"
+  projects:
+  - slug: "default"
+    name: "Default"
+    applications:
+    - name: "cuttlegate"
+      displayName: "Cuttlegate"
+      type: "public"
+      redirectUris:
+      - "http://localhost:5173/auth/callback"
+      postLogoutRedirectUris:
+      - "http://localhost:5173/logout-callback"
+keyStore:
+  mode: "directory"
+  directory:
+    path: "./keys"
+cache:
+  mode: redis
+  redis:
+    host: "valkey"
+leaderElection:
+  mode: raft
+  raft:
+    host: "keyline"
+    port: 9876
+    id: "keyline-1"
+    initiatorId: "keyline-1"
+    nodes:
+      - id: "keyline-1"
+        address: "keyline:9876"

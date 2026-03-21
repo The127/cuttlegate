@@ -66,17 +66,19 @@ migrate-up:
 migrate-down:
     go run ./cmd/migrate down
 
-# Start everything for local dev: Postgres, Go server (hot reload), and Vite (port 5173)
+# Start everything for local dev: Postgres, Keyline (local OIDC), Go server (hot reload), and Vite (port 5173)
 # Requires: docker or podman-compose
-# Requires a 'cuttlegate' application registered in Keyline (https://keyline.karo.gay)
 dev:
     #!/usr/bin/env bash
     set -euo pipefail
-    docker compose up -d db
+    docker compose up -d db keyline-db valkey keyline
     echo "Waiting for Postgres..."
     until bash -c 'echo > /dev/tcp/localhost/5432' 2>/dev/null; do sleep 1; done
+    echo "Waiting for Keyline OIDC..."
+    until curl -sf http://localhost:5002/oidc/keyline/.well-known/openid-configuration > /dev/null 2>&1; do sleep 1; done
+    echo "Keyline ready."
     trap 'kill 0' EXIT
-    OIDC_ISSUER=https://keyline-api.karo.gay/oidc/keyline \
+    OIDC_ISSUER=http://localhost:5002/oidc/keyline \
     OIDC_CLIENT_ID=cuttlegate \
     OIDC_REDIRECT_URI=http://localhost:5173/auth/callback \
     DATABASE_URL=postgres://cuttlegate:cuttlegate@localhost:5432/cuttlegate?sslmode=disable \
