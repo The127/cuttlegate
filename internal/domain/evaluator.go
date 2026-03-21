@@ -31,7 +31,11 @@ type EvalResult struct {
 //
 // state may be nil, which is treated as disabled (flag never toggled in this environment).
 // rules are sorted by Priority ascending before evaluation; slice order does not matter.
-func Evaluate(flag *Flag, state *FlagEnvironmentState, rules []*Rule, ctx EvalContext) EvalResult {
+//
+// segmentSlugs is the set of segment slugs the calling user belongs to, pre-loaded by the
+// service layer — the evaluator does no IO. nil is treated as an empty set: in_segment
+// conditions always miss, not_in_segment conditions always hit (user is not in any segment).
+func Evaluate(flag *Flag, state *FlagEnvironmentState, rules []*Rule, ctx EvalContext, segmentSlugs map[string]struct{}) EvalResult {
 	if state == nil || !state.Enabled {
 		return EvalResult{VariantKey: flag.DefaultVariantKey, Reason: ReasonDisabled}
 	}
@@ -46,7 +50,7 @@ func Evaluate(flag *Flag, state *FlagEnvironmentState, rules []*Rule, ctx EvalCo
 		if !rule.Enabled {
 			continue
 		}
-		if matchesAll(rule.Conditions, ctx) {
+		if matchesAll(rule.Conditions, ctx, segmentSlugs) {
 			return EvalResult{VariantKey: rule.VariantKey, Reason: ReasonRuleMatch}
 		}
 	}
@@ -55,9 +59,9 @@ func Evaluate(flag *Flag, state *FlagEnvironmentState, rules []*Rule, ctx EvalCo
 }
 
 // matchesAll returns true when every condition in the slice matches ctx.
-func matchesAll(conditions []Condition, ctx EvalContext) bool {
+func matchesAll(conditions []Condition, ctx EvalContext, segmentSlugs map[string]struct{}) bool {
 	for _, c := range conditions {
-		if !matchesCondition(c, ctx) {
+		if !matchesCondition(c, ctx, segmentSlugs) {
 			return false
 		}
 	}
@@ -65,8 +69,18 @@ func matchesAll(conditions []Condition, ctx EvalContext) bool {
 }
 
 // matchesCondition evaluates a single condition against ctx.
-// A missing attribute never matches.
-func matchesCondition(c Condition, ctx EvalContext) bool {
+// A missing attribute never matches for attribute-based operators.
+// For segment operators, segmentSlugs (nil treated as empty) determines membership.
+func matchesCondition(c Condition, ctx EvalContext, segmentSlugs map[string]struct{}) bool {
+	switch c.Operator {
+	case OperatorInSegment:
+		_, ok := segmentSlugs[c.Values[0]]
+		return ok
+	case OperatorNotInSegment:
+		_, ok := segmentSlugs[c.Values[0]]
+		return !ok
+	}
+
 	val, ok := ctx.Attributes[c.Attribute]
 	if !ok {
 		return false

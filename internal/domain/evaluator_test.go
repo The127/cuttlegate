@@ -45,14 +45,14 @@ func TestEvaluate_DisabledFlag(t *testing.T) {
 	flag := testFlag()
 
 	t.Run("state disabled", func(t *testing.T) {
-		result := Evaluate(flag, disabledState(), nil, EvalContext{})
+		result := Evaluate(flag, disabledState(), nil, EvalContext{}, nil)
 		if result.Reason != ReasonDisabled || result.VariantKey != flag.DefaultVariantKey {
 			t.Fatalf("got %+v", result)
 		}
 	})
 
 	t.Run("state nil", func(t *testing.T) {
-		result := Evaluate(flag, nil, nil, EvalContext{})
+		result := Evaluate(flag, nil, nil, EvalContext{}, nil)
 		if result.Reason != ReasonDisabled || result.VariantKey != flag.DefaultVariantKey {
 			t.Fatalf("got %+v", result)
 		}
@@ -60,7 +60,7 @@ func TestEvaluate_DisabledFlag(t *testing.T) {
 }
 
 func TestEvaluate_NoRules(t *testing.T) {
-	result := Evaluate(testFlag(), enabledState(), nil, EvalContext{})
+	result := Evaluate(testFlag(), enabledState(), nil, EvalContext{}, nil)
 	if result.Reason != ReasonDefault || result.VariantKey != "default" {
 		t.Fatalf("got %+v", result)
 	}
@@ -71,7 +71,7 @@ func TestEvaluate_RuleMatch(t *testing.T) {
 	r := rule(0, "variant-a", cond("plan", OperatorEq, "pro"))
 	ctx := EvalContext{Attributes: map[string]string{"plan": "pro"}}
 
-	result := Evaluate(flag, enabledState(), []*Rule{r}, ctx)
+	result := Evaluate(flag, enabledState(), []*Rule{r}, ctx, nil)
 	if result.Reason != ReasonRuleMatch || result.VariantKey != "variant-a" {
 		t.Fatalf("got %+v", result)
 	}
@@ -83,7 +83,7 @@ func TestEvaluate_FirstMatchWins(t *testing.T) {
 	r2 := rule(1, "variant-b", cond("plan", OperatorEq, "pro"))  // matches
 	ctx := EvalContext{Attributes: map[string]string{"plan": "pro"}}
 
-	result := Evaluate(flag, enabledState(), []*Rule{r1, r2}, ctx)
+	result := Evaluate(flag, enabledState(), []*Rule{r1, r2}, ctx, nil)
 	if result.VariantKey != "variant-b" || result.Reason != ReasonRuleMatch {
 		t.Fatalf("got %+v", result)
 	}
@@ -96,7 +96,7 @@ func TestEvaluate_PriorityOrdering(t *testing.T) {
 	r1 := rule(1, "variant-a", cond("plan", OperatorEq, "pro"))
 	ctx := EvalContext{Attributes: map[string]string{"plan": "pro"}}
 
-	result := Evaluate(flag, enabledState(), []*Rule{r10, r1}, ctx) // r10 first in slice
+	result := Evaluate(flag, enabledState(), []*Rule{r10, r1}, ctx, nil) // r10 first in slice
 	if result.VariantKey != "variant-a" {
 		t.Fatalf("expected variant-a (priority 1), got %+v", result)
 	}
@@ -108,7 +108,7 @@ func TestEvaluate_DisabledRuleSkipped(t *testing.T) {
 	r.Enabled = false
 	ctx := EvalContext{Attributes: map[string]string{"plan": "pro"}}
 
-	result := Evaluate(flag, enabledState(), []*Rule{r}, ctx)
+	result := Evaluate(flag, enabledState(), []*Rule{r}, ctx, nil)
 	if result.Reason != ReasonDefault {
 		t.Fatalf("disabled rule should be skipped, got %+v", result)
 	}
@@ -119,7 +119,7 @@ func TestEvaluate_MissingAttributeNoMatch(t *testing.T) {
 	r := rule(0, "variant-a", cond("plan", OperatorIn, "pro", "enterprise"))
 	ctx := EvalContext{Attributes: map[string]string{}} // "plan" absent
 
-	result := Evaluate(flag, enabledState(), []*Rule{r}, ctx)
+	result := Evaluate(flag, enabledState(), []*Rule{r}, ctx, nil)
 	if result.Reason != ReasonDefault {
 		t.Fatalf("missing attribute should not match, got %+v", result)
 	}
@@ -155,7 +155,40 @@ func TestEvaluate_Operators(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := rule(0, "variant-a", tt.condition)
 			ctx := EvalContext{Attributes: tt.attrs}
-			result := Evaluate(flag, state, []*Rule{r}, ctx)
+			result := Evaluate(flag, state, []*Rule{r}, ctx, nil)
+			matched := result.Reason == ReasonRuleMatch
+			if matched != tt.wantMatch {
+				t.Fatalf("wantMatch=%v got reason=%s", tt.wantMatch, result.Reason)
+			}
+		})
+	}
+}
+
+func TestEvaluate_SegmentOperators(t *testing.T) {
+	flag := testFlag()
+	state := enabledState()
+	ctx := EvalContext{UserID: "user-1", Attributes: map[string]string{}}
+
+	inBeta := map[string]struct{}{"beta": {}}
+
+	tests := []struct {
+		name         string
+		condition    Condition
+		segmentSlugs map[string]struct{}
+		wantMatch    bool
+	}{
+		{"in_segment: user is member", cond("", OperatorInSegment, "beta"), inBeta, true},
+		{"in_segment: user not member", cond("", OperatorInSegment, "beta"), nil, false},
+		{"in_segment: wrong segment", cond("", OperatorInSegment, "alpha"), inBeta, false},
+		{"not_in_segment: user not member", cond("", OperatorNotInSegment, "beta"), nil, true},
+		{"not_in_segment: user is member", cond("", OperatorNotInSegment, "beta"), inBeta, false},
+		{"not_in_segment: wrong segment (not member)", cond("", OperatorNotInSegment, "alpha"), inBeta, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := rule(0, "variant-a", tt.condition)
+			result := Evaluate(flag, state, []*Rule{r}, ctx, tt.segmentSlugs)
 			matched := result.Reason == ReasonRuleMatch
 			if matched != tt.wantMatch {
 				t.Fatalf("wantMatch=%v got reason=%s", tt.wantMatch, result.Reason)

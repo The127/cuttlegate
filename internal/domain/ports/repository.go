@@ -38,3 +38,16 @@ type RuleRepository interface {
 	Upsert(ctx context.Context, rule *domain.Rule) error
 	Delete(ctx context.Context, id string) error
 }
+
+// SegmentRepository is the port for persisting and retrieving user segments.
+type SegmentRepository interface {
+	Create(ctx context.Context, segment *domain.Segment) error
+	GetBySlug(ctx context.Context, projectID, slug string) (*domain.Segment, error)
+	List(ctx context.Context, projectID string) ([]*domain.Segment, error)
+	UpdateName(ctx context.Context, id, name string) error
+	Delete(ctx context.Context, id string) error
+	// SetMembers bulk-replaces all members of a segment. An empty slice clears all members.
+	SetMembers(ctx context.Context, segmentID string, userKeys []string) error
+	ListMembers(ctx context.Context, segmentID string) ([]string, error)
+	IsMember(ctx context.Context, segmentID string, userKey string) (bool, error)
+}
