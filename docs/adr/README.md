@@ -40,3 +40,4 @@ See `template.md`. Status values: `Proposed`, `Accepted`, `Deprecated`, `Superse
 | [0009](0009-js-sdk-single-package.md) | JS/TS SDK: single package with dual entry points | Accepted |
 | [0011](0011-in-process-event-fanout.md) | In-process event fanout for SSE delivery | Accepted |
 | [0012](0012-api-key-second-auth-path.md) | API key as second authentication path for the evaluation endpoint | Accepted |
+| [0013](0013-transactional-unit-of-work.md) | Transactional unit of work for multi-repository operations | Accepted |
