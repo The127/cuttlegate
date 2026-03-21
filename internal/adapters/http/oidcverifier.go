@@ -3,6 +3,7 @@ package httpadapter
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	gooidc "github.com/coreos/go-oidc/v3/oidc"
 
@@ -15,12 +16,13 @@ import (
 type OIDCVerifier struct {
 	verifier  *gooidc.IDTokenVerifier
 	roleClaim string
+	logger    *slog.Logger
 }
 
 // NewOIDCVerifier discovers the OIDC provider at issuer and returns a verifier.
 // audience is the expected aud claim — pass an empty string to skip the check.
 // roleClaim is the JWT claim name carrying the Cuttlegate role (e.g. "role").
-func NewOIDCVerifier(ctx context.Context, issuer, audience, roleClaim string) (*OIDCVerifier, error) {
+func NewOIDCVerifier(ctx context.Context, issuer, audience, roleClaim string, logger *slog.Logger) (*OIDCVerifier, error) {
 	provider, err := gooidc.NewProvider(ctx, issuer)
 	if err != nil {
 		return nil, err
@@ -34,6 +36,7 @@ func NewOIDCVerifier(ctx context.Context, issuer, audience, roleClaim string) (*
 	return &OIDCVerifier{
 		verifier:  provider.Verifier(cfg),
 		roleClaim: roleClaim,
+		logger:    logger,
 	}, nil
 }
 
@@ -58,10 +61,23 @@ func (v *OIDCVerifier) Verify(ctx context.Context, token string) (domain.User, e
 	name, _ := claims["name"].(string)
 
 	roleStr, _ := claims[v.roleClaim].(string)
-	role := domain.Role(roleStr)
-	if !role.Valid() {
-		role = domain.RoleViewer
-	}
+	role := resolveRole(ctx, v.logger, roleStr, sub)
 
 	return domain.User{Sub: sub, Email: email, Name: name, Role: role}, nil
+}
+
+// resolveRole maps a raw role claim string to a domain.Role. If the string is
+// non-empty but unrecognised, it logs a warning and defaults to viewer.
+func resolveRole(ctx context.Context, logger *slog.Logger, roleStr, sub string) domain.Role {
+	role := domain.Role(roleStr)
+	if role.Valid() {
+		return role
+	}
+	if roleStr != "" {
+		logger.WarnContext(ctx, "unrecognised OIDC role claim, defaulting to viewer",
+			"role", roleStr,
+			"sub", sub,
+		)
+	}
+	return domain.RoleViewer
 }
