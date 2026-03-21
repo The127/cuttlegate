@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, type ChangeEvent } from 'react'
 import { projectEnvRoute } from './$slug.environments.$envSlug'
 import { fetchJSON, patchJSON, deleteRequest, APIError } from '../../api'
+import { useFlagSSE } from '../../hooks/useFlagSSE'
 
 interface Variant {
   key: string
@@ -41,6 +42,8 @@ function FlagDetailPage() {
   const queryClient = useQueryClient()
   const queryKey = ['flag', slug, envSlug, key]
   const listQueryKey = ['flags', slug, envSlug]
+
+  useFlagSSE(slug, envSlug)
 
   const { data: flag, isLoading, error } = useQuery({
     queryKey,
@@ -396,7 +399,9 @@ function DeleteConfirmModal({
 function EnvironmentTogglePanel({ slug, flagKey }: { slug: string; flagKey: string }) {
   const { data, isLoading, error } = useQuery({
     queryKey: ['environments', slug],
-    queryFn: () => fetchJSON<{ environments: Environment[] }>(`/api/v1/projects/${slug}/environments`),
+    queryFn: () =>
+      fetchJSON<{ environments: Environment[] }>(`/api/v1/projects/${slug}/environments`)
+        .then((d) => d.environments),
   })
 
   return (
@@ -412,7 +417,7 @@ function EnvironmentTogglePanel({ slug, flagKey }: { slug: string; flagKey: stri
         </div>
       ) : (
         <ul>
-          {data!.environments.map((env) => (
+          {data!.map((env) => (
             <EnvironmentToggleRow key={env.id} slug={slug} env={env} flagKey={flagKey} />
           ))}
         </ul>

@@ -132,3 +132,18 @@ export async function createFlag(
   );
   return resp.json() as Promise<Flag>;
 }
+
+export async function toggleFlag(
+  token: string,
+  projectSlug: string,
+  envSlug: string,
+  flagKey: string,
+  enabled: boolean,
+): Promise<void> {
+  await apiRequest(
+    'PATCH',
+    `/api/v1/projects/${projectSlug}/environments/${envSlug}/flags/${flagKey}`,
+    token,
+    { enabled },
+  );
+}

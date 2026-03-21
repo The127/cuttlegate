@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"testing"
-	"time"
 
 	"github.com/karo/cuttlegate/internal/app"
 	"github.com/karo/cuttlegate/internal/domain"
@@ -690,16 +689,16 @@ func TestFlagService_SetEnabled_PublishesEventOnEnable(t *testing.T) {
 	if evt.EventType() != "flag.state_changed" {
 		t.Errorf("event type: got %q", evt.EventType())
 	}
-	if evt.ProjectSlug != "alpha" {
-		t.Errorf("project slug: got %q", evt.ProjectSlug)
+	if evt.ProjectSlug() != "alpha" {
+		t.Errorf("project slug: got %q", evt.ProjectSlug())
 	}
-	if evt.EnvironmentSlug != "staging" {
-		t.Errorf("environment slug: got %q", evt.EnvironmentSlug)
+	if evt.EnvironmentSlug() != "staging" {
+		t.Errorf("environment slug: got %q", evt.EnvironmentSlug())
 	}
-	if evt.FlagKey != "dark-mode" {
-		t.Errorf("flag key: got %q", evt.FlagKey)
+	if evt.FlagKey() != "dark-mode" {
+		t.Errorf("flag key: got %q", evt.FlagKey())
 	}
-	if !evt.Enabled {
+	if !evt.Enabled() {
 		t.Error("expected enabled=true")
 	}
 }
@@ -725,7 +724,7 @@ func TestFlagService_SetEnabled_PublishesEventOnDisable(t *testing.T) {
 		t.Fatalf("expected 1 event, got %d", len(spy.events))
 	}
 	evt := spy.events[0].(domain.FlagStateChangedEvent)
-	if evt.Enabled {
+	if evt.Enabled() {
 		t.Error("expected enabled=false")
 	}
 }
@@ -777,25 +776,11 @@ func TestFlagService_SetEnabled_PublishFailureDoesNotFailRequest(t *testing.T) {
 
 // BDD Scenario 5: FlagStateChangedEvent satisfies DomainEvent interface
 func TestFlagStateChangedEvent_SatisfiesDomainEvent(t *testing.T) {
-	evt := domain.FlagStateChangedEvent{
-		ProjectSlug:     "my-project",
-		EnvironmentSlug: "production",
-		FlagKey:         "dark-mode",
-		Enabled:         true,
-		Timestamp:       mustParseTime("2026-03-21T12:00:00Z"),
-	}
+	evt := domain.NewFlagStateChangedEvent("my-project", "production", "dark-mode", true)
 	if evt.EventType() != "flag.state_changed" {
 		t.Errorf("EventType: got %q", evt.EventType())
 	}
-	if !evt.OccurredAt().Equal(mustParseTime("2026-03-21T12:00:00Z")) {
-		t.Errorf("OccurredAt: got %v", evt.OccurredAt())
+	if evt.OccurredAt().IsZero() {
+		t.Error("OccurredAt should not be zero")
 	}
-}
-
-func mustParseTime(s string) (t time.Time) {
-	t, err := time.Parse(time.RFC3339, s)
-	if err != nil {
-		panic(err)
-	}
-	return t
 }

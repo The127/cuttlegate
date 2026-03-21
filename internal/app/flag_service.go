@@ -302,13 +302,7 @@ func (s *FlagService) SetEnabled(ctx context.Context, params SetEnabledParams) e
 	if err := s.stateRepo.SetEnabled(ctx, f.ID, params.EnvironmentID, params.Enabled); err != nil {
 		return err
 	}
-	event := domain.FlagStateChangedEvent{
-		ProjectSlug:     params.ProjectSlug,
-		EnvironmentSlug: params.EnvSlug,
-		FlagKey:         params.FlagKey,
-		Enabled:         params.Enabled,
-		Timestamp:       time.Now().UTC(),
-	}
+	event := domain.NewFlagStateChangedEvent(params.ProjectSlug, params.EnvSlug, params.FlagKey, params.Enabled)
 	if err := s.publisher.Publish(ctx, event); err != nil {
 		log.Printf("failed to publish FlagStateChangedEvent for %s/%s/%s: %v", params.ProjectSlug, params.EnvSlug, params.FlagKey, err)
 	}
