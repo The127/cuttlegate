@@ -23,9 +23,6 @@ func NewPostgresProjectRepository(db *sql.DB) *PostgresProjectRepository {
 
 var _ ports.ProjectRepository = (*PostgresProjectRepository)(nil)
 
-// pgUniqueViolation is the PostgreSQL error code for unique constraint violations.
-const pgUniqueViolation = pq.ErrorCode("23505") //nolint:staticcheck
-
 func (r *PostgresProjectRepository) Create(ctx context.Context, p domain.Project) error {
 	_, err := r.db.ExecContext(ctx,
 		`INSERT INTO projects (id, name, slug, created_at) VALUES ($1, $2, $3, $4)`,
