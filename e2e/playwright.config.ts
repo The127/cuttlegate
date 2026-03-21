@@ -1,4 +1,7 @@
 import { defineConfig } from '@playwright/test';
+import { resolve } from 'path';
+
+const STORAGE_STATE_PATH = resolve(__dirname, '.auth-storage-state.json');
 
 export default defineConfig({
   testDir: './tests',
@@ -15,4 +18,30 @@ export default defineConfig({
   retries: 0,
   // Run tests serially — shared server state, not worth parallelising yet.
   workers: 1,
+  projects: [
+    // Unauthenticated tests — run first, no dependencies.
+    {
+      name: 'smoke',
+      testMatch: 'smoke.spec.ts',
+    },
+    // Auth setup — runs the OIDC login flow once and saves browser state.
+    {
+      name: 'auth-setup',
+      testMatch: 'auth.setup.ts',
+    },
+    // Login flow tests — no pre-loaded auth state; they test the login itself.
+    {
+      name: 'login',
+      testMatch: 'login.spec.ts',
+    },
+    // Authenticated tests — depend on auth-setup, reuse saved browser state.
+    {
+      name: 'authenticated',
+      testMatch: 'ui-smoke.spec.ts',
+      dependencies: ['auth-setup'],
+      use: {
+        storageState: STORAGE_STATE_PATH,
+      },
+    },
+  ],
 });
