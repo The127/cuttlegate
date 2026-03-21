@@ -21,11 +21,38 @@ type FlagService struct {
 	envRepo   ports.EnvironmentRepository
 	stateRepo ports.FlagEnvironmentStateRepository
 	publisher ports.EventPublisher
+	auditRepo ports.AuditRepository
 }
 
 // NewFlagService constructs a FlagService.
-func NewFlagService(repo ports.FlagRepository, envRepo ports.EnvironmentRepository, stateRepo ports.FlagEnvironmentStateRepository, publisher ports.EventPublisher) *FlagService {
-	return &FlagService{repo: repo, envRepo: envRepo, stateRepo: stateRepo, publisher: publisher}
+func NewFlagService(repo ports.FlagRepository, envRepo ports.EnvironmentRepository, stateRepo ports.FlagEnvironmentStateRepository, publisher ports.EventPublisher, auditRepo ports.AuditRepository) *FlagService {
+	return &FlagService{repo: repo, envRepo: envRepo, stateRepo: stateRepo, publisher: publisher, auditRepo: auditRepo}
+}
+
+// recordAudit persists an audit event on a best-effort basis.
+// Failures are logged but never block the calling mutation.
+func (s *FlagService) recordAudit(ctx context.Context, action, entityID, entityKey, projectID, before, after string) {
+	ac, _ := domain.AuthContextFrom(ctx)
+	id, err := newUUID()
+	if err != nil {
+		log.Printf("audit: failed to generate UUID: %v", err)
+		return
+	}
+	event := &domain.AuditEvent{
+		ID:          id,
+		ProjectID:   projectID,
+		ActorID:     ac.UserID,
+		Action:      action,
+		EntityType:  "flag",
+		EntityID:    entityID,
+		EntityKey:   entityKey,
+		BeforeState: before,
+		AfterState:  after,
+		OccurredAt:  time.Now().UTC(),
+	}
+	if err := s.auditRepo.Record(ctx, event); err != nil {
+		log.Printf("audit: failed to record %s for %s/%s: %v", action, projectID, entityKey, err)
+	}
 }
 
 // Create validates the flag, assigns a UUID and creation timestamp, persists it, then
@@ -54,6 +81,7 @@ func (s *FlagService) Create(ctx context.Context, flag *domain.Flag) error {
 		return err
 	}
 	if len(envs) == 0 {
+		s.recordAudit(ctx, "flag.created", flag.ID, flag.Key, flag.ProjectID, "", flag.Key)
 		return nil
 	}
 	states := make([]*domain.FlagEnvironmentState, len(envs))
@@ -68,6 +96,7 @@ func (s *FlagService) Create(ctx context.Context, flag *domain.Flag) error {
 		_ = s.repo.Delete(ctx, flag.ID)
 		return err
 	}
+	s.recordAudit(ctx, "flag.created", flag.ID, flag.Key, flag.ProjectID, "", flag.Key)
 	return nil
 }
 
@@ -136,6 +165,7 @@ func (s *FlagService) AddVariant(ctx context.Context, projectID, flagKey string,
 	if err := s.repo.Update(ctx, f); err != nil {
 		return nil, err
 	}
+	s.recordAudit(ctx, "flag.variant_added", f.ID, f.Key, f.ProjectID, "", v.Key)
 	return f, nil
 }
 
@@ -167,6 +197,7 @@ func (s *FlagService) RenameVariant(ctx context.Context, projectID, flagKey, var
 	if err := s.repo.Update(ctx, f); err != nil {
 		return nil, err
 	}
+	s.recordAudit(ctx, "flag.variant_renamed", f.ID, f.Key, f.ProjectID, variantKey, newName)
 	return f, nil
 }
 
@@ -208,6 +239,7 @@ func (s *FlagService) DeleteVariant(ctx context.Context, projectID, flagKey, var
 	if err := s.repo.Update(ctx, f); err != nil {
 		return nil, err
 	}
+	s.recordAudit(ctx, "flag.variant_deleted", f.ID, f.Key, f.ProjectID, variantKey, "")
 	return f, nil
 }
 
@@ -220,7 +252,11 @@ func (s *FlagService) Update(ctx context.Context, flag *domain.Flag) error {
 	if err := flag.Validate(); err != nil {
 		return err
 	}
-	return s.repo.Update(ctx, flag)
+	if err := s.repo.Update(ctx, flag); err != nil {
+		return err
+	}
+	s.recordAudit(ctx, "flag.updated", flag.ID, flag.Key, flag.ProjectID, "", "")
+	return nil
 }
 
 // GetByKeyAndEnvironment returns a flag combined with its enabled state for a specific environment.
@@ -266,6 +302,13 @@ func (s *FlagService) SetEnabled(ctx context.Context, projectID, environmentID, 
 	if err := s.publisher.Publish(ctx, event); err != nil {
 		log.Printf("failed to publish FlagStateChangedEvent for %s/%s/%s: %v", projectSlug, envSlug, flagKey, err)
 	}
+	before := "disabled"
+	after := "enabled"
+	if !enabled {
+		before = "enabled"
+		after = "disabled"
+	}
+	s.recordAudit(ctx, "flag.state_changed", f.ID, flagKey, projectID, before, after)
 	return nil
 }
 
@@ -275,7 +318,11 @@ func (s *FlagService) Delete(ctx context.Context, id string) error {
 	if _, err := requireRole(ctx, domain.RoleEditor); err != nil {
 		return err
 	}
-	return s.repo.Delete(ctx, id)
+	if err := s.repo.Delete(ctx, id); err != nil {
+		return err
+	}
+	s.recordAudit(ctx, "flag.deleted", id, "", "", "", "")
+	return nil
 }
 
 // DeleteByKey removes a flag identified by project ID and key.
@@ -288,5 +335,9 @@ func (s *FlagService) DeleteByKey(ctx context.Context, projectID, key string) er
 	if err != nil {
 		return err
 	}
-	return s.repo.Delete(ctx, f.ID)
+	if err := s.repo.Delete(ctx, f.ID); err != nil {
+		return err
+	}
+	s.recordAudit(ctx, "flag.deleted", f.ID, f.Key, f.ProjectID, f.Key, "")
+	return nil
 }
