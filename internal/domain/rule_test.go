@@ -13,23 +13,23 @@ func TestCondition_Validate(t *testing.T) {
 		{
 			name:    "empty attribute",
 			c:       Condition{Attribute: "", Operator: OperatorEq, Values: []string{"x"}},
-			wantErr: "attribute must not be empty",
+			wantErr: "attribute: must not be empty",
 		},
 		{
 			name:    "unsupported operator",
 			c:       Condition{Attribute: "plan", Operator: "unknown", Values: []string{"x"}},
-			wantErr: "unsupported operator: unknown",
+			wantErr: "operator: unsupported operator: unknown",
 		},
 		// scalar operators
 		{
 			name:    "eq with zero values",
 			c:       Condition{Attribute: "plan", Operator: OperatorEq, Values: []string{}},
-			wantErr: "operator eq requires exactly one value",
+			wantErr: "values: operator eq requires exactly one value",
 		},
 		{
 			name:    "eq with two values",
 			c:       Condition{Attribute: "plan", Operator: OperatorEq, Values: []string{"a", "b"}},
-			wantErr: "operator eq requires exactly one value",
+			wantErr: "values: operator eq requires exactly one value",
 		},
 		{
 			name: "eq with one value — valid",
@@ -55,7 +55,7 @@ func TestCondition_Validate(t *testing.T) {
 		{
 			name:    "in with zero values",
 			c:       Condition{Attribute: "country", Operator: OperatorIn, Values: []string{}},
-			wantErr: "operator in requires at least one value",
+			wantErr: "values: operator in requires at least one value",
 		},
 		{
 			name: "in with one value — valid",
@@ -68,7 +68,7 @@ func TestCondition_Validate(t *testing.T) {
 		{
 			name:    "not_in with zero values",
 			c:       Condition{Attribute: "country", Operator: OperatorNotIn, Values: []string{}},
-			wantErr: "operator not_in requires at least one value",
+			wantErr: "values: operator not_in requires at least one value",
 		},
 		{
 			name: "not_in with multiple values — valid",
@@ -114,12 +114,12 @@ func TestRule_Validate(t *testing.T) {
 		{
 			name:    "no conditions",
 			r:       Rule{Conditions: []Condition{}, VariantKey: "variant-a"},
-			wantErr: "rule must have at least one condition",
+			wantErr: "conditions: rule must have at least one condition",
 		},
 		{
 			name:    "empty variant key",
 			r:       Rule{Conditions: []Condition{validCondition}, VariantKey: ""},
-			wantErr: "variant key must not be empty",
+			wantErr: "variantKey: must not be empty",
 		},
 		{
 			name: "invalid condition propagates error",
@@ -127,7 +127,7 @@ func TestRule_Validate(t *testing.T) {
 				Conditions: []Condition{{Attribute: "", Operator: OperatorEq, Values: []string{"x"}}},
 				VariantKey: "variant-a",
 			},
-			wantErr: "attribute must not be empty",
+			wantErr: "attribute: must not be empty",
 		},
 	}
 

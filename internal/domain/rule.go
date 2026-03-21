@@ -1,9 +1,6 @@
 package domain
 
-import (
-	"errors"
-	"time"
-)
+import "time"
 
 // Operator is a comparison operator used in a targeting rule condition.
 type Operator string
@@ -44,21 +41,21 @@ type Condition struct {
 // Validate returns an error if the condition is not well-formed.
 func (c Condition) Validate() error {
 	if c.Attribute == "" {
-		return errors.New("attribute must not be empty")
+		return &ValidationError{Field: "attribute", Message: "must not be empty"}
 	}
 	if scalarOperators[c.Operator] {
 		if len(c.Values) != 1 {
-			return errors.New("operator " + string(c.Operator) + " requires exactly one value")
+			return &ValidationError{Field: "values", Message: "operator " + string(c.Operator) + " requires exactly one value"}
 		}
 		return nil
 	}
 	if listOperators[c.Operator] {
 		if len(c.Values) == 0 {
-			return errors.New("operator " + string(c.Operator) + " requires at least one value")
+			return &ValidationError{Field: "values", Message: "operator " + string(c.Operator) + " requires at least one value"}
 		}
 		return nil
 	}
-	return errors.New("unsupported operator: " + string(c.Operator))
+	return &ValidationError{Field: "operator", Message: "unsupported operator: " + string(c.Operator)}
 }
 
 // Rule is a targeting rule attached to a flag in a specific environment.
@@ -77,10 +74,10 @@ type Rule struct {
 // Validate returns an error if the rule is not well-formed.
 func (r Rule) Validate() error {
 	if len(r.Conditions) == 0 {
-		return errors.New("rule must have at least one condition")
+		return &ValidationError{Field: "conditions", Message: "rule must have at least one condition"}
 	}
 	if r.VariantKey == "" {
-		return errors.New("variant key must not be empty")
+		return &ValidationError{Field: "variantKey", Message: "must not be empty"}
 	}
 	for _, c := range r.Conditions {
 		if err := c.Validate(); err != nil {
