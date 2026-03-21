@@ -19,6 +19,16 @@ interface FlagDetail {
   enabled: boolean
 }
 
+interface Environment {
+  id: string
+  slug: string
+  name: string
+}
+
+interface FlagEnvState {
+  enabled: boolean
+}
+
 export const flagDetailRoute = createRoute({
   getParentRoute: () => projectEnvRoute,
   path: '/flags/$key',
@@ -101,6 +111,8 @@ function FlagDetailPage() {
         onDeleteIntent={() => setPendingDelete(true)}
         onSaved={() => void queryClient.invalidateQueries({ queryKey })}
       />
+
+      <EnvironmentTogglePanel slug={slug} flagKey={key} />
 
       {pendingDelete && (
         <DeleteConfirmModal
@@ -368,6 +380,121 @@ function DeleteConfirmModal({
         </div>
       </div>
     </div>
+  )
+}
+
+function EnvironmentTogglePanel({ slug, flagKey }: { slug: string; flagKey: string }) {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['environments', slug],
+    queryFn: () => fetchJSON<{ environments: Environment[] }>(`/api/v1/projects/${slug}/environments`),
+  })
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg mt-4">
+      <div className="px-5 py-3 border-b border-gray-100">
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Environments</h2>
+      </div>
+      {isLoading ? (
+        <EnvToggleSkeleton />
+      ) : error ? (
+        <div className="px-5 py-4">
+          <p className="text-sm text-red-600">Failed to load environments.</p>
+        </div>
+      ) : (
+        <ul>
+          {data!.environments.map((env) => (
+            <EnvironmentToggleRow key={env.id} slug={slug} env={env} flagKey={flagKey} />
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function EnvironmentToggleRow({
+  slug,
+  env,
+  flagKey,
+}: {
+  slug: string
+  env: Environment
+  flagKey: string
+}) {
+  const queryKey = ['flag-env-state', slug, env.slug, flagKey]
+  const queryClient = useQueryClient()
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey,
+    queryFn: () =>
+      fetchJSON<FlagEnvState>(`/api/v1/projects/${slug}/environments/${env.slug}/flags/${flagKey}`),
+  })
+
+  const toggleMutation = useMutation({
+    mutationFn: (enabled: boolean) =>
+      patchJSON<{ enabled: boolean }>(
+        `/api/v1/projects/${slug}/environments/${env.slug}/flags/${flagKey}`,
+        { enabled },
+      ),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey }),
+  })
+
+  return (
+    <li className="flex items-center justify-between px-5 py-3 border-b border-gray-50 last:border-0">
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-gray-900">{env.name}</span>
+        <span className="font-mono text-xs text-gray-500">{env.slug}</span>
+      </div>
+      {isLoading ? (
+        <div className="h-6 w-16 bg-gray-100 rounded animate-pulse" aria-label="Loading" />
+      ) : error ? (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-red-600">Failed to load</span>
+          <button
+            onClick={() => void refetch()}
+            className="text-xs text-blue-600 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+          >
+            Retry
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => toggleMutation.mutate(!data!.enabled)}
+          disabled={toggleMutation.isPending}
+          aria-pressed={data!.enabled}
+          aria-label={`${data!.enabled ? 'Disable' : 'Enable'} flag in ${env.name}`}
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-60 ${
+            data!.enabled
+              ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 focus:ring-green-500'
+              : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200 focus:ring-gray-400'
+          }`}
+        >
+          <span
+            className={`w-1.5 h-1.5 rounded-full ${data!.enabled ? 'bg-green-500' : 'bg-gray-400'}`}
+            aria-hidden="true"
+          />
+          {data!.enabled ? 'Enabled' : 'Disabled'}
+        </button>
+      )}
+    </li>
+  )
+}
+
+function EnvToggleSkeleton() {
+  return (
+    <ul>
+      {[1, 2, 3].map((i) => (
+        <li
+          key={i}
+          className="flex items-center justify-between px-5 py-3 border-b border-gray-50 last:border-0"
+        >
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-24 bg-gray-100 rounded animate-pulse" />
+            <div className="h-3 w-16 bg-gray-100 rounded animate-pulse" />
+          </div>
+          <div className="h-6 w-16 bg-gray-100 rounded animate-pulse" />
+        </li>
+      ))}
+    </ul>
   )
 }
 
