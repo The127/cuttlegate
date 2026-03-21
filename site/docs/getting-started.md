@@ -139,3 +139,5 @@ The SDK now returns `enabled: true`. The `reason` is `default` because no target
 ## SDK reference
 
 See the full [JavaScript/TypeScript SDK documentation](/docs/js) for the complete API, including `evaluate()` for bulk evaluation and structured error handling.
+
+For non-obvious runtime behaviours (such as stream abort handling), see [Gotchas & Known Behaviours](/docs/js/gotchas).

@@ -97,3 +97,7 @@ try {
 ## Testing
 
 See [Testing](/docs/js/testing) for the in-process mock client that lets you test flag-dependent code without a running server.
+
+## Gotchas
+
+See [Gotchas & Known Behaviours](/docs/js/gotchas) for non-obvious runtime behaviours you may encounter when using the SDK.
