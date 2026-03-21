@@ -10,6 +10,8 @@ export class APIError extends Error {
   }
 }
 
+// authedFetch injects Authorization and Content-Type headers, overriding any
+// same-named headers in init. Callers must not set those headers themselves.
 async function authedFetch(path: string, init?: RequestInit): Promise<Response> {
   const user = await getUserManager().getUser()
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }

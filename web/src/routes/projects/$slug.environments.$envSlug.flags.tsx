@@ -38,10 +38,16 @@ function FlagListPage() {
       ).then((d) => d.flags),
   })
 
+  const [toggleErrorKey, setToggleErrorKey] = useState<string | null>(null)
+
   const toggleMutation = useMutation({
     mutationFn: ({ key, enabled }: { key: string; enabled: boolean }) =>
       patchJSON(`/api/v1/projects/${slug}/environments/${envSlug}/flags/${key}`, { enabled }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey }),
+    onError: (_err, variables) => {
+      setToggleErrorKey(variables.key)
+      setTimeout(() => setToggleErrorKey(null), 3000)
+    },
   })
 
   const deleteMutation = useMutation({
@@ -83,6 +89,7 @@ function FlagListPage() {
               isToggling={
                 toggleMutation.isPending && toggleMutation.variables?.key === flag.key
               }
+              isToggleError={toggleErrorKey === flag.key}
             />
           ))}
         </ul>
@@ -92,6 +99,7 @@ function FlagListPage() {
         <DeleteConfirmModal
           flagKey={pendingDelete}
           isDeleting={deleteMutation.isPending}
+          deleteFailed={deleteMutation.isError}
           onConfirm={() => {
             deleteMutation.mutate(pendingDelete, {
               onSuccess: () => setPendingDelete(null),
@@ -109,19 +117,26 @@ function FlagRow({
   onToggle,
   onDeleteIntent,
   isToggling,
+  isToggleError,
 }: {
   flag: FlagItem
   onToggle: (enabled: boolean) => void
   onDeleteIntent: () => void
   isToggling: boolean
+  isToggleError: boolean
 }) {
   const [copied, setCopied] = useState(false)
 
   function copyKey() {
-    void navigator.clipboard.writeText(flag.key).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    })
+    void navigator.clipboard
+      .writeText(flag.key)
+      .then(() => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 1500)
+      })
+      .catch(() => {
+        // clipboard write unavailable (non-HTTPS or permission denied)
+      })
   }
 
   return (
@@ -160,16 +175,18 @@ function FlagRow({
           aria-pressed={flag.enabled}
           aria-label={flag.enabled ? 'Disable flag' : 'Enable flag'}
           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-60 ${
-            flag.enabled
-              ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 focus:ring-green-500'
-              : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200 focus:ring-gray-400'
+            isToggleError
+              ? 'bg-red-50 text-red-700 border-red-200 focus:ring-red-500'
+              : flag.enabled
+                ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 focus:ring-green-500'
+                : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200 focus:ring-gray-400'
           }`}
         >
           <span
-            className={`w-1.5 h-1.5 rounded-full ${flag.enabled ? 'bg-green-500' : 'bg-gray-400'}`}
+            className={`w-1.5 h-1.5 rounded-full ${isToggleError ? 'bg-red-500' : flag.enabled ? 'bg-green-500' : 'bg-gray-400'}`}
             aria-hidden="true"
           />
-          {flag.enabled ? 'Enabled' : 'Disabled'}
+          {isToggleError ? 'Failed' : flag.enabled ? 'Enabled' : 'Disabled'}
         </button>
 
         {/* Delete */}
@@ -218,11 +235,13 @@ function EmptyState() {
 function DeleteConfirmModal({
   flagKey,
   isDeleting,
+  deleteFailed,
   onConfirm,
   onCancel,
 }: {
   flagKey: string
   isDeleting: boolean
+  deleteFailed: boolean
   onConfirm: () => void
   onCancel: () => void
 }) {
@@ -251,6 +270,9 @@ function DeleteConfirmModal({
           <span className="font-mono text-gray-800">{flagKey}</span> from all environments.
           This action cannot be undone.
         </p>
+        {deleteFailed && (
+          <p className="mt-3 text-xs text-red-600">Failed to delete. Please try again.</p>
+        )}
         <div className="mt-5 flex justify-end gap-3">
           <button
             autoFocus
