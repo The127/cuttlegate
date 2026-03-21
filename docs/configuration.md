@@ -55,6 +55,6 @@ The stub OIDC provider (Dex) is pre-configured with a test user:
 |---|---|
 | Email | `admin@example.com` |
 | Password | `password` |
-| Role | `viewer` (default — Dex does not inject a `role` claim) |
+| Role | `admin` (via `OIDC_ROLE_CLAIM=name` — Dex sets the `name` claim to `admin` from the static password `username` field) |
 
-To grant admin access after login, update the user's role directly in the database or configure your OIDC provider to include a `role` claim in the ID token.
+The docker-compose configuration sets `OIDC_ROLE_CLAIM=name` so that the Dex test user's `username: admin` maps to the `admin` role. This is a local development convenience — production deployments should configure their OIDC provider to include a dedicated `role` claim.
