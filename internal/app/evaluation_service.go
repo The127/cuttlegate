@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/karo/cuttlegate/internal/domain"
 	"github.com/karo/cuttlegate/internal/domain/ports"
@@ -82,6 +83,62 @@ func (s *EvaluationService) Evaluate(ctx context.Context, projectID, environment
 		view.Value = &result.VariantKey
 	}
 	return view, nil
+}
+
+// EvaluateAll evaluates all flags in a project+environment for the given user
+// context. Returns the list of evaluation results and the timestamp at which
+// evaluation was performed. Requires at least viewer role.
+func (s *EvaluationService) EvaluateAll(ctx context.Context, projectID, environmentID string, evalCtx domain.EvalContext) ([]EvalView, time.Time, error) {
+	if _, err := requireRole(ctx, domain.RoleViewer); err != nil {
+		return nil, time.Time{}, err
+	}
+
+	evaluatedAt := time.Now().UTC()
+
+	flags, err := s.flagRepo.ListByProject(ctx, projectID)
+	if err != nil {
+		return nil, time.Time{}, err
+	}
+
+	// Batch-load all states for this environment to avoid N+1 queries.
+	allStates, err := s.stateRepo.ListByEnvironment(ctx, environmentID)
+	if err != nil {
+		return nil, time.Time{}, err
+	}
+	stateByFlag := make(map[string]*domain.FlagEnvironmentState, len(allStates))
+	for _, st := range allStates {
+		stateByFlag[st.FlagID] = st
+	}
+
+	views := make([]EvalView, 0, len(flags))
+	for _, flag := range flags {
+		state := stateByFlag[flag.ID] // nil if no state row — treated as disabled
+
+		rules, err := s.ruleRepo.ListByFlagEnvironment(ctx, flag.ID, environmentID)
+		if err != nil {
+			return nil, time.Time{}, err
+		}
+
+		userSegments, err := s.resolveSegments(ctx, projectID, rules, evalCtx.UserID)
+		if err != nil {
+			return nil, time.Time{}, err
+		}
+
+		result := domain.Evaluate(flag, state, rules, evalCtx, userSegments)
+
+		view := EvalView{
+			Key:     flag.Key,
+			Enabled: result.Reason != domain.ReasonDisabled,
+			Reason:  result.Reason,
+			Type:    flag.Type,
+		}
+		if flag.Type != domain.FlagTypeBool {
+			view.Value = &result.VariantKey
+		}
+		views = append(views, view)
+	}
+
+	return views, evaluatedAt, nil
 }
 
 // resolveSegments extracts distinct segment slugs referenced by in_segment /
