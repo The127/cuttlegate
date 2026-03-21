@@ -103,8 +103,7 @@ func run() error {
 		flagRepo := dbadapter.NewPostgresFlagRepository(conn)
 		stateRepo := dbadapter.NewPostgresFlagEnvironmentStateRepository(conn)
 		ruleRepo := dbadapter.NewPostgresRuleRepository(conn)
-		// TODO(#42): replace with PostgresSegmentRepository once migration 000005/000006 lands.
-		segmentRepo := dbadapter.NewFakeSegmentRepository()
+		segmentRepo := dbadapter.NewPostgresSegmentRepository(conn)
 		apiKeyRepo := dbadapter.NewPostgresAPIKeyRepository(conn)
 		auditRepo := dbadapter.NewPostgresAuditRepository(conn)
 
