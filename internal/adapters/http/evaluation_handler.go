@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/karo/cuttlegate/internal/app"
 	"github.com/karo/cuttlegate/internal/domain"
@@ -13,6 +14,7 @@ import (
 // evaluationService is the use-case interface required by EvaluationHandler.
 type evaluationService interface {
 	Evaluate(ctx context.Context, projectID, environmentID, flagKey string, evalCtx domain.EvalContext) (*app.EvalView, error)
+	EvaluateAll(ctx context.Context, projectID, environmentID string, evalCtx domain.EvalContext) ([]app.EvalView, time.Time, error)
 }
 
 // EvaluationHandler handles flag evaluation HTTP requests.
@@ -27,10 +29,12 @@ func NewEvaluationHandler(svc evaluationService, projects projectResolver, envs 
 	return &EvaluationHandler{svc: svc, projects: projects, envs: envs}
 }
 
-// RegisterRoutes registers the evaluation route on mux behind the provided auth middleware.
+// RegisterRoutes registers the evaluation routes on mux behind the provided auth middleware.
 func (h *EvaluationHandler) RegisterRoutes(mux *http.ServeMux, auth func(http.Handler) http.Handler) {
 	mux.Handle("POST /api/v1/projects/{slug}/environments/{env_slug}/flags/{key}/evaluate",
 		auth(http.HandlerFunc(h.evaluate)))
+	mux.Handle("POST /api/v1/projects/{slug}/environments/{env_slug}/evaluate",
+		auth(http.HandlerFunc(h.evaluateAll)))
 }
 
 type evaluateRequest struct {
@@ -101,5 +105,72 @@ func (h *EvaluationHandler) evaluate(w http.ResponseWriter, r *http.Request) {
 		Value:   view.Value,
 		Reason:  string(view.Reason),
 		Type:    string(view.Type),
+	})
+}
+
+type evaluateAllResponse struct {
+	Flags       []evaluateResponse `json:"flags"`
+	EvaluatedAt string             `json:"evaluated_at"`
+}
+
+func (h *EvaluationHandler) evaluateAll(w http.ResponseWriter, r *http.Request) {
+	proj, err := h.projects.GetBySlug(r.Context(), r.PathValue("slug"))
+	if err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
+			WriteError(w, domain.ErrForbidden)
+			return
+		}
+		WriteError(w, err)
+		return
+	}
+	env, err := h.envs.GetBySlug(r.Context(), proj.ID, r.PathValue("env_slug"))
+	if err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
+			WriteError(w, domain.ErrForbidden)
+			return
+		}
+		WriteError(w, err)
+		return
+	}
+
+	var body evaluateRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		WriteError(w, newBadRequest("invalid request body"))
+		return
+	}
+	if body.Context == nil {
+		WriteError(w, newBadRequest("context is required"))
+		return
+	}
+
+	attrs := body.Context.Attributes
+	if attrs == nil {
+		attrs = map[string]string{}
+	}
+	evalCtx := domain.EvalContext{
+		UserID:     body.Context.UserID,
+		Attributes: attrs,
+	}
+
+	views, evaluatedAt, err := h.svc.EvaluateAll(r.Context(), proj.ID, env.ID, evalCtx)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	flags := make([]evaluateResponse, len(views))
+	for i, v := range views {
+		flags[i] = evaluateResponse{
+			Key:     v.Key,
+			Enabled: v.Enabled,
+			Value:   v.Value,
+			Reason:  string(v.Reason),
+			Type:    string(v.Type),
+		}
+	}
+
+	writeJSON(w, http.StatusOK, evaluateAllResponse{
+		Flags:       flags,
+		EvaluatedAt: evaluatedAt.Format(time.RFC3339),
 	})
 }

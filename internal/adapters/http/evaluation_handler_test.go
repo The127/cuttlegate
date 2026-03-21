@@ -18,10 +18,18 @@ import (
 type fakeEvaluationService struct {
 	view *app.EvalView
 	err  error
+
+	views       []app.EvalView
+	evaluatedAt time.Time
+	bulkErr     error
 }
 
 func (f *fakeEvaluationService) Evaluate(_ context.Context, _, _, _ string, _ domain.EvalContext) (*app.EvalView, error) {
 	return f.view, f.err
+}
+
+func (f *fakeEvaluationService) EvaluateAll(_ context.Context, _, _ string, _ domain.EvalContext) ([]app.EvalView, time.Time, error) {
+	return f.views, f.evaluatedAt, f.bulkErr
 }
 
 func newEvalMux(svc *fakeEvaluationService, auth func(http.Handler) http.Handler) *http.ServeMux {
@@ -233,5 +241,167 @@ func TestEvaluationHandler_Evaluate_Forbidden_Returns403(t *testing.T) {
 	json.NewDecoder(w.Body).Decode(&b) //nolint:errcheck
 	if b["error"] != "forbidden" {
 		t.Errorf("error code: got %v, want forbidden", b["error"])
+	}
+}
+
+// ── Bulk evaluation ──────────────────────────────────────────────────────────
+
+const bulkURL = "/api/v1/projects/my-project/environments/production/evaluate"
+
+func TestEvaluationHandler_EvaluateAll_MultipleFlags(t *testing.T) {
+	variantA := "variant-a"
+	ts := time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC)
+	svc := &fakeEvaluationService{
+		views: []app.EvalView{
+			{Key: "flag-1", Enabled: true, Value: &variantA, Reason: domain.ReasonRuleMatch, Type: domain.FlagTypeString},
+			{Key: "flag-2", Enabled: false, Value: nil, Reason: domain.ReasonDisabled, Type: domain.FlagTypeBool},
+			{Key: "flag-3", Enabled: true, Value: nil, Reason: domain.ReasonDefault, Type: domain.FlagTypeBool},
+		},
+		evaluatedAt: ts,
+	}
+	mux := newEvalMux(svc, noopAuth)
+
+	body := `{"context":{"user_id":"u_1","attributes":{"plan":"pro"}}}`
+	req := httptest.NewRequest(http.MethodPost, bulkURL, strings.NewReader(body))
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	var resp map[string]any
+	json.NewDecoder(w.Body).Decode(&resp) //nolint:errcheck
+
+	flags, ok := resp["flags"].([]any)
+	if !ok {
+		t.Fatalf("expected flags array")
+	}
+	if len(flags) != 3 {
+		t.Fatalf("expected 3 flags, got %d", len(flags))
+	}
+
+	first := flags[0].(map[string]any)
+	if first["key"] != "flag-1" {
+		t.Errorf("expected key=flag-1, got %v", first["key"])
+	}
+	if first["enabled"] != true {
+		t.Errorf("expected enabled=true")
+	}
+	if first["value"] != "variant-a" {
+		t.Errorf("expected value=variant-a, got %v", first["value"])
+	}
+	if first["reason"] != "rule_match" {
+		t.Errorf("expected reason=rule_match, got %v", first["reason"])
+	}
+	if first["type"] != "string" {
+		t.Errorf("expected type=string, got %v", first["type"])
+	}
+
+	if resp["evaluated_at"] != "2026-03-20T10:00:00Z" {
+		t.Errorf("expected evaluated_at=2026-03-20T10:00:00Z, got %v", resp["evaluated_at"])
+	}
+}
+
+func TestEvaluationHandler_EvaluateAll_EmptyProject(t *testing.T) {
+	ts := time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC)
+	svc := &fakeEvaluationService{
+		views:       []app.EvalView{},
+		evaluatedAt: ts,
+	}
+	mux := newEvalMux(svc, noopAuth)
+
+	body := `{"context":{"user_id":"u_1","attributes":{}}}`
+	req := httptest.NewRequest(http.MethodPost, bulkURL, strings.NewReader(body))
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	var resp map[string]any
+	json.NewDecoder(w.Body).Decode(&resp) //nolint:errcheck
+
+	flags, ok := resp["flags"].([]any)
+	if !ok {
+		t.Fatalf("expected flags array")
+	}
+	if len(flags) != 0 {
+		t.Errorf("expected empty flags array, got %d items", len(flags))
+	}
+	if resp["evaluated_at"] == nil || resp["evaluated_at"] == "" {
+		t.Errorf("evaluated_at must be present even for empty results")
+	}
+}
+
+func TestEvaluationHandler_EvaluateAll_MissingContext(t *testing.T) {
+	svc := &fakeEvaluationService{}
+	mux := newEvalMux(svc, noopAuth)
+
+	req := httptest.NewRequest(http.MethodPost, bulkURL, strings.NewReader(`{}`))
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", w.Code)
+	}
+}
+
+func TestEvaluationHandler_EvaluateAll_Unauthenticated(t *testing.T) {
+	svc := &fakeEvaluationService{}
+	mux := newEvalMux(svc, requireAuth401)
+
+	body := `{"context":{"user_id":"u_1","attributes":{}}}`
+	req := httptest.NewRequest(http.MethodPost, bulkURL, strings.NewReader(body))
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", w.Code)
+	}
+}
+
+func TestEvaluationHandler_EvaluateAll_ProjectNotFound_Returns403(t *testing.T) {
+	svc := &fakeEvaluationService{}
+	mux := newEvalMux(svc, noopAuth)
+
+	body := `{"context":{"user_id":"u_1","attributes":{}}}`
+	req := httptest.NewRequest(http.MethodPost,
+		"/api/v1/projects/nonexistent/environments/production/evaluate",
+		strings.NewReader(body))
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 (existence oracle), got %d", w.Code)
+	}
+}
+
+func TestEvaluationHandler_EvaluateAll_EnvNotFound_Returns403(t *testing.T) {
+	svc := &fakeEvaluationService{}
+	mux := newEvalMux(svc, noopAuth)
+
+	body := `{"context":{"user_id":"u_1","attributes":{}}}`
+	req := httptest.NewRequest(http.MethodPost,
+		"/api/v1/projects/my-project/environments/nonexistent/evaluate",
+		strings.NewReader(body))
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 (existence oracle), got %d", w.Code)
+	}
+}
+
+func TestEvaluationHandler_EvaluateAll_Forbidden_Returns403(t *testing.T) {
+	svc := &fakeEvaluationService{bulkErr: domain.ErrForbidden}
+	mux := newEvalMux(svc, noopAuth)
+
+	body := `{"context":{"user_id":"u_1","attributes":{}}}`
+	req := httptest.NewRequest(http.MethodPost, bulkURL, strings.NewReader(body))
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("expected 403, got %d", w.Code)
 	}
 }
