@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Regenerate the codebase index after every commit so it stays current for AI session orientation.
+just index
