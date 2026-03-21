@@ -21,6 +21,10 @@ build-sdk:
 test-sdk:
     cd sdk/js && npm test
 
+# Run frontend component tests (Vitest + Testing Library)
+test-frontend:
+    cd web && npx vitest run
+
 # Build the server binary into build/server
 build:
     go build -o build/server ./cmd/server
