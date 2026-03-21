@@ -101,6 +101,32 @@ func TestRuleService_Create_MissingVariantKey_ReturnsError(t *testing.T) {
 	}
 }
 
+func TestRuleService_Create_DuplicatePriority_ReturnsPriorityConflict(t *testing.T) {
+	svc := newRuleSvc()
+	ctx := authCtx("editor-1", domain.RoleEditor)
+	_, err := svc.Create(ctx, "flag-1", "env-1", 5, validConditions, "on")
+	if err != nil {
+		t.Fatalf("first Create: %v", err)
+	}
+	_, err = svc.Create(ctx, "flag-1", "env-1", 5, validConditions, "off")
+	if !errors.Is(err, domain.ErrPriorityConflict) {
+		t.Errorf("expected ErrPriorityConflict, got %v", err)
+	}
+}
+
+func TestRuleService_Create_DuplicatePriority_DifferentEnvironment_Succeeds(t *testing.T) {
+	svc := newRuleSvc()
+	ctx := authCtx("editor-1", domain.RoleEditor)
+	_, err := svc.Create(ctx, "flag-1", "env-1", 5, validConditions, "on")
+	if err != nil {
+		t.Fatalf("first Create: %v", err)
+	}
+	_, err = svc.Create(ctx, "flag-1", "env-2", 5, validConditions, "off")
+	if err != nil {
+		t.Errorf("expected success for same priority in different environment, got %v", err)
+	}
+}
+
 // ── List scenarios ────────────────────────────────────────────────────────────
 
 func TestRuleService_List_Empty_ReturnsEmptySlice(t *testing.T) {
@@ -170,6 +196,38 @@ func TestRuleService_Update_InvalidRule_ReturnsError(t *testing.T) {
 	_, err = svc.Update(ctx, rule)
 	if err == nil {
 		t.Error("expected validation error for empty conditions, got nil")
+	}
+}
+
+func TestRuleService_Update_DuplicatePriority_ReturnsPriorityConflict(t *testing.T) {
+	svc := newRuleSvc()
+	ctx := authCtx("editor-1", domain.RoleEditor)
+	_, err := svc.Create(ctx, "flag-1", "env-1", 1, validConditions, "on")
+	if err != nil {
+		t.Fatalf("Create rule at priority 1: %v", err)
+	}
+	rule2, err := svc.Create(ctx, "flag-1", "env-1", 2, validConditions, "off")
+	if err != nil {
+		t.Fatalf("Create rule at priority 2: %v", err)
+	}
+	rule2.Priority = 1
+	_, err = svc.Update(ctx, rule2)
+	if !errors.Is(err, domain.ErrPriorityConflict) {
+		t.Errorf("expected ErrPriorityConflict, got %v", err)
+	}
+}
+
+func TestRuleService_Update_SamePriority_SameRule_Succeeds(t *testing.T) {
+	svc := newRuleSvc()
+	ctx := authCtx("editor-1", domain.RoleEditor)
+	rule, err := svc.Create(ctx, "flag-1", "env-1", 5, validConditions, "on")
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	rule.VariantKey = "off"
+	_, err = svc.Update(ctx, rule)
+	if err != nil {
+		t.Errorf("expected no error updating rule without changing priority, got %v", err)
 	}
 }
 

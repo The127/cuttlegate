@@ -34,6 +34,8 @@ func WriteError(w http.ResponseWriter, err error) {
 		status, code, message = http.StatusConflict, "default_variant", err.Error()
 	case errors.Is(err, domain.ErrLastAdmin):
 		status, code, message = http.StatusConflict, "last_admin", "cannot remove the last admin"
+	case errors.Is(err, domain.ErrPriorityConflict):
+		status, code, message = http.StatusBadRequest, "priority_conflict", err.Error()
 	case errors.Is(err, domain.ErrConflict):
 		status, code, message = http.StatusConflict, "conflict", "resource already exists"
 	case errors.Is(err, domain.ErrForbidden):

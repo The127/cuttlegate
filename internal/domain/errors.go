@@ -33,3 +33,6 @@ var ErrDefaultVariant = errors.New("cannot delete the default variant")
 
 // ErrLastVariant is returned when deleting a variant would leave a flag with no variants.
 var ErrLastVariant = errors.New("cannot remove the last variant")
+
+// ErrPriorityConflict is returned when a rule's priority collides with an existing rule in the same flag+environment.
+var ErrPriorityConflict = errors.New("a rule with this priority already exists")

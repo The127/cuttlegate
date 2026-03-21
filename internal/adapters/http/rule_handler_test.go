@@ -133,7 +133,31 @@ func TestRuleHandler_Create_Succeeds(t *testing.T) {
 	}
 }
 
-// ── Scenario 2: create with empty conditions returns 400 ─────────────────────
+// ── Scenario 2: create with priority conflict returns 400 ────────────────────
+
+func TestRuleHandler_Create_PriorityConflict_Returns400(t *testing.T) {
+	svc := newFakeRuleService()
+	svc.err = domain.ErrPriorityConflict
+	mux := newRuleMux(svc, noopAuth)
+	body := `{"conditions":[{"attribute":"plan","operator":"eq","values":["pro"]}],"variantKey":"on","priority":5}`
+	req := httptest.NewRequest(http.MethodPost, ruleBase, strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status: got %d, want 400; body: %s", rec.Code, rec.Body.String())
+	}
+	var resp map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if resp["error"] != "priority_conflict" {
+		t.Errorf("error code: got %v, want priority_conflict", resp["error"])
+	}
+}
+
+// ── Scenario 3: create with empty conditions returns 400 ─────────────────────
 
 func TestRuleHandler_Create_EmptyConditions_Returns400(t *testing.T) {
 	svc := newFakeRuleService()
