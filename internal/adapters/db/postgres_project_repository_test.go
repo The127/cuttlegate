@@ -4,40 +4,18 @@ package dbadapter_test
 
 import (
 	"context"
-	"database/sql"
 	"errors"
-	"os"
 	"testing"
 	"time"
-
-	_ "github.com/lib/pq"
 
 	dbadapter "github.com/karo/cuttlegate/internal/adapters/db"
 	"github.com/karo/cuttlegate/internal/domain"
 )
 
-func openTestDB(t *testing.T) *sql.DB {
-	t.Helper()
-	dsn := os.Getenv("DATABASE_URL")
-	if dsn == "" {
-		t.Skip("DATABASE_URL not set — skipping integration test")
-	}
-	db, err := sql.Open("postgres", dsn)
-	if err != nil {
-		t.Fatalf("open db: %v", err)
-	}
-	t.Cleanup(func() { db.Close() })
-	return db
-}
-
 func TestPostgresProjectRepository_CreateGetListDelete(t *testing.T) {
-	db := openTestDB(t)
+	db := newTestDB(t)
 	repo := dbadapter.NewPostgresProjectRepository(db)
 	ctx := context.Background()
-
-	t.Cleanup(func() {
-		db.ExecContext(ctx, `DELETE FROM projects WHERE slug IN ('test-acme', 'test-beta')`)
-	})
 
 	p := domain.Project{
 		ID:        "11111111-1111-4111-8111-111111111111",
@@ -102,7 +80,7 @@ func TestPostgresProjectRepository_CreateGetListDelete(t *testing.T) {
 }
 
 func TestPostgresProjectRepository_List_NeverNil(t *testing.T) {
-	db := openTestDB(t)
+	db := newTestDB(t)
 	repo := dbadapter.NewPostgresProjectRepository(db)
 
 	list, err := repo.List(context.Background())
@@ -115,7 +93,7 @@ func TestPostgresProjectRepository_List_NeverNil(t *testing.T) {
 }
 
 func TestPostgresProjectRepository_GetBySlug_NotFound(t *testing.T) {
-	db := openTestDB(t)
+	db := newTestDB(t)
 	repo := dbadapter.NewPostgresProjectRepository(db)
 
 	_, err := repo.GetBySlug(context.Background(), "definitely-does-not-exist-xyz")

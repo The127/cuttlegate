@@ -13,7 +13,7 @@ import (
 )
 
 func TestPostgresEnvironmentRepository(t *testing.T) {
-	db := openTestDB(t)
+	db := newTestDB(t)
 	projRepo := dbadapter.NewPostgresProjectRepository(db)
 	envRepo := dbadapter.NewPostgresEnvironmentRepository(db)
 	ctx := context.Background()

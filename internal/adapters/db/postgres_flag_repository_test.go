@@ -33,7 +33,7 @@ func seedFlagProject(t *testing.T, ctx context.Context, db interface {
 }
 
 func TestPostgresFlagRepository(t *testing.T) {
-	db := openTestDB(t)
+	db := newTestDB(t)
 	projRepo := dbadapter.NewPostgresProjectRepository(db)
 	flagRepo := dbadapter.NewPostgresFlagRepository(db)
 	ctx := context.Background()

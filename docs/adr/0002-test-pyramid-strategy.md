@@ -34,11 +34,11 @@ The cost is ~3s container startup per integration test package. For a foundation
 
 Integration tests live alongside the code they test (e.g. `internal/adapters/db/flag_repository_integration_test.go`). The build tag keeps them co-located with the unit tests they complement, which makes it easier to see coverage gaps. A separate `test/integration/` directory would require mirroring the package structure.
 
-## Makefile targets
+## Build targets
 
 ```
-make test                 # go test ./...
-make test-integration     # go test -tags=integration ./...
+just test                 # go test ./...
+just test-integration     # go test -tags=integration ./... (requires Docker or Podman socket)
 ```
 
 ## Consequences

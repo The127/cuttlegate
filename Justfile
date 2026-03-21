@@ -20,7 +20,9 @@ ci: lint test test-integration
 test:
     go test ./...
 
-# Run integration tests against a real Postgres (requires Docker)
+# Run integration tests against a real Postgres (requires Docker or Podman socket)
+# Locally with Podman: systemctl --user start podman.socket
+# CI (GitHub Actions ubuntu-latest): Docker daemon is available automatically
 test-integration:
     go test -tags=integration ./...
 
