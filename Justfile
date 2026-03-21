@@ -43,14 +43,20 @@ test-e2e:
     cd e2e && npm ci && npx playwright test
 
 # Run all unit tests (includes architecture import rules)
+# -p 4: run up to 4 packages in parallel. Safe for unit tests (no shared state).
+# Chosen for GitHub Actions 2-core (4 logical) runners; adjust if runner spec changes.
 test:
-    go test ./...
+    go test -p 4 ./...
 
 # Run integration tests against a real Postgres (requires Docker or Podman socket)
 # Locally with Podman: systemctl --user start podman.socket
 # CI (GitHub Actions ubuntu-latest): Docker daemon is available automatically
+# -p 2: run up to 2 packages in parallel. Conservative limit — each integration test
+# package may spin up Postgres containers, so keep this low to avoid exhausting the
+# 2-core CI runner. Currently only one integration package exists (adapters/db), so
+# this is a guardrail for when a second package appears.
 test-integration:
-    go test -tags=integration ./...
+    go test -tags=integration -p 2 ./...
 
 # Apply all pending database migrations (requires DATABASE_URL)
 migrate-up:
