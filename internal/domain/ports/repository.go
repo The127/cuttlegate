@@ -44,11 +44,21 @@ type RuleRepository interface {
 	DeleteByFlagEnvironment(ctx context.Context, flagID, environmentID string) error
 }
 
+// SegmentWithCount pairs a segment with its precomputed member count.
+// Used by ListWithCount to avoid a second round-trip per segment.
+type SegmentWithCount struct {
+	Segment     *domain.Segment
+	MemberCount int
+}
+
 // SegmentRepository is the port for persisting and retrieving user segments.
 type SegmentRepository interface {
 	Create(ctx context.Context, segment *domain.Segment) error
 	GetBySlug(ctx context.Context, projectID, slug string) (*domain.Segment, error)
 	List(ctx context.Context, projectID string) ([]*domain.Segment, error)
+	// ListWithCount returns segments for a project with their member counts,
+	// computed in a single query via LEFT JOIN + COUNT.
+	ListWithCount(ctx context.Context, projectID string) ([]*SegmentWithCount, error)
 	UpdateName(ctx context.Context, id, name string) error
 	Delete(ctx context.Context, id string) error
 	// SetMembers bulk-replaces all members of a segment. An empty slice clears all members.

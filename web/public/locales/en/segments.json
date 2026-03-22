@@ -5,6 +5,8 @@
   "error": "Failed to load segments.",
   "edit_aria": "Edit segment {{slug}}",
   "delete_aria": "Delete segment {{slug}}",
+  "members_count_one": "{{count}} member",
+  "members_count_other": "{{count}} members",
   "create": {
     "title": "Create segment",
     "name_label": "Name",

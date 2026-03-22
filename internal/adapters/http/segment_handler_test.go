@@ -2,6 +2,7 @@ package httpadapter_test
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -10,6 +11,7 @@ import (
 
 	httpadapter "github.com/karo/cuttlegate/internal/adapters/http"
 	"github.com/karo/cuttlegate/internal/domain"
+	"github.com/karo/cuttlegate/internal/domain/ports"
 )
 
 // fakeSegmentService is a test double for the segmentService interface.
@@ -43,6 +45,13 @@ func (f *fakeSegmentService) List(_ context.Context, _ string) ([]*domain.Segmen
 		return nil, f.err
 	}
 	return []*domain.Segment{f.seg}, nil
+}
+
+func (f *fakeSegmentService) ListWithCount(_ context.Context, _ string) ([]*ports.SegmentWithCount, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	return []*ports.SegmentWithCount{{Segment: f.seg, MemberCount: 3}}, nil
 }
 
 func (f *fakeSegmentService) UpdateName(_ context.Context, _, _ string) error {
@@ -202,5 +211,40 @@ func TestSegmentHandler_ListMembers_Forbidden_Returns403(t *testing.T) {
 
 	if rec.Code != http.StatusForbidden {
 		t.Fatalf("status: got %d, want 403", rec.Code)
+	}
+}
+
+// @happy — list response includes memberCount field
+func TestSegmentHandler_List_IncludesMemberCount(t *testing.T) {
+	mux := newSegmentMux(newFakeSegmentService(), noopAuth)
+
+	req := httptest.NewRequest(http.MethodGet, segBase, nil)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status: got %d, want 200", rec.Code)
+	}
+
+	var body struct {
+		Segments []struct {
+			ID          string `json:"id"`
+			Slug        string `json:"slug"`
+			MemberCount int    `json:"memberCount"`
+		} `json:"segments"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(body.Segments) != 1 {
+		t.Fatalf("expected 1 segment, got %d", len(body.Segments))
+	}
+	seg := body.Segments[0]
+	if seg.Slug != "beta-users" {
+		t.Errorf("slug: got %q, want %q", seg.Slug, "beta-users")
+	}
+	// fakeSegmentService.ListWithCount returns MemberCount = 3
+	if seg.MemberCount != 3 {
+		t.Errorf("memberCount: got %d, want 3", seg.MemberCount)
 	}
 }
