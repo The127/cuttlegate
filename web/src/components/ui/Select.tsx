@@ -1,0 +1,79 @@
+import * as RadixSelect from '@radix-ui/react-select'
+import { forwardRef, type ReactNode } from 'react'
+
+// ── SelectItem ──────────────────────────────────────────────────────────────
+
+export interface SelectItemProps {
+  value: string
+  children: ReactNode
+  disabled?: boolean
+}
+
+export const SelectItem = forwardRef<HTMLDivElement, SelectItemProps>(
+  ({ value, children, disabled }, ref) => (
+    <RadixSelect.Item
+      ref={ref}
+      value={value}
+      disabled={disabled}
+      className="relative flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 rounded cursor-default select-none data-[highlighted]:bg-gray-100 data-[highlighted]:outline-none data-[disabled]:opacity-50"
+    >
+      <RadixSelect.ItemText>{children}</RadixSelect.ItemText>
+      <RadixSelect.ItemIndicator className="absolute left-1 text-[var(--color-accent)]">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
+          <path d="M10.28 2.28L3.989 8.575 1.695 6.28A1 1 0 00.28 7.695l3 3a1 1 0 001.414 0l7-7A1 1 0 0010.28 2.28z" />
+        </svg>
+      </RadixSelect.ItemIndicator>
+    </RadixSelect.Item>
+  ),
+)
+SelectItem.displayName = 'SelectItem'
+
+// ── Select ──────────────────────────────────────────────────────────────────
+
+export interface SelectProps {
+  value: string
+  onValueChange: (value: string) => void
+  placeholder?: string
+  disabled?: boolean
+  className?: string
+  children: ReactNode
+  'aria-label'?: string
+  'aria-labelledby'?: string
+}
+
+export function Select({
+  value,
+  onValueChange,
+  placeholder,
+  disabled,
+  className = '',
+  children,
+  'aria-label': ariaLabel,
+  'aria-labelledby': ariaLabelledby,
+}: SelectProps) {
+  return (
+    <RadixSelect.Root value={value} onValueChange={onValueChange} disabled={disabled}>
+      <RadixSelect.Trigger
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledby}
+        className={`inline-flex items-center justify-between gap-1 text-sm border border-gray-300 rounded px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-[var(--color-accent)] disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+      >
+        <RadixSelect.Value placeholder={placeholder} />
+        <RadixSelect.Icon className="text-gray-400 ml-1">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
+            <path d="M6 8L1 3h10z" />
+          </svg>
+        </RadixSelect.Icon>
+      </RadixSelect.Trigger>
+      <RadixSelect.Portal>
+        <RadixSelect.Content
+          position="popper"
+          sideOffset={4}
+          className="z-50 min-w-[8rem] overflow-hidden rounded-md border border-gray-200 bg-white shadow-md"
+        >
+          <RadixSelect.Viewport className="p-1">{children}</RadixSelect.Viewport>
+        </RadixSelect.Content>
+      </RadixSelect.Portal>
+    </RadixSelect.Root>
+  )
+}

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { projectEnvRoute } from './$slug.environments.$envSlug'
 import { fetchJSON, postJSON, patchJSON, deleteRequest, APIError } from '../../api'
+import { Button, Input, Select, SelectItem } from '../../components/ui'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -168,12 +169,7 @@ function RulesPage() {
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-gray-700">Targeting Rules</h2>
         {!addingNew && (
-          <button
-            onClick={() => setAddingNew(true)}
-            className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            Add rule
-          </button>
+          <Button onClick={() => setAddingNew(true)}>Add rule</Button>
         )}
       </div>
 
@@ -218,12 +214,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
       <p className="text-sm text-gray-500">
         No targeting rules. Add a rule to start targeting specific users.
       </p>
-      <button
-        onClick={onAdd}
-        className="mt-3 px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      >
-        Add rule
-      </button>
+      <Button onClick={onAdd} className="mt-3">Add rule</Button>
     </div>
   )
 }
@@ -321,38 +312,29 @@ function RuleRow({
         <div className="flex items-center gap-1 shrink-0">
           {!editing && !pendingDelete && (
             <>
-              <button
-                onClick={startEdit}
-                className="px-2.5 py-1 text-sm text-gray-600 border border-gray-200 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                aria-label="Edit rule"
-              >
+              <Button variant="secondary" size="sm" onClick={startEdit} aria-label="Edit rule">
                 Edit
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="danger-outline"
+                size="sm"
                 onClick={() => setPendingDelete(true)}
                 disabled={isDeleting}
-                className="px-2.5 py-1 text-sm text-red-600 border border-red-200 rounded hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
                 aria-label="Delete rule"
               >
                 {isDeleting ? '…' : '✕'}
-              </button>
+              </Button>
             </>
           )}
           {pendingDelete && (
             <span className="flex items-center gap-2 text-sm">
               <span className="text-gray-600">Delete?</span>
-              <button
-                onClick={confirmDelete}
-                className="px-2 py-0.5 text-sm font-medium text-red-600 border border-red-300 rounded hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500"
-              >
+              <Button variant="danger-outline" size="sm" onClick={confirmDelete}>
                 Yes
-              </button>
-              <button
-                onClick={() => setPendingDelete(false)}
-                className="px-2 py-0.5 text-sm text-gray-600 border border-gray-200 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
-              >
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => setPendingDelete(false)}>
                 No
-              </button>
+              </Button>
             </span>
           )}
         </div>
@@ -368,20 +350,12 @@ function RuleRow({
             onChange={setDraft}
           />
           <div className="flex items-center gap-3">
-            <button
-              onClick={save}
-              disabled={isSaving}
-              className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
+            <Button onClick={save} disabled={isSaving}>
               {isSaving ? 'Saving…' : 'Save'}
-            </button>
-            <button
-              onClick={cancelEdit}
-              disabled={isSaving}
-              className="px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
-            >
+            </Button>
+            <Button variant="secondary" onClick={cancelEdit} disabled={isSaving}>
               Cancel
-            </button>
+            </Button>
             {saveError && <p className="text-xs text-red-600">{saveError}</p>}
           </div>
         </div>
@@ -420,7 +394,7 @@ function NewRuleRow({
       <p className="text-xs font-medium text-gray-500">New rule</p>
       <RuleEditor draft={draft} segments={segments} variants={variants} onChange={setDraft} />
       <div className="flex items-center gap-3">
-        <button
+        <Button
           onClick={() => {
             setSaveError(null)
             onSave(draft, {
@@ -428,17 +402,12 @@ function NewRuleRow({
             })
           }}
           disabled={isSaving}
-          className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           {isSaving ? 'Saving…' : 'Save'}
-        </button>
-        <button
-          onClick={onCancel}
-          disabled={isSaving}
-          className="px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
-        >
+        </Button>
+        <Button variant="secondary" onClick={onCancel} disabled={isSaving}>
           Cancel
-        </button>
+        </Button>
         {saveError && <p className="text-xs text-red-600">{saveError}</p>}
       </div>
     </div>
@@ -494,46 +463,43 @@ function RuleEditor({
           {draft.conditions.map((c, i) => (
             <div key={i} className="flex items-start gap-2">
               {/* Attribute */}
-              <input
+              <Input
                 type="text"
                 value={c.attribute}
                 onChange={(e) => updateCondition(i, { attribute: e.target.value })}
                 placeholder="attribute"
                 aria-label={`Condition ${i + 1} attribute`}
-                className="w-32 text-sm font-mono border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-32 font-mono py-1.5 px-2"
               />
               {/* Operator */}
-              <select
+              <Select
                 value={c.operator}
-                onChange={(e) => updateCondition(i, { operator: e.target.value })}
+                onValueChange={(val) => updateCondition(i, { operator: val })}
                 aria-label={`Condition ${i + 1} operator`}
-                className="text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {Object.entries(OPERATOR_LABELS).map(([val, label]) => (
-                  <option key={val} value={val}>
+                  <SelectItem key={val} value={val}>
                     {label}
-                  </option>
+                  </SelectItem>
                 ))}
-              </select>
+              </Select>
               {/* Value — segment dropdown or text input */}
               {isSegmentOperator(c.operator) ? (
-                <select
+                <Select
                   value={c.values[0] ?? ''}
-                  onChange={(e) => updateCondition(i, { values: [e.target.value] })}
+                  onValueChange={(val) => updateCondition(i, { values: [val] })}
                   aria-label={`Condition ${i + 1} segment`}
-                  className="flex-1 text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Select segment…"
+                  className="flex-1"
                 >
-                  <option value="" disabled>
-                    Select segment…
-                  </option>
                   {segments.map((s) => (
-                    <option key={s.slug} value={s.slug}>
+                    <SelectItem key={s.slug} value={s.slug}>
                       {s.name}
-                    </option>
+                    </SelectItem>
                   ))}
-                </select>
+                </Select>
               ) : (
-                <input
+                <Input
                   type="text"
                   value={c.values.join(', ')}
                   onChange={(e) =>
@@ -543,7 +509,7 @@ function RuleEditor({
                   }
                   placeholder="value(s), comma-separated"
                   aria-label={`Condition ${i + 1} value`}
-                  className="flex-1 text-sm font-mono border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 font-mono py-1.5 px-2"
                 />
               )}
               <button
@@ -558,7 +524,7 @@ function RuleEditor({
         </div>
         <button
           onClick={addCondition}
-          className="mt-2 text-xs text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+          className="mt-2 text-xs text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
         >
           + Add condition
         </button>
@@ -567,17 +533,17 @@ function RuleEditor({
       {/* Variant */}
       <div>
         <label className="block text-xs font-medium text-gray-500 mb-1">Serve variant</label>
-        <select
+        <Select
           value={draft.variantKey}
-          onChange={(e) => onChange({ ...draft, variantKey: e.target.value })}
-          className="text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          onValueChange={(val) => onChange({ ...draft, variantKey: val })}
+          aria-label="Serve variant"
         >
           {variants.map((v) => (
-            <option key={v.key} value={v.key}>
+            <SelectItem key={v.key} value={v.key}>
               {v.key}
-            </option>
+            </SelectItem>
           ))}
-        </select>
+        </Select>
       </div>
 
       {/* Priority */}
@@ -585,12 +551,12 @@ function RuleEditor({
         <label className="block text-xs font-medium text-gray-500 mb-1">
           Priority <span className="text-gray-400 font-normal">(lower = evaluated first)</span>
         </label>
-        <input
+        <Input
           type="number"
           min={0}
           value={draft.priority}
           onChange={(e) => onChange({ ...draft, priority: parseInt(e.target.value, 10) || 0 })}
-          className="w-24 text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-24 py-1.5 px-2"
         />
       </div>
     </div>

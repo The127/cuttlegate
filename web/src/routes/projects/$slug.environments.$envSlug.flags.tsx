@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import { projectEnvRoute } from './$slug.environments.$envSlug'
 import { fetchJSON, patchJSON, postJSON, deleteRequest, APIError } from '../../api'
+import { Button, Input, Label, Select, SelectItem } from '../../components/ui'
 
 interface Variant {
   key: string
@@ -67,12 +68,7 @@ function FlagListPage() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-lg font-semibold text-gray-900">Feature Flags</h1>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          New flag
-        </button>
+        <Button onClick={() => setShowCreate(true)}>New flag</Button>
       </div>
 
       {flags.length === 0 ? (
@@ -162,7 +158,7 @@ function FlagRow({
         <div className="relative">
           <button
             onClick={copyKey}
-            className="font-mono text-sm text-gray-800 hover:text-blue-600 bg-gray-50 border border-gray-200 rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="font-mono text-sm text-gray-800 hover:text-blue-600 bg-gray-50 border border-gray-200 rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
             aria-label={`Copy flag key ${flag.key}`}
           >
             {flag.key}
@@ -178,7 +174,7 @@ function FlagRow({
         <Link
           to="/projects/$slug/environments/$envSlug/flags/$key"
           params={{ slug, envSlug, key: flag.key }}
-          className="text-sm text-gray-700 truncate hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+          className="text-sm text-gray-700 truncate hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
         >
           {flag.name}
         </Link>
@@ -242,12 +238,9 @@ function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
       <p className="text-sm text-gray-500">
         No flags yet. Create your first flag to start targeting users.
       </p>
-      <button
-        onClick={onCreateClick}
-        className="mt-4 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      >
+      <Button onClick={onCreateClick} size="lg" className="mt-4">
         New flag
-      </button>
+      </Button>
     </div>
   )
 }
@@ -363,10 +356,8 @@ function CreateFlagModal({
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="flag-key" className="block text-xs font-medium text-gray-500 mb-1">
-              Key
-            </label>
-            <input
+            <Label htmlFor="flag-key" className="text-xs text-gray-500 mb-1">Key</Label>
+            <Input
               id="flag-key"
               type="text"
               autoFocus
@@ -376,11 +367,8 @@ function CreateFlagModal({
               placeholder="my-feature-flag"
               aria-invalid={!!keyError}
               aria-describedby={keyError ? 'flag-key-error' : undefined}
-              className={`w-full font-mono text-sm border rounded px-2 py-1.5 focus:outline-none focus:ring-2 ${
-                keyError
-                  ? 'border-red-300 focus:ring-red-500'
-                  : 'border-gray-300 focus:ring-blue-500'
-              }`}
+              hasError={!!keyError}
+              className="font-mono py-1.5 px-2"
             />
             {keyError && (
               <p id="flag-key-error" className="mt-1 text-xs text-red-600">
@@ -390,34 +378,30 @@ function CreateFlagModal({
           </div>
 
           <div>
-            <label htmlFor="flag-name" className="block text-xs font-medium text-gray-500 mb-1">
-              Name
-            </label>
-            <input
+            <Label htmlFor="flag-name" className="text-xs text-gray-500 mb-1">Name</Label>
+            <Input
               id="flag-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="My Feature Flag"
-              className="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="py-1.5 px-2"
             />
           </div>
 
           <div>
-            <label htmlFor="flag-type" className="block text-xs font-medium text-gray-500 mb-1">
-              Type
-            </label>
-            <select
-              id="flag-type"
+            <Label htmlFor="flag-type" className="text-xs text-gray-500 mb-1">Type</Label>
+            <Select
               value={type}
-              onChange={(e) => setType(e.target.value)}
-              className="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onValueChange={setType}
+              aria-label="Flag type"
+              className="w-full"
             >
-              <option value="bool">Boolean</option>
-              <option value="string">String</option>
-              <option value="number">Number</option>
-              <option value="json">JSON</option>
-            </select>
+              <SelectItem value="bool">Boolean</SelectItem>
+              <SelectItem value="string">String</SelectItem>
+              <SelectItem value="number">Number</SelectItem>
+              <SelectItem value="json">JSON</SelectItem>
+            </Select>
           </div>
 
           {serverError && (
@@ -425,21 +409,21 @@ function CreateFlagModal({
           )}
 
           <div className="flex justify-end gap-3 pt-2">
-            <button
+            <Button
               type="button"
+              variant="secondary"
               onClick={onCancel}
               disabled={createMutation.isPending}
-              className="px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
+              variant="primary"
               disabled={createMutation.isPending || !!keyError}
-              className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              {createMutation.isPending ? 'Creating\u2026' : 'Create'}
-            </button>
+              {createMutation.isPending ? 'Creating…' : 'Create'}
+            </Button>
           </div>
         </form>
       </div>
@@ -489,21 +473,12 @@ function DeleteConfirmModal({
           <p className="mt-3 text-xs text-red-600">Failed to delete. Please try again.</p>
         )}
         <div className="mt-5 flex justify-end gap-3">
-          <button
-            autoFocus
-            onClick={onCancel}
-            disabled={isDeleting}
-            className="px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
-          >
+          <Button autoFocus variant="secondary" onClick={onCancel} disabled={isDeleting}>
             Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={isDeleting}
-            className="px-3 py-1.5 text-sm font-medium bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500"
-          >
+          </Button>
+          <Button variant="danger" onClick={onConfirm} disabled={isDeleting}>
             {isDeleting ? 'Deleting…' : 'Delete'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
