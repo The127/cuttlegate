@@ -2,7 +2,7 @@ import { createRoute, useNavigate, Link } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, type ChangeEvent } from 'react'
 import { projectEnvRoute } from './$slug.environments.$envSlug'
-import { fetchJSON, patchJSON, deleteRequest, APIError } from '../../api'
+import { fetchJSON, patchJSON, postJSON, deleteRequest, APIError } from '../../api'
 import { useFlagSSE } from '../../hooks/useFlagSSE'
 
 interface Variant {
@@ -117,6 +117,8 @@ function FlagDetailPage() {
           Targeting rules →
         </Link>
       </div>
+
+      <EvaluationPanel slug={slug} envSlug={envSlug} flagKey={key} />
 
       {pendingDelete && (
         <DeleteConfirmModal
@@ -501,6 +503,163 @@ function EnvToggleSkeleton() {
         </li>
       ))}
     </ul>
+  )
+}
+
+interface EvalResponse {
+  key: string
+  enabled: boolean
+  value: string | null
+  reason: string
+  type: string
+}
+
+const REASON_LABELS: Record<string, string> = {
+  disabled: 'Flag is disabled',
+  default: 'No rules matched — default',
+  rule_match: 'Matched a targeting rule',
+}
+
+function EvaluationPanel({
+  slug,
+  envSlug,
+  flagKey,
+}: {
+  slug: string
+  envSlug: string
+  flagKey: string
+}) {
+  const [open, setOpen] = useState(false)
+  const [contextInput, setContextInput] = useState('{}')
+  const [jsonError, setJsonError] = useState<string | null>(null)
+
+  const mutation = useMutation({
+    mutationFn: (context: unknown) =>
+      postJSON<EvalResponse>(
+        `/api/v1/projects/${slug}/environments/${envSlug}/flags/${flagKey}/evaluate`,
+        { context },
+      ),
+  })
+
+  function handleInputChange(e: ChangeEvent<HTMLTextAreaElement>) {
+    const val = e.target.value
+    setContextInput(val)
+    try {
+      JSON.parse(val)
+      setJsonError(null)
+    } catch {
+      setJsonError('Invalid JSON')
+    }
+  }
+
+  function handleEvaluate() {
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(contextInput)
+    } catch {
+      setJsonError('Invalid JSON')
+      return
+    }
+    setJsonError(null)
+    mutation.mutate(parsed)
+  }
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg mt-4">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="w-full flex items-center justify-between px-5 py-3 text-left focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+      >
+        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+          Evaluation playground
+        </span>
+        <span className="text-gray-400 text-sm" aria-hidden="true">
+          {open ? '▲' : '▼'}
+        </span>
+      </button>
+
+      {open && (
+        <div className="px-5 pb-5 border-t border-gray-100 pt-4 space-y-3">
+          <div>
+            <label
+              htmlFor="eval-context"
+              className="block text-xs font-medium text-gray-500 mb-1"
+            >
+              Evaluation context (JSON)
+            </label>
+            <textarea
+              id="eval-context"
+              value={contextInput}
+              onChange={handleInputChange}
+              rows={4}
+              spellCheck={false}
+              className="w-full font-mono text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+            />
+            {jsonError && (
+              <p className="mt-1 text-xs text-red-600" role="alert">
+                {jsonError}
+              </p>
+            )}
+          </div>
+
+          <button
+            onClick={handleEvaluate}
+            disabled={mutation.isPending || jsonError !== null}
+            className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {mutation.isPending ? 'Evaluating…' : 'Evaluate'}
+          </button>
+
+          {mutation.isError && (
+            <p className="text-xs text-red-600" role="alert">
+              {mutation.error instanceof APIError
+                ? mutation.error.message
+                : 'Evaluation failed. Please try again.'}
+            </p>
+          )}
+
+          {mutation.isSuccess && mutation.data && (
+            <EvalResultDisplay result={mutation.data} />
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function EvalResultDisplay({ result }: { result: EvalResponse }) {
+  const reasonLabel = REASON_LABELS[result.reason] ?? result.reason
+
+  return (
+    <div className="rounded border border-gray-200 bg-gray-50 px-4 py-3 space-y-2">
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-medium text-gray-500">Result</span>
+        {result.value !== null ? (
+          <span className="font-mono text-sm bg-blue-50 text-blue-800 border border-blue-200 rounded px-2 py-0.5">
+            {result.value}
+          </span>
+        ) : (
+          <span
+            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+              result.enabled
+                ? 'bg-green-50 text-green-700 border-green-200'
+                : 'bg-gray-100 text-gray-600 border-gray-200'
+            }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${result.enabled ? 'bg-green-500' : 'bg-gray-400'}`}
+              aria-hidden="true"
+            />
+            {result.enabled ? 'Enabled' : 'Disabled'}
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-medium text-gray-500">Reason</span>
+        <span className="text-xs text-gray-700">{reasonLabel}</span>
+      </div>
+    </div>
   )
 }
 
