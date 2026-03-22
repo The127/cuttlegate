@@ -110,14 +110,20 @@ func (s *EvaluationService) EvaluateAll(ctx context.Context, projectID, environm
 		stateByFlag[st.FlagID] = st
 	}
 
+	// Batch-load all rules for this environment to avoid N+1 queries.
+	allRules, err := s.ruleRepo.ListByEnvironment(ctx, environmentID)
+	if err != nil {
+		return nil, time.Time{}, err
+	}
+	rulesByFlag := make(map[string][]*domain.Rule, len(flags))
+	for _, r := range allRules {
+		rulesByFlag[r.FlagID] = append(rulesByFlag[r.FlagID], r)
+	}
+
 	views := make([]EvalView, 0, len(flags))
 	for _, flag := range flags {
 		state := stateByFlag[flag.ID] // nil if no state row — treated as disabled
-
-		rules, err := s.ruleRepo.ListByFlagEnvironment(ctx, flag.ID, environmentID)
-		if err != nil {
-			return nil, time.Time{}, err
-		}
+		rules := rulesByFlag[flag.ID] // nil if no rules — treated as empty slice by Evaluate
 
 		userSegments, err := s.resolveSegments(ctx, projectID, rules, evalCtx.UserID)
 		if err != nil {

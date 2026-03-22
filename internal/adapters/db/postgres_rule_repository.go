@@ -81,6 +81,32 @@ func (r *PostgresRuleRepository) ListByFlagEnvironment(ctx context.Context, flag
 	return rules, rows.Err()
 }
 
+// ListByEnvironment returns all rules for an environment, ordered by flag_id then priority ascending.
+// Intended for batch loading in EvaluateAll to avoid N+1 queries.
+func (r *PostgresRuleRepository) ListByEnvironment(ctx context.Context, environmentID string) ([]*domain.Rule, error) {
+	rows, err := r.db.QueryContext(ctx,
+		`SELECT id, flag_id, environment_id, priority, conditions, variant_key, enabled, created_at
+		 FROM rules
+		 WHERE environment_id = $1
+		 ORDER BY flag_id, priority ASC`,
+		environmentID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	rules := make([]*domain.Rule, 0)
+	for rows.Next() {
+		rule, err := scanRuleRow(rows)
+		if err != nil {
+			return nil, err
+		}
+		rules = append(rules, rule)
+	}
+	return rules, rows.Err()
+}
+
 // Upsert inserts a new rule or updates an existing one (matched by id).
 // The RETURNING clause populates rule.CreatedAt with the DB-stored value;
 // on conflict (update) this preserves the original creation timestamp.
