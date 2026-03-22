@@ -1,13 +1,19 @@
 # Keyline OIDC provider configuration for local development.
 # Provides a local identity provider with a pre-seeded admin user.
+# Default credentials: admin / password
 
 server:
   host: "0.0.0.0"
   port: 8080
   externalUrl: "http://localhost:5002"
-  allowedOrigins: ["http://localhost:5173", "http://localhost:8080", "http://localhost:5002", "http://localhost:5003"]
+  allowedOrigins:
+    - "http://localhost:5173"
+    - "http://localhost:5003"
+    - "http://localhost:8080"
+
 frontend:
   externalUrl: "http://localhost:5003"
+
 database:
   mode: postgres
   postgres:
@@ -16,43 +22,41 @@ database:
     username: "keyline"
     password: "keyline"
     sslMode: "disable"
+
 initialVirtualServer:
+  name: "cuttlegate"
+  displayName: "Cuttlegate"
   enableRegistration: false
+  signingAlgorithm: "EdDSA"
+  createSystemAdminRole: true
   createAdmin: true
   admin:
     username: admin
     displayName: admin
-    primaryEmail: admin@example.com
+    primaryEmail: admin@cuttlegate.local
     # argon2id hash of "password"
     passwordHash: "$argon2id$v=19$m=16,t=2,p=1$MTIzNDU2Nzg$QWu7e+sjG5knAdNLoKdLDg"
   projects:
-  - slug: "default"
-    name: "Default"
-    applications:
-    - name: "cuttlegate"
-      displayName: "Cuttlegate"
-      type: "public"
-      redirectUris:
-      - "http://localhost:5173/auth/callback"
-      - "http://localhost:8080/auth/callback"
-      postLogoutRedirectUris:
-      - "http://localhost:5173/logout-callback"
-      - "http://localhost:8080/logout-callback"
+    - slug: "cuttlegate"
+      name: "Cuttlegate"
+      applications:
+        - name: "cuttlegate"
+          displayName: "Cuttlegate"
+          type: "public"
+          redirectUris:
+            - "http://localhost:5173/auth/callback"
+            - "http://localhost:8080/auth/callback"
+          postLogoutRedirectUris:
+            - "http://localhost:5173"
+            - "http://localhost:8080"
+
 keyStore:
   mode: "directory"
   directory:
     path: "./keys"
+
 cache:
-  mode: redis
-  redis:
-    host: "valkey"
+  mode: memory
+
 leaderElection:
-  mode: raft
-  raft:
-    host: "keyline"
-    port: 9876
-    id: "keyline-1"
-    initiatorId: "keyline-1"
-    nodes:
-      - id: "keyline-1"
-        address: "keyline:9876"
+  mode: none

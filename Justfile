@@ -66,25 +66,30 @@ migrate-up:
 migrate-down:
     go run ./cmd/migrate down
 
-# Start everything for local dev: Postgres, Keyline (local OIDC), Go server (hot reload), and Vite (port 5173)
-# Requires: docker or podman-compose
+# Start everything for local dev: Postgres (5433), Keyline OIDC (5002), Go server with hot reload, and Vite (5173)
+# Requires: docker or podman-compose, pg_isready (postgresql-client)
+# Port 5433 is used instead of 5432 to avoid conflicts with other local Postgres instances.
+# Override the server port via env: ADDR=:9090 just dev
 dev:
     #!/usr/bin/env bash
     set -euo pipefail
-    docker compose up -d db keyline-db valkey keyline
+    docker compose up -d db keyline-db keyline keyline-ui
     echo "Waiting for Postgres..."
-    until bash -c 'echo > /dev/tcp/localhost/5432' 2>/dev/null; do sleep 1; done
+    until pg_isready -h localhost -p 5433 -U cuttlegate -d cuttlegate -q; do sleep 1; done
     echo "Waiting for Keyline OIDC..."
-    until curl -sf http://localhost:5002/oidc/keyline/.well-known/openid-configuration > /dev/null 2>&1; do sleep 1; done
+    until curl -sf http://localhost:5002/oidc/cuttlegate/.well-known/openid-configuration > /dev/null 2>&1; do sleep 1; done
     echo "Keyline ready."
     trap 'kill 0' EXIT
-    OIDC_ISSUER=http://localhost:5002/oidc/keyline \
+    api_port="${ADDR#:}"
+    api_port="${api_port:-8080}"
+    OIDC_ISSUER=http://localhost:5002/oidc/cuttlegate \
     OIDC_CLIENT_ID=cuttlegate \
     OIDC_REDIRECT_URI=http://localhost:5173/auth/callback \
-    DATABASE_URL=postgres://cuttlegate:cuttlegate@localhost:5432/cuttlegate?sslmode=disable \
+    OIDC_ROLE_CLAIM=application_roles \
+    DATABASE_URL=postgres://cuttlegate:cuttlegate@localhost:5433/cuttlegate?sslmode=disable \
     AUTO_MIGRATE=true \
     go run github.com/air-verse/air@latest &
-    cd web && npm run dev &
+    cd web && npm install --silent && API_PORT="$api_port" npm run dev &
     wait
 
 # Smoke test the full docker-compose stack: boot, verify endpoints, tear down
