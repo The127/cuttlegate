@@ -1,5 +1,7 @@
 package cuttlegate
 
+import "time"
+
 // EvalContext is the user context sent with every evaluation request.
 //
 // Attributes values must be JSON-serialisable. Non-serialisable values
@@ -33,4 +35,12 @@ type FlagResult struct {
 	Value   string // string value; empty for bool flags
 	Variant string // variant key; "true"/"false" for bool flags
 	Reason  string
+}
+
+// FlagUpdate is a real-time flag state change received from the SSE stream.
+// It is delivered on the updates channel returned by Client.Subscribe.
+type FlagUpdate struct {
+	Key       string    // flag key that changed
+	Enabled   bool      // new enabled state
+	UpdatedAt time.Time // when the change occurred (UTC)
 }
