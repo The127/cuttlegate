@@ -1,0 +1,52 @@
+{
+  "title": "Segmente",
+  "new_segment": "Neues Segment",
+  "empty_state": "Noch keine Segmente — mit Segmenten können Sie Feature-Flags auf bestimmte Benutzergruppen ausrichten.",
+  "error": "Segmente konnten nicht geladen werden.",
+  "edit_aria": "Segment {{slug}} bearbeiten",
+  "delete_aria": "Segment {{slug}} löschen",
+  "create": {
+    "title": "Segment erstellen",
+    "name_label": "Name",
+    "name_placeholder": "Beta-Benutzer",
+    "slug_label": "Slug",
+    "slug_placeholder": "beta-benutzer",
+    "slug_conflict": "In diesem Projekt existiert bereits ein Segment mit diesem Slug",
+    "slug_required": "Slug ist erforderlich",
+    "slug_too_long": "Slug darf maximal {{max}} Zeichen lang sein",
+    "slug_invalid": "Slug muss mit einem Buchstaben oder einer Ziffer beginnen und darf nur Kleinbuchstaben, Ziffern und Bindestriche enthalten",
+    "server_error": "Etwas ist schiefgelaufen. Bitte erneut versuchen."
+  },
+  "edit": {
+    "title": "Segment bearbeiten",
+    "name_label": "Name",
+    "slug_label": "Slug",
+    "slug_immutable": "Slug kann nach der Erstellung nicht mehr geändert werden.",
+    "server_error": "Etwas ist schiefgelaufen. Bitte erneut versuchen."
+  },
+  "delete": {
+    "title": "Segment löschen?",
+    "body": "Dadurch wird <mono>{{slug}}</mono> dauerhaft gelöscht.",
+    "warning": "Das Löschen dieses Segments kann Zielgruppenregeln beschädigen, die darauf verweisen.",
+    "failed": "Löschen fehlgeschlagen. Bitte erneut versuchen."
+  },
+  "members": {
+    "title": "Mitglieder — {{slug}}",
+    "close_aria": "Schließen",
+    "add_placeholder": "benutzer-schlüssel",
+    "add_aria": "Hinzuzufügender Benutzerschlüssel",
+    "add_button": "Hinzufügen",
+    "duplicate_key": "Dieser Schlüssel ist bereits Mitglied",
+    "no_members": "Noch keine Mitglieder.",
+    "bulk_show": "Massenimport (ersetzt alle)",
+    "bulk_hide": "Massenimport ausblenden",
+    "bulk_placeholder": "Ein Benutzerschlüssel pro Zeile",
+    "bulk_aria": "Mitglieder-Massenimport",
+    "bulk_apply": "Alle ersetzen",
+    "save_failed": "Mitglieder konnten nicht gespeichert werden. Bitte erneut versuchen.",
+    "remove_aria": "{{key}} entfernen",
+    "failed_to_load": "Mitglieder konnten nicht geladen werden.",
+    "members_button": "Mitglieder",
+    "saving": "Wird gespeichert…"
+  }
+}

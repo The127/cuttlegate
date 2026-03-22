@@ -1,0 +1,38 @@
+{
+  "app_name": "Cuttlegate",
+  "actions": {
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "create": "Erstellen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "retry": "Erneut versuchen",
+    "done": "Fertig",
+    "add": "Hinzufügen",
+    "copy": "Kopieren",
+    "close": "Schließen"
+  },
+  "states": {
+    "saving": "Wird gespeichert…",
+    "creating": "Wird erstellt…",
+    "deleting": "Wird gelöscht…",
+    "adding": "Wird hinzugefügt…",
+    "removing": "Wird entfernt…",
+    "revoking": "Wird widerrufen…",
+    "copied": "Kopiert!",
+    "saved": "Gespeichert"
+  },
+  "errors": {
+    "unexpected": "Ein unerwarteter Fehler ist aufgetreten.",
+    "failed_to_load": "Laden fehlgeschlagen",
+    "access_denied_title": "Zugriff verweigert",
+    "access_denied_body": "Sie haben keine Berechtigung, auf diese Ressource zuzugreifen.",
+    "something_went_wrong": "Etwas ist schiefgelaufen",
+    "return_to_home": "Zur Startseite"
+  },
+  "not_found": {
+    "title": "404",
+    "body": "Seite nicht gefunden.",
+    "return_to_home": "Zur Startseite"
+  }
+}

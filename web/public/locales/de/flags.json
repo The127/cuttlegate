@@ -1,0 +1,86 @@
+{
+  "list": {
+    "title": "Feature-Flags",
+    "new_flag": "Neues Flag",
+    "empty_state": "Noch keine Flags. Erstellen Sie Ihr erstes Flag, um mit der Zielgruppensteuerung zu beginnen.",
+    "error": "Flags konnten nicht geladen werden.",
+    "not_found": "Flag nicht gefunden.",
+    "failed_to_load": "Flag konnte nicht geladen werden.",
+    "back_to_flags": "Zurück zu den Flags",
+    "copy_key_aria": "Flag-Schlüssel {{key}} kopieren",
+    "delete_flag_aria": "Flag {{key}} löschen"
+  },
+  "toggle": {
+    "enable": "Flag aktivieren",
+    "disable": "Flag deaktivieren",
+    "enabled": "Aktiviert",
+    "disabled": "Deaktiviert",
+    "failed": "Fehlgeschlagen",
+    "enable_in_env": "Flag in {{env}} aktivieren",
+    "disable_in_env": "Flag in {{env}} deaktivieren"
+  },
+  "delete": {
+    "title": "Flag löschen?",
+    "body": "Dadurch wird <mono>{{key}}</mono> dauerhaft aus allen Umgebungen gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
+    "failed": "Löschen fehlgeschlagen. Bitte erneut versuchen."
+  },
+  "create": {
+    "title": "Flag erstellen",
+    "key_label": "Schlüssel",
+    "name_label": "Name",
+    "type_label": "Typ",
+    "key_placeholder": "my-feature-flag",
+    "name_placeholder": "Mein Feature-Flag",
+    "key_required": "Flag-Schlüssel ist erforderlich",
+    "key_too_long": "Flag-Schlüssel darf maximal {{max}} Zeichen lang sein",
+    "key_invalid": "Flag-Schlüssel muss mit einem Buchstaben oder einer Ziffer beginnen und darf nur Kleinbuchstaben, Ziffern und Bindestriche enthalten",
+    "key_conflict": "In diesem Projekt existiert bereits ein Flag mit diesem Schlüssel",
+    "server_error": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
+    "type_bool": "Boolean",
+    "type_string": "Zeichenkette",
+    "type_number": "Zahl",
+    "type_json": "JSON",
+    "type_aria": "Flag-Typ"
+  },
+  "detail": {
+    "name_label": "Name",
+    "variants_label": "Varianten",
+    "default_variant_label": "Standardvariante",
+    "status_label": "Status in {{env}}",
+    "save_failed": "Speichern fehlgeschlagen. Bitte erneut versuchen.",
+    "delete_aria": "Flag löschen",
+    "variant_name_aria": "Variantenname für {{key}}",
+    "default_variant_aria": "Standardvariante",
+    "targeting_rules": "Zielgruppenregeln →",
+    "environments_section": "Umgebungen",
+    "env_error": "Umgebungen konnten nicht geladen werden.",
+    "env_row_error": "Laden fehlgeschlagen",
+    "loading_aria": "Wird geladen"
+  },
+  "eval": {
+    "title": "Auswertungs-Playground",
+    "context_label": "Auswertungskontext (JSON)",
+    "evaluate": "Auswerten",
+    "evaluating": "Wird ausgewertet…",
+    "invalid_json": "Ungültiges JSON",
+    "eval_failed": "Auswertung fehlgeschlagen. Bitte erneut versuchen.",
+    "result_label": "Ergebnis",
+    "reason_label": "Grund",
+    "reason_disabled": "Flag ist deaktiviert",
+    "reason_default": "Keine Regel zugeordnet — Standard",
+    "reason_rule_match": "Eine Zielgruppenregel wurde zugeordnet"
+  },
+  "compare": {
+    "title": "Umgebungen vergleichen",
+    "flag_column": "Flag",
+    "empty_state": "Noch keine Flags in diesem Projekt. Erstellen Sie ein Flag, um die Vergleichsmatrix anzuzeigen.",
+    "error": "Vergleichsmatrix konnte nicht geladen werden.",
+    "page_info": "Seite {{page}} von {{total}}",
+    "previous": "Zurück",
+    "next": "Weiter",
+    "matrix_aria": "Flag-Umgebungsvergleichsmatrix"
+  },
+  "api_key": {
+    "show_once_warning": "Kopieren Sie diesen Schlüssel jetzt. Er wird nicht erneut angezeigt."
+  }
+}
