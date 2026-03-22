@@ -2,7 +2,6 @@ package dbadapter
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/karo/cuttlegate/internal/domain"
 	"github.com/karo/cuttlegate/internal/domain/ports"
@@ -10,11 +9,11 @@ import (
 
 // PostgresAuditRepository implements ports.AuditRepository using PostgreSQL.
 type PostgresAuditRepository struct {
-	db *sql.DB
+	db DBTX
 }
 
 // NewPostgresAuditRepository constructs a PostgresAuditRepository.
-func NewPostgresAuditRepository(db *sql.DB) *PostgresAuditRepository {
+func NewPostgresAuditRepository(db DBTX) *PostgresAuditRepository {
 	return &PostgresAuditRepository{db: db}
 }
 

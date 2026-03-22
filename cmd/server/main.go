@@ -108,6 +108,7 @@ func run() error {
 		segmentRepo := dbadapter.NewPostgresSegmentRepository(conn)
 		apiKeyRepo := dbadapter.NewPostgresAPIKeyRepository(conn)
 		auditRepo := dbadapter.NewPostgresAuditRepository(conn)
+		_ = dbadapter.NewPostgresUnitOfWorkFactory(conn) // wired for future service injection
 
 		projSvc := app.NewProjectService(projRepo)
 		envSvc := app.NewEnvironmentService(envRepo, projRepo)

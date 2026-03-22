@@ -11,11 +11,11 @@ import (
 
 // PostgresRuleRepository implements ports.RuleRepository using PostgreSQL.
 type PostgresRuleRepository struct {
-	db *sql.DB
+	db DBTX
 }
 
 // NewPostgresRuleRepository constructs a PostgresRuleRepository.
-func NewPostgresRuleRepository(db *sql.DB) *PostgresRuleRepository {
+func NewPostgresRuleRepository(db DBTX) *PostgresRuleRepository {
 	return &PostgresRuleRepository{db: db}
 }
 

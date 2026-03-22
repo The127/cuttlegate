@@ -11,40 +11,26 @@ import (
 
 // PostgresFlagEnvironmentStateRepository implements ports.FlagEnvironmentStateRepository using PostgreSQL.
 type PostgresFlagEnvironmentStateRepository struct {
-	db *sql.DB
+	db DBTX
 }
 
 // NewPostgresFlagEnvironmentStateRepository constructs a PostgresFlagEnvironmentStateRepository.
-func NewPostgresFlagEnvironmentStateRepository(db *sql.DB) *PostgresFlagEnvironmentStateRepository {
+func NewPostgresFlagEnvironmentStateRepository(db DBTX) *PostgresFlagEnvironmentStateRepository {
 	return &PostgresFlagEnvironmentStateRepository{db: db}
 }
 
 var _ ports.FlagEnvironmentStateRepository = (*PostgresFlagEnvironmentStateRepository)(nil)
 
 func (r *PostgresFlagEnvironmentStateRepository) CreateBatch(ctx context.Context, states []*domain.FlagEnvironmentState) error {
-	if len(states) == 0 {
-		return nil
-	}
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback() //nolint:errcheck
-
-	stmt, err := tx.PrepareContext(ctx,
-		`INSERT INTO flag_environment_states (flag_id, environment_id, enabled) VALUES ($1, $2, $3)`,
-	)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close() //nolint:errcheck
-
 	for _, s := range states {
-		if _, err := stmt.ExecContext(ctx, s.FlagID, s.EnvironmentID, s.Enabled); err != nil {
+		if _, err := r.db.ExecContext(ctx,
+			`INSERT INTO flag_environment_states (flag_id, environment_id, enabled) VALUES ($1, $2, $3)`,
+			s.FlagID, s.EnvironmentID, s.Enabled,
+		); err != nil {
 			return err
 		}
 	}
-	return tx.Commit()
+	return nil
 }
 
 func (r *PostgresFlagEnvironmentStateRepository) ListByEnvironment(ctx context.Context, environmentID string) ([]*domain.FlagEnvironmentState, error) {
