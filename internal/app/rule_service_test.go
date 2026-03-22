@@ -49,6 +49,15 @@ func (f *fakeRuleRepository) Delete(_ context.Context, id string) error {
 	return nil
 }
 
+func (f *fakeRuleRepository) DeleteByFlagEnvironment(_ context.Context, flagID, environmentID string) error {
+	for id, r := range f.rules {
+		if r.FlagID == flagID && r.EnvironmentID == environmentID {
+			delete(f.rules, id)
+		}
+	}
+	return nil
+}
+
 func newRuleSvc() *app.RuleService {
 	return app.NewRuleService(newFakeRuleRepository())
 }

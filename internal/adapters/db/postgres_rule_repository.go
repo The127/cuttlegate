@@ -104,6 +104,15 @@ func (r *PostgresRuleRepository) Upsert(ctx context.Context, rule *domain.Rule) 
 	return row.Scan(&rule.CreatedAt)
 }
 
+// DeleteByFlagEnvironment removes all rules for a flag+environment pair in one statement.
+func (r *PostgresRuleRepository) DeleteByFlagEnvironment(ctx context.Context, flagID, environmentID string) error {
+	_, err := r.db.ExecContext(ctx,
+		`DELETE FROM rules WHERE flag_id = $1 AND environment_id = $2`,
+		flagID, environmentID,
+	)
+	return err
+}
+
 // Delete removes a rule by ID. Returns ErrNotFound if no row was deleted.
 func (r *PostgresRuleRepository) Delete(ctx context.Context, id string) error {
 	res, err := r.db.ExecContext(ctx, `DELETE FROM rules WHERE id = $1`, id)

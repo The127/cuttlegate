@@ -92,6 +92,13 @@ func (f *fakeFlagEnvironmentStateRepository) SetEnabled(_ context.Context, flagI
 	return nil
 }
 
+func (f *fakeFlagEnvironmentStateRepository) Upsert(_ context.Context, state *domain.FlagEnvironmentState) error {
+	k := stateKey(state.FlagID, state.EnvironmentID)
+	cp := *state
+	f.states[k] = &cp
+	return nil
+}
+
 // newFlagSvc constructs a FlagService with in-memory fakes. Repos are discarded when not needed.
 func newFlagSvc() *app.FlagService {
 	return app.NewFlagService(newFakeFlagRepository(), newFakeEnvironmentRepository(), newFakeFlagEnvironmentStateRepository(), noOpPublisher{}, noOpAuditRepository{})
