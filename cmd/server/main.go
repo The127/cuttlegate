@@ -133,7 +133,7 @@ func run() error {
 		flagSvc := app.NewFlagService(flagRepo, envRepo, stateRepo, broker, auditRepo)
 		ruleSvc := app.NewRuleService(ruleRepo)
 		segmentSvc := app.NewSegmentService(segmentRepo)
-		evalSvc := app.NewEvaluationService(flagRepo, stateRepo, ruleRepo, segmentRepo, evalEventRepo).WithStatsRepo(evalStatsRepo)
+		evalSvc := app.NewEvaluationService(flagRepo, stateRepo, ruleRepo, segmentRepo, evalEventRepo).WithStatsRepo(evalStatsRepo).WithAuditRepo(auditRepo)
 		evalAuditSvc := app.NewEvaluationAuditService(evalEventRepo, flagRepo)
 		evalStatsSvc := app.NewEvaluationStatsService(evalStatsRepo, flagRepo)
 		apiKeySvc := app.NewAPIKeyService(apiKeyRepo)

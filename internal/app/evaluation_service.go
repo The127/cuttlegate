@@ -29,6 +29,7 @@ type EvaluationService struct {
 	segmentRepo ports.SegmentRepository
 	publisher   ports.EvaluationEventPublisher      // nil = no-op
 	statsRepo   ports.FlagEvaluationStatsRepository // nil = no-op
+	auditRepo   ports.AuditRepository               // nil = no-op
 }
 
 // NewEvaluationService constructs an EvaluationService.
@@ -53,6 +54,14 @@ func NewEvaluationService(
 // allow chaining at construction time.
 func (s *EvaluationService) WithStatsRepo(statsRepo ports.FlagEvaluationStatsRepository) *EvaluationService {
 	s.statsRepo = statsRepo
+	return s
+}
+
+// WithAuditRepo attaches an AuditRepository so that an audit event is recorded
+// whenever evaluation skips a deleted segment reference. The method returns the
+// service to allow chaining at construction time.
+func (s *EvaluationService) WithAuditRepo(auditRepo ports.AuditRepository) *EvaluationService {
+	s.auditRepo = auditRepo
 	return s
 }
 
@@ -132,7 +141,7 @@ func (s *EvaluationService) Evaluate(ctx context.Context, projectID, environment
 	// Pre-load segment membership for any in_segment / not_in_segment conditions.
 	// Extract distinct segment slugs referenced by the rules, then check membership
 	// once per slug using evalCtx.UserID as the user key.
-	userSegments, err := s.resolveSegments(ctx, projectID, rules, evalCtx.UserID)
+	userSegments, err := s.resolveSegments(ctx, projectID, flag.ID, environmentID, rules, evalCtx.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +206,7 @@ func (s *EvaluationService) EvaluateAll(ctx context.Context, projectID, environm
 		state := stateByFlag[flag.ID] // nil if no state row — treated as disabled
 		rules := rulesByFlag[flag.ID] // nil if no rules — treated as empty slice by Evaluate
 
-		userSegments, err := s.resolveSegments(ctx, projectID, rules, evalCtx.UserID)
+		userSegments, err := s.resolveSegments(ctx, projectID, flag.ID, environmentID, rules, evalCtx.UserID)
 		if err != nil {
 			return nil, time.Time{}, err
 		}
@@ -223,10 +232,11 @@ func (s *EvaluationService) EvaluateAll(ctx context.Context, projectID, environm
 // resolveSegments extracts distinct segment slugs referenced by in_segment /
 // not_in_segment conditions in rules, resolves each slug to an ID, and returns
 // the set of segment slugs the given userKey belongs to.
-// Segments that no longer exist are silently skipped (treated as non-membership).
+// Segments that no longer exist are skipped (treated as non-membership) and an
+// audit event is recorded if an AuditRepository is configured.
 // An empty userKey (unauthenticated caller) always resolves to an empty set —
 // IsMember returns false for "", so in_segment conditions always miss.
-func (s *EvaluationService) resolveSegments(ctx context.Context, projectID string, rules []*domain.Rule, userKey string) (domain.Set, error) {
+func (s *EvaluationService) resolveSegments(ctx context.Context, projectID, flagID, environmentID string, rules []*domain.Rule, userKey string) (domain.Set, error) {
 	// Collect distinct segment slugs from rule conditions.
 	slugs := domain.NewSet()
 	for _, rule := range rules {
@@ -247,7 +257,10 @@ func (s *EvaluationService) resolveSegments(ctx context.Context, projectID strin
 		seg, err := s.segmentRepo.GetBySlug(ctx, projectID, slug)
 		if err != nil {
 			if errors.Is(err, domain.ErrNotFound) {
-				continue // segment was deleted — treat user as non-member
+				// Segment was deleted — treat user as non-member and record an audit event
+				// so the silent privilege change is visible in the audit log.
+				s.recordDeletedSegmentAudit(ctx, flagID, environmentID, slug)
+				continue
 			}
 			return nil, err
 		}
@@ -260,4 +273,42 @@ func (s *EvaluationService) resolveSegments(ctx context.Context, projectID strin
 		}
 	}
 	return userSegments, nil
+}
+
+// recordDeletedSegmentAudit emits a best-effort audit event when a rule references
+// a segment that no longer exists. Errors are logged but never propagated —
+// the evaluation result must not be affected by audit recording failures.
+func (s *EvaluationService) recordDeletedSegmentAudit(ctx context.Context, flagID, environmentID, segmentSlug string) {
+	if s.auditRepo == nil {
+		return
+	}
+	payload := segmentNotFoundPayload{
+		FlagID:        flagID,
+		EnvironmentID: environmentID,
+		SegmentSlug:   segmentSlug,
+		Reason:        "segment_not_found",
+	}
+	afterState, err := json.Marshal(payload)
+	if err != nil {
+		slog.Error("deleted segment audit: failed to marshal payload", "segment_slug", segmentSlug, "err", err)
+		return
+	}
+	event := &domain.AuditEvent{
+		Action:     "segment_not_found",
+		EntityType: "segment",
+		EntityKey:  segmentSlug,
+		AfterState: string(afterState),
+	}
+	if err := s.auditRepo.Record(ctx, event); err != nil {
+		slog.Error("deleted segment audit: failed to record event", "segment_slug", segmentSlug, "err", err)
+	}
+}
+
+// segmentNotFoundPayload is the structured payload stored in AuditEvent.AfterState
+// when a rule references a segment that no longer exists at evaluation time.
+type segmentNotFoundPayload struct {
+	FlagID        string `json:"flag_id"`
+	EnvironmentID string `json:"environment_id"`
+	SegmentSlug   string `json:"segment_slug"`
+	Reason        string `json:"reason"`
 }
