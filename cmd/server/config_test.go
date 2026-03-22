@@ -2,6 +2,8 @@ package main
 
 import (
 	"testing"
+
+	httpadapter "github.com/karo/cuttlegate/internal/adapters/http"
 )
 
 func TestLoad_AllVarsSet(t *testing.T) {
@@ -49,5 +51,63 @@ func TestLoad_MissingIssuer(t *testing.T) {
 	_, err := Load()
 	if err == nil {
 		t.Fatal("expected error when OIDC_ISSUER is missing")
+	}
+}
+
+func TestLoad_MissingRolePolicy_DefaultIsReject(t *testing.T) {
+	t.Setenv("OIDC_ISSUER", "https://auth.example.com")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.OIDCMissingRolePolicy != httpadapter.MissingRolePolicyReject {
+		t.Errorf("default OIDCMissingRolePolicy = %q, want %q", cfg.OIDCMissingRolePolicy, httpadapter.MissingRolePolicyReject)
+	}
+}
+
+func TestLoad_MissingRolePolicy_ExplicitReject(t *testing.T) {
+	t.Setenv("OIDC_ISSUER", "https://auth.example.com")
+	t.Setenv("OIDC_MISSING_ROLE_POLICY", "reject")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.OIDCMissingRolePolicy != httpadapter.MissingRolePolicyReject {
+		t.Errorf("OIDCMissingRolePolicy = %q, want %q", cfg.OIDCMissingRolePolicy, httpadapter.MissingRolePolicyReject)
+	}
+}
+
+func TestLoad_MissingRolePolicy_Viewer(t *testing.T) {
+	t.Setenv("OIDC_ISSUER", "https://auth.example.com")
+	t.Setenv("OIDC_MISSING_ROLE_POLICY", "viewer")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.OIDCMissingRolePolicy != httpadapter.MissingRolePolicyViewer {
+		t.Errorf("OIDCMissingRolePolicy = %q, want %q", cfg.OIDCMissingRolePolicy, httpadapter.MissingRolePolicyViewer)
+	}
+}
+
+func TestLoad_MissingRolePolicy_InvalidValue(t *testing.T) {
+	t.Setenv("OIDC_ISSUER", "https://auth.example.com")
+	t.Setenv("OIDC_MISSING_ROLE_POLICY", "permissive")
+
+	_, err := Load()
+	if err == nil {
+		t.Fatal("expected error for invalid OIDC_MISSING_ROLE_POLICY value")
+	}
+}
+
+func TestLoad_MissingRolePolicy_EmptyStringIsInvalid(t *testing.T) {
+	t.Setenv("OIDC_ISSUER", "https://auth.example.com")
+	t.Setenv("OIDC_MISSING_ROLE_POLICY", "")
+
+	_, err := Load()
+	if err == nil {
+		t.Fatal("expected error when OIDC_MISSING_ROLE_POLICY is set to empty string")
 	}
 }

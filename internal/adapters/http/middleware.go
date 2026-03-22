@@ -25,7 +25,7 @@ func RequireBearer(verifier ports.TokenVerifier) func(http.Handler) http.Handler
 
 			user, err := verifier.Verify(r.Context(), token)
 			if err != nil {
-				writeUnauthorized(w)
+				writeVerifyError(w, err)
 				return
 			}
 

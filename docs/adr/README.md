@@ -42,3 +42,4 @@ See `template.md`. Status values: `Proposed`, `Accepted`, `Deprecated`, `Superse
 | [0012](0012-api-key-second-auth-path.md) | API key as second authentication path for the evaluation endpoint | Accepted |
 | [0013](0013-transactional-unit-of-work.md) | Transactional unit of work for multi-repository operations | Accepted |
 | [0014](0014-typed-entity-ids.md) | Typed entity IDs to replace bare string IDs | Accepted |
+| [0016](0016-oidc-missing-role-policy.md) | OIDC missing role claim — reject by default, viewer opt-in | Accepted |

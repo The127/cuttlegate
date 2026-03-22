@@ -59,6 +59,26 @@ func writeUnauthorized(w http.ResponseWriter) {
 	json.NewEncoder(w).Encode(errorBody{Error: "unauthorized", Message: "authentication required"}) //nolint:errcheck
 }
 
+// writeMissingRoleClaim writes a JSON 401 response for tokens that are
+// cryptographically valid but carry no role claim. The token subject is
+// deliberately excluded from the response body and logged server-side only.
+func writeMissingRoleClaim(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusUnauthorized)
+	json.NewEncoder(w).Encode(errorBody{Error: "missing_role_claim", Message: "token is missing required role claim"}) //nolint:errcheck
+}
+
+// writeVerifyError writes the appropriate 401 response for errors returned by
+// ports.TokenVerifier.Verify. errMissingRoleClaim produces a distinct body;
+// all other errors produce the generic unauthorized response.
+func writeVerifyError(w http.ResponseWriter, err error) {
+	if err == errMissingRoleClaim {
+		writeMissingRoleClaim(w)
+	} else {
+		writeUnauthorized(w)
+	}
+}
+
 // badRequestError is a sentinel type for input validation errors.
 type badRequestError struct{ msg string }
 
