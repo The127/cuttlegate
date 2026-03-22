@@ -71,6 +71,7 @@ describe('FlagDetailPage', () => {
     // FLAG_FIXTURE satisfies both shapes (has `enabled` for env-state, `variants` for detail).
     mockFetchJSON.mockImplementation((path: string) => {
       if (path.match(/\/environments$/)) return Promise.resolve(ENVS_FIXTURE)
+      if (path.endsWith('/stats')) return Promise.resolve({ last_evaluated_at: null, evaluation_count: 0 })
       return Promise.resolve(FLAG_FIXTURE)
     })
   })
@@ -87,5 +88,43 @@ describe('FlagDetailPage', () => {
 
     const results = await axe(container)
     expect(results).toHaveNoViolations()
+  })
+
+  // @edge: never-evaluated flag shows "Never" not blank in stats section.
+  it('shows Never in stats panel for flag with no evaluations', async () => {
+    const { flagDetailRoute } = await loadFlagDetailPage()
+    const FlagDetailPage = flagDetailRoute.options.component
+
+    render(<Wrapper><FlagDetailPage /></Wrapper>)
+
+    await waitFor(() => {
+      expect(screen.getByText('Dark Mode')).toBeInTheDocument()
+    })
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Never').length).toBeGreaterThan(0)
+    })
+  })
+
+  // @happy: stats section shows count when flag has evaluations.
+  it('shows evaluation count in stats panel', async () => {
+    mockFetchJSON.mockImplementation((path: string) => {
+      if (path.match(/\/environments$/)) return Promise.resolve(ENVS_FIXTURE)
+      if (path.endsWith('/stats')) return Promise.resolve({ last_evaluated_at: '2026-03-21T14:00:00Z', evaluation_count: 42 })
+      return Promise.resolve(FLAG_FIXTURE)
+    })
+
+    const { flagDetailRoute } = await loadFlagDetailPage()
+    const FlagDetailPage = flagDetailRoute.options.component
+
+    render(<Wrapper><FlagDetailPage /></Wrapper>)
+
+    await waitFor(() => {
+      expect(screen.getByText('Dark Mode')).toBeInTheDocument()
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('42')).toBeInTheDocument()
+    })
   })
 })
