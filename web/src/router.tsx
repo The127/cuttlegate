@@ -14,6 +14,7 @@ import { environmentSettingsRoute } from './routes/projects/$slug.settings.envir
 import { compareRoute } from './routes/projects/$slug.compare'
 import { projectSettingsRoute } from './routes/projects/$slug.settings'
 import { apiKeyListRoute } from './routes/projects/$slug.api-keys'
+import { memberListRoute } from './routes/projects/$slug.members'
 
 const routeTree = rootRoute.addChildren([
   authenticatedRoute.addChildren([
@@ -25,6 +26,7 @@ const routeTree = rootRoute.addChildren([
       environmentSettingsRoute,
       compareRoute,
       apiKeyListRoute,
+      memberListRoute,
       projectEnvRoute.addChildren([flagListRoute, flagDetailRoute, flagRulesRoute]),
     ]),
   ]),
