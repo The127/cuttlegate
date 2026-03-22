@@ -10,52 +10,52 @@ import (
 	"time"
 
 	httpadapter "github.com/karo/cuttlegate/internal/adapters/http"
+	"github.com/karo/cuttlegate/internal/app"
 	"github.com/karo/cuttlegate/internal/domain"
 )
 
 // fakeProjectMemberService is a test double for the projectMemberService interface.
 type fakeProjectMemberService struct {
-	members map[string][]*domain.ProjectMember // keyed by projectSlug
+	members map[string][]app.ProjectMemberView // keyed by projectSlug
 	err     error                              // if set, all calls return this error
 }
 
 func newFakeProjectMemberService() *fakeProjectMemberService {
-	return &fakeProjectMemberService{members: make(map[string][]*domain.ProjectMember)}
+	return &fakeProjectMemberService{members: make(map[string][]app.ProjectMemberView)}
 }
 
-func (f *fakeProjectMemberService) ListMembers(_ context.Context, slug string) ([]*domain.ProjectMember, error) {
+func (f *fakeProjectMemberService) ListMembers(_ context.Context, slug string) ([]app.ProjectMemberView, error) {
 	if f.err != nil {
 		return nil, f.err
 	}
-	result := make([]*domain.ProjectMember, 0, len(f.members[slug]))
-	for _, m := range f.members[slug] {
-		cp := *m
-		result = append(result, &cp)
-	}
+	result := make([]app.ProjectMemberView, len(f.members[slug]))
+	copy(result, f.members[slug])
 	return result, nil
 }
 
-func (f *fakeProjectMemberService) AddMember(_ context.Context, slug, userID string, role domain.Role) (*domain.ProjectMember, error) {
+func (f *fakeProjectMemberService) AddMember(_ context.Context, slug, userID string, role domain.Role) (app.ProjectMemberView, error) {
 	if f.err != nil {
-		return nil, f.err
+		return app.ProjectMemberView{}, f.err
 	}
-	m := &domain.ProjectMember{
+	v := app.ProjectMemberView{
 		ProjectID: "proj-" + slug,
 		UserID:    userID,
 		Role:      role,
 		CreatedAt: time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC),
+		Name:      "",
+		Email:     "",
 	}
-	f.members[slug] = append(f.members[slug], m)
-	return m, nil
+	f.members[slug] = append(f.members[slug], v)
+	return v, nil
 }
 
 func (f *fakeProjectMemberService) UpdateRole(_ context.Context, slug, userID string, role domain.Role) error {
 	if f.err != nil {
 		return f.err
 	}
-	for _, m := range f.members[slug] {
+	for i, m := range f.members[slug] {
 		if m.UserID == userID {
-			m.Role = role
+			f.members[slug][i].Role = role
 			return nil
 		}
 	}
@@ -86,8 +86,8 @@ func newMemberMux(svc *fakeProjectMemberService, auth func(http.Handler) http.Ha
 
 func TestProjectMemberHandler_List_ReturnsWrappedArray(t *testing.T) {
 	svc := newFakeProjectMemberService()
-	svc.members["acme"] = []*domain.ProjectMember{
-		{ProjectID: "proj-acme", UserID: "user-1", Role: domain.RoleAdmin, CreatedAt: time.Now()},
+	svc.members["acme"] = []app.ProjectMemberView{
+		{ProjectID: "proj-acme", UserID: "user-1", Role: domain.RoleAdmin, CreatedAt: time.Now(), Name: "Alice", Email: "alice@example.com"},
 	}
 	mux := newMemberMux(svc, noopAuth)
 
@@ -108,6 +108,48 @@ func TestProjectMemberHandler_List_ReturnsWrappedArray(t *testing.T) {
 	}
 	if len(arr) != 1 {
 		t.Errorf("expected 1 member, got %d", len(arr))
+	}
+	m := arr[0].(map[string]any)
+	if m["name"] != "Alice" {
+		t.Errorf("name: got %v, want Alice", m["name"])
+	}
+	if m["email"] != "alice@example.com" {
+		t.Errorf("email: got %v, want alice@example.com", m["email"])
+	}
+}
+
+func TestProjectMemberHandler_List_UnknownProfile_ReturnsEmptyStrings(t *testing.T) {
+	svc := newFakeProjectMemberService()
+	svc.members["acme"] = []app.ProjectMemberView{
+		{ProjectID: "proj-acme", UserID: "user-1", Role: domain.RoleViewer, CreatedAt: time.Now()},
+	}
+	mux := newMemberMux(svc, noopAuth)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/projects/acme/members", nil)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status: got %d, want 200", rec.Code)
+	}
+	var body map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	arr := body["members"].([]any)
+	m := arr[0].(map[string]any)
+	// name and email must be present as empty strings, not absent or null
+	if _, ok := m["name"]; !ok {
+		t.Error("name field absent from response")
+	}
+	if _, ok := m["email"]; !ok {
+		t.Error("email field absent from response")
+	}
+	if m["name"] != "" {
+		t.Errorf("name: got %v, want empty string", m["name"])
+	}
+	if m["email"] != "" {
+		t.Errorf("email: got %v, want empty string", m["email"])
 	}
 }
 
@@ -133,6 +175,13 @@ func TestProjectMemberHandler_Add_Succeeds(t *testing.T) {
 	}
 	if m["role"] != "viewer" {
 		t.Errorf("role: got %v", m["role"])
+	}
+	// name and email must always be present
+	if _, ok := m["name"]; !ok {
+		t.Error("name field absent from add response")
+	}
+	if _, ok := m["email"]; !ok {
+		t.Error("email field absent from add response")
 	}
 }
 
@@ -180,7 +229,7 @@ func TestProjectMemberHandler_Add_ForbiddenReturns403(t *testing.T) {
 
 func TestProjectMemberHandler_UpdateRole_Succeeds(t *testing.T) {
 	svc := newFakeProjectMemberService()
-	svc.members["acme"] = []*domain.ProjectMember{
+	svc.members["acme"] = []app.ProjectMemberView{
 		{ProjectID: "proj-acme", UserID: "user-1", Role: domain.RoleViewer},
 	}
 	mux := newMemberMux(svc, noopAuth)
@@ -216,7 +265,7 @@ func TestProjectMemberHandler_UpdateRole_ForbiddenReturns403(t *testing.T) {
 
 func TestProjectMemberHandler_Remove_Succeeds(t *testing.T) {
 	svc := newFakeProjectMemberService()
-	svc.members["acme"] = []*domain.ProjectMember{
+	svc.members["acme"] = []app.ProjectMemberView{
 		{ProjectID: "proj-acme", UserID: "user-1", Role: domain.RoleViewer},
 	}
 	mux := newMemberMux(svc, noopAuth)

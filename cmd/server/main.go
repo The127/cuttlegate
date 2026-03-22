@@ -69,7 +69,6 @@ func run() error {
 	// ── HTTP mux ──────────────────────────────────────────────────────────────
 
 	mux := http.NewServeMux()
-	requireBearer := httpadapter.RequireBearer(verifier)
 
 	// Public: SPA OIDC config — no auth required.
 	spaAuthority := cfg.OIDCSPAAuthority
@@ -102,6 +101,7 @@ func run() error {
 		projRepo := dbadapter.NewPostgresProjectRepository(conn)
 		envRepo := dbadapter.NewPostgresEnvironmentRepository(conn)
 		memberRepo := dbadapter.NewPostgresProjectMemberRepository(conn)
+		userRepo := dbadapter.NewPostgresUserRepository(conn)
 		flagRepo := dbadapter.NewPostgresFlagRepository(conn)
 		stateRepo := dbadapter.NewPostgresFlagEnvironmentStateRepository(conn)
 		ruleRepo := dbadapter.NewPostgresRuleRepository(conn)
@@ -110,9 +110,11 @@ func run() error {
 		auditRepo := dbadapter.NewPostgresAuditRepository(conn)
 		uowFactory := dbadapter.NewPostgresUnitOfWorkFactory(conn)
 
+		requireBearer := httpadapter.RequireBearer(verifier, userRepo)
+
 		projSvc := app.NewProjectService(projRepo)
 		envSvc := app.NewEnvironmentService(envRepo, projRepo)
-		memberSvc := app.NewProjectMemberService(memberRepo, projRepo)
+		memberSvc := app.NewProjectMemberService(memberRepo, projRepo, userRepo)
 		flagSvc := app.NewFlagService(flagRepo, envRepo, stateRepo, broker, auditRepo)
 		ruleSvc := app.NewRuleService(ruleRepo)
 		segmentSvc := app.NewSegmentService(segmentRepo)

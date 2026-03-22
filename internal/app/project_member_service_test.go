@@ -61,11 +61,19 @@ func (f *fakeProjectMemberRepository) RemoveMember(_ context.Context, projectID,
 	return domain.ErrNotFound
 }
 
+// fakeUserRepository is a no-op in-memory implementation of ports.UserRepository.
+type fakeUserRepository struct{}
+
+func (f *fakeUserRepository) Upsert(_ context.Context, _ *domain.User) error { return nil }
+func (f *fakeUserRepository) GetByID(_ context.Context, _ string) (*domain.User, error) {
+	return nil, nil
+}
+
 // newMemberSvc is a convenience constructor for tests.
 func newMemberSvc() (*app.ProjectMemberService, *fakeProjectRepository, *fakeProjectMemberRepository) {
 	projRepo := newFakeProjectRepository()
 	memberRepo := newFakeProjectMemberRepository()
-	svc := app.NewProjectMemberService(memberRepo, projRepo)
+	svc := app.NewProjectMemberService(memberRepo, projRepo, &fakeUserRepository{})
 	return svc, projRepo, memberRepo
 }
 
