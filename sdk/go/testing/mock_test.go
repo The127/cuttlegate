@@ -134,18 +134,63 @@ func TestMockClient_Reset(t *testing.T) {
 	}
 }
 
-func TestMockClient_Evaluate_ReturnsBulk(t *testing.T) {
+func TestMockClient_EvaluateAll_ReturnsBulk(t *testing.T) {
 	// @happy
 	mock := cuttlegatetesting.NewMockClient()
 	mock.Enable("dark-mode")
 	mock.SetVariant("banner-text", "holiday")
 
-	results, err := mock.Evaluate(ctx, evalCtx)
+	results, err := mock.EvaluateAll(ctx, evalCtx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(results) != 2 {
 		t.Errorf("expected 2 results, got %d", len(results))
+	}
+}
+
+func TestMockClient_Evaluate_ReturnsNotFoundError(t *testing.T) {
+	// @error-path
+	mock := cuttlegatetesting.NewMockClient()
+
+	_, err := mock.Evaluate(ctx, "unknown-flag", evalCtx)
+	if err == nil {
+		t.Fatal("expected NotFoundError for unknown flag")
+	}
+	nfErr, ok := err.(*cuttlegate.NotFoundError)
+	if !ok {
+		t.Fatalf("expected *NotFoundError, got %T: %v", err, err)
+	}
+	if nfErr.Resource != "flag" {
+		t.Errorf("expected Resource=flag, got %q", nfErr.Resource)
+	}
+}
+
+func TestMockClient_Bool_ReturnsTrue(t *testing.T) {
+	// @happy
+	mock := cuttlegatetesting.NewMockClient()
+	mock.Enable("dark-mode") // Enable sets Variant="true"
+
+	val, err := mock.Bool(ctx, "dark-mode", evalCtx)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !val {
+		t.Error("expected true for enabled bool flag")
+	}
+}
+
+func TestMockClient_String_ReturnsValue(t *testing.T) {
+	// @happy
+	mock := cuttlegatetesting.NewMockClient()
+	mock.SetVariant("banner-text", "holiday")
+
+	val, err := mock.String(ctx, "banner-text", evalCtx)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if val != "holiday" {
+		t.Errorf("expected holiday, got %q", val)
 	}
 }
 

@@ -15,7 +15,7 @@ const mockEvaluatedAt = "1970-01-01T00:00:00Z"
 type MockClient interface {
 	cuttlegate.Client
 
-	// Enable marks a flag as enabled with no variant value.
+	// Enable marks a flag as enabled with Variant="true".
 	Enable(key string)
 
 	// Disable removes a flag, causing it to return enabled=false with reason "mock_default".
@@ -24,7 +24,7 @@ type MockClient interface {
 	// SetVariant enables a flag and sets its variant value.
 	SetVariant(key, value string)
 
-	// AssertEvaluated panics (via testing.T-style error) if the flag was not evaluated.
+	// AssertEvaluated returns an error if the flag was not evaluated.
 	// Intended for use with testing.TB — call as mock.AssertEvaluated("my-flag") in a test.
 	AssertEvaluated(key string) error
 
@@ -38,6 +38,7 @@ type MockClient interface {
 type flagConfig struct {
 	enabled bool
 	value   string
+	variant string
 }
 
 type mockClient struct {
@@ -64,22 +65,58 @@ func NewMockClient() MockClient {
 	}
 }
 
-func (m *mockClient) Evaluate(ctx context.Context, _ cuttlegate.EvalContext) ([]cuttlegate.EvalResult, error) {
+func (m *mockClient) EvaluateAll(ctx context.Context, _ cuttlegate.EvalContext) (map[string]cuttlegate.EvalResult, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	results := make([]cuttlegate.EvalResult, 0, len(m.flags))
+	results := make(map[string]cuttlegate.EvalResult, len(m.flags))
 	for key, cfg := range m.flags {
 		m.evaluated[key] = struct{}{}
-		results = append(results, cuttlegate.EvalResult{
+		results[key] = cuttlegate.EvalResult{
 			Key:         key,
 			Enabled:     cfg.enabled,
 			Value:       cfg.value,
+			Variant:     cfg.variant,
 			Reason:      "mock",
 			EvaluatedAt: mockEvaluatedAt,
-		})
+		}
 	}
 	return results, nil
+}
+
+func (m *mockClient) Evaluate(ctx context.Context, key string, _ cuttlegate.EvalContext) (cuttlegate.EvalResult, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.evaluated[key] = struct{}{}
+	cfg, ok := m.flags[key]
+	if !ok {
+		return cuttlegate.EvalResult{}, &cuttlegate.NotFoundError{Resource: "flag", Key: key}
+	}
+	return cuttlegate.EvalResult{
+		Key:         key,
+		Enabled:     cfg.enabled,
+		Value:       cfg.value,
+		Variant:     cfg.variant,
+		Reason:      "mock",
+		EvaluatedAt: mockEvaluatedAt,
+	}, nil
+}
+
+func (m *mockClient) Bool(ctx context.Context, key string, evalCtx cuttlegate.EvalContext) (bool, error) {
+	result, err := m.Evaluate(ctx, key, evalCtx)
+	if err != nil {
+		return false, err
+	}
+	return result.Variant == "true", nil
+}
+
+func (m *mockClient) String(ctx context.Context, key string, evalCtx cuttlegate.EvalContext) (string, error) {
+	result, err := m.Evaluate(ctx, key, evalCtx)
+	if err != nil {
+		return "", err
+	}
+	return result.Value, nil
 }
 
 func (m *mockClient) EvaluateFlag(ctx context.Context, key string, _ cuttlegate.EvalContext) (cuttlegate.FlagResult, error) {
@@ -89,15 +126,15 @@ func (m *mockClient) EvaluateFlag(ctx context.Context, key string, _ cuttlegate.
 	m.evaluated[key] = struct{}{}
 	cfg, ok := m.flags[key]
 	if !ok {
-		return cuttlegate.FlagResult{Enabled: false, Value: "", Reason: "mock_default"}, nil
+		return cuttlegate.FlagResult{Enabled: false, Value: "", Variant: "", Reason: "mock_default"}, nil
 	}
-	return cuttlegate.FlagResult{Enabled: cfg.enabled, Value: cfg.value, Reason: "mock"}, nil
+	return cuttlegate.FlagResult{Enabled: cfg.enabled, Value: cfg.value, Variant: cfg.variant, Reason: "mock"}, nil
 }
 
 func (m *mockClient) Enable(key string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.flags[key] = flagConfig{enabled: true, value: ""}
+	m.flags[key] = flagConfig{enabled: true, value: "", variant: "true"}
 }
 
 func (m *mockClient) Disable(key string) {
@@ -109,7 +146,7 @@ func (m *mockClient) Disable(key string) {
 func (m *mockClient) SetVariant(key, value string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.flags[key] = flagConfig{enabled: true, value: value}
+	m.flags[key] = flagConfig{enabled: true, value: value, variant: value}
 }
 
 func (m *mockClient) AssertEvaluated(key string) error {

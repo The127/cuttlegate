@@ -15,14 +15,29 @@ const defaultTimeout = 10 * time.Second
 // Consumers should type variables as Client, not as the concrete type returned
 // by NewClient.
 type Client interface {
-	// Evaluate evaluates all flags for the given context and returns results for
-	// every flag in the project/environment. ctx is used for cancellation and
-	// deadline propagation.
-	Evaluate(ctx context.Context, evalCtx EvalContext) ([]EvalResult, error)
+	// EvaluateAll evaluates all flags for the given context and returns a map
+	// from flag key to EvalResult. Uses the bulk evaluation endpoint — one HTTP
+	// request regardless of how many flags exist. ctx is used for cancellation
+	// and deadline propagation.
+	EvaluateAll(ctx context.Context, evalCtx EvalContext) (map[string]EvalResult, error)
 
-	// EvaluateFlag evaluates a single flag by key. It calls Evaluate internally
-	// and filters the result. Returns FlagResult with Reason "not_found" if the
-	// key is absent — never returns an error for a missing key.
+	// Evaluate evaluates a single flag by key. Returns NotFoundError if the key
+	// does not exist in the project — never silently defaults.
+	Evaluate(ctx context.Context, key string, evalCtx EvalContext) (EvalResult, error)
+
+	// Bool evaluates a flag and returns its boolean value. Returns false and
+	// NotFoundError if the flag key does not exist. Never silently defaults.
+	// Each call makes one HTTP round trip — prefer EvaluateAll when evaluating multiple flags.
+	Bool(ctx context.Context, key string, evalCtx EvalContext) (bool, error)
+
+	// String evaluates a flag and returns its string value. Returns "" and
+	// NotFoundError if the flag key does not exist. Never silently defaults.
+	// Each call makes one HTTP round trip — prefer EvaluateAll when evaluating multiple flags.
+	String(ctx context.Context, key string, evalCtx EvalContext) (string, error)
+
+	// EvaluateFlag evaluates a single flag by key. Returns FlagResult with
+	// Reason "not_found" if the key is absent — does not return an error for a
+	// missing key. Prefer Evaluate, Bool, or String for new code.
 	EvaluateFlag(ctx context.Context, key string, evalCtx EvalContext) (FlagResult, error)
 }
 
@@ -114,7 +129,9 @@ type bulkEvalResponse struct {
 	EvaluatedAt string                 `json:"evaluated_at"`
 }
 
-func (c *client) Evaluate(ctx context.Context, evalCtx EvalContext) ([]EvalResult, error) {
+// doBulkEval makes the HTTP request to the bulk evaluation endpoint and returns
+// parsed results keyed by flag key.
+func (c *client) doBulkEval(ctx context.Context, evalCtx EvalContext) (map[string]EvalResult, error) {
 	url := fmt.Sprintf(
 		"%s/api/v1/projects/%s/environments/%s/evaluate",
 		c.baseURL, c.project, c.environment,
@@ -156,39 +173,70 @@ func (c *client) Evaluate(ctx context.Context, evalCtx EvalContext) ([]EvalResul
 		return nil, fmt.Errorf("cuttlegate: failed to decode response: %w", err)
 	}
 
-	results := make([]EvalResult, 0, len(parsed.Flags))
+	results := make(map[string]EvalResult, len(parsed.Flags))
 	for _, f := range parsed.Flags {
 		// value_key is always present for servers that support it; fall back to
 		// dereferencing Value for older servers that do not yet send value_key.
-		valueKey := f.ValueKey
+		variant := f.ValueKey
 		value := ""
 		if f.Value != nil {
 			value = *f.Value
 		}
-		if valueKey == "" {
-			valueKey = value
+		if variant == "" {
+			variant = value
 		}
-		results = append(results, EvalResult{
+		results[f.Key] = EvalResult{
 			Key:         f.Key,
 			Enabled:     f.Enabled,
 			Value:       value,
-			ValueKey:    valueKey,
+			Variant:     variant,
 			Reason:      f.Reason,
 			EvaluatedAt: parsed.EvaluatedAt,
-		})
+		}
 	}
 	return results, nil
 }
 
+func (c *client) EvaluateAll(ctx context.Context, evalCtx EvalContext) (map[string]EvalResult, error) {
+	return c.doBulkEval(ctx, evalCtx)
+}
+
+func (c *client) Evaluate(ctx context.Context, key string, evalCtx EvalContext) (EvalResult, error) {
+	results, err := c.doBulkEval(ctx, evalCtx)
+	if err != nil {
+		return EvalResult{}, err
+	}
+	r, ok := results[key]
+	if !ok {
+		return EvalResult{}, &NotFoundError{Resource: "flag", Key: key}
+	}
+	return r, nil
+}
+
+func (c *client) Bool(ctx context.Context, key string, evalCtx EvalContext) (bool, error) {
+	result, err := c.Evaluate(ctx, key, evalCtx)
+	if err != nil {
+		return false, err
+	}
+	return result.Variant == "true", nil
+}
+
+func (c *client) String(ctx context.Context, key string, evalCtx EvalContext) (string, error) {
+	result, err := c.Evaluate(ctx, key, evalCtx)
+	if err != nil {
+		return "", err
+	}
+	return result.Value, nil
+}
+
 func (c *client) EvaluateFlag(ctx context.Context, key string, evalCtx EvalContext) (FlagResult, error) {
-	results, err := c.Evaluate(ctx, evalCtx)
+	results, err := c.doBulkEval(ctx, evalCtx)
 	if err != nil {
 		return FlagResult{}, err
 	}
-	for _, r := range results {
-		if r.Key == key {
-			return FlagResult{Enabled: r.Enabled, Value: r.Value, ValueKey: r.ValueKey, Reason: r.Reason}, nil
-		}
+	r, ok := results[key]
+	if !ok {
+		return FlagResult{Enabled: false, Value: "", Variant: "", Reason: "not_found"}, nil
 	}
-	return FlagResult{Enabled: false, Value: "", ValueKey: "", Reason: "not_found"}, nil
+	return FlagResult{Enabled: r.Enabled, Value: r.Value, Variant: r.Variant, Reason: r.Reason}, nil
 }

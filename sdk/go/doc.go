@@ -12,6 +12,7 @@
 //
 // Start here:
 //   - NewClient — construct an authenticated client
-//   - Client.Evaluate — evaluate all flags for a context
-//   - Client.EvaluateFlag — evaluate a single flag by key
+//   - Client.EvaluateAll — evaluate all flags for a context (bulk, one HTTP call)
+//   - Client.Evaluate — evaluate a single flag by key (NotFoundError if missing)
+//   - Client.Bool / Client.String — typed convenience helpers
 package cuttlegate
