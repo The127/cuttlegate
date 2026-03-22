@@ -60,10 +60,37 @@ func (v *OIDCVerifier) Verify(ctx context.Context, token string) (domain.User, e
 	email, _ := claims["email"].(string)
 	name, _ := claims["name"].(string)
 
-	roleStr, _ := claims[v.roleClaim].(string)
+	roleStr := extractRoleClaim(claims[v.roleClaim])
 	role := resolveRole(ctx, v.logger, roleStr, sub)
 
 	return domain.User{Sub: sub, Email: email, Name: name, Role: role}, nil
+}
+
+// extractRoleClaim returns the role string from a claim value that may be
+// either a plain string or a JSON array of strings. For arrays, the first
+// element that is a recognised domain.Role wins; otherwise the first string
+// element is returned so resolveRole can log an appropriate warning.
+func extractRoleClaim(raw any) string {
+	if s, ok := raw.(string); ok {
+		return s
+	}
+	if arr, ok := raw.([]any); ok {
+		first := ""
+		for _, v := range arr {
+			s, ok := v.(string)
+			if !ok {
+				continue
+			}
+			if domain.Role(s).Valid() {
+				return s
+			}
+			if first == "" {
+				first = s
+			}
+		}
+		return first
+	}
+	return ""
 }
 
 // resolveRole maps a raw role claim string to a domain.Role. If the string is
