@@ -24,6 +24,9 @@ type Config struct {
 	AutoMigrate           bool                          // run migrations at startup — dev/test only; unsafe in production (rolling restarts can race between old pods and a migrated schema)
 	EvalRateLimit         int                           // max evaluation requests per user per EvalRateLimitWindow (default: 600)
 	EvalRateLimitWindow   time.Duration                 // window size for eval rate limiting (default: 1m)
+	UIAppName             string                        // application name shown in the SPA (default: "Cuttlegate"); env: UI_APP_NAME
+	UILogoURL             string                        // URL of the logo shown in the SPA nav bar; empty = text name (env: UI_LOGO_URL)
+	UIAccentColour        string                        // CSS hex colour for the SPA accent (default: "#2563eb"); env: UI_ACCENT_COLOUR
 }
 
 // Load reads configuration from environment variables.
@@ -65,6 +68,15 @@ func Load() (Config, error) {
 
 	spaAuthority := os.Getenv("OIDC_SPA_AUTHORITY")
 
+	uiAppName := os.Getenv("UI_APP_NAME")
+	if uiAppName == "" {
+		uiAppName = "Cuttlegate"
+	}
+	uiAccentColour := os.Getenv("UI_ACCENT_COLOUR")
+	if uiAccentColour == "" {
+		uiAccentColour = "#2563eb"
+	}
+
 	cfg := Config{
 		OIDCIssuer:            os.Getenv("OIDC_ISSUER"),
 		OIDCAudience:          os.Getenv("OIDC_AUDIENCE"),
@@ -78,6 +90,9 @@ func Load() (Config, error) {
 		AutoMigrate:           os.Getenv("AUTO_MIGRATE") == "true",
 		EvalRateLimit:         evalRateLimit,
 		EvalRateLimitWindow:   evalRateLimitWindow,
+		UIAppName:             uiAppName,
+		UILogoURL:             os.Getenv("UI_LOGO_URL"),
+		UIAccentColour:        uiAccentColour,
 	}
 
 	if cfg.OIDCIssuer == "" {

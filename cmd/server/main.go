@@ -76,10 +76,17 @@ func run() error {
 	if spaAuthority == "" {
 		spaAuthority = cfg.OIDCIssuer
 	}
+	var logoURL *string
+	if cfg.UILogoURL != "" {
+		logoURL = &cfg.UILogoURL
+	}
 	clientCfg := spaClientConfig{
-		Authority:   spaAuthority,
-		ClientID:    cfg.OIDCClientID,
-		RedirectURI: cfg.OIDCRedirectURI,
+		Authority:    spaAuthority,
+		ClientID:     cfg.OIDCClientID,
+		RedirectURI:  cfg.OIDCRedirectURI,
+		AppName:      cfg.UIAppName,
+		LogoURL:      logoURL,
+		AccentColour: cfg.UIAccentColour,
 	}
 	mux.HandleFunc("GET /api/v1/config", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -199,12 +206,16 @@ func run() error {
 	return err
 }
 
-// spaClientConfig is the public OIDC config returned to the SPA.
+// spaClientConfig is the public config returned to the SPA at GET /api/v1/config.
+// Contains OIDC discovery fields and operator-controlled branding.
 // Only values safe to expose to the browser are included.
 type spaClientConfig struct {
-	Authority   string `json:"authority"`
-	ClientID    string `json:"client_id"`
-	RedirectURI string `json:"redirect_uri"`
+	Authority    string  `json:"authority"`
+	ClientID     string  `json:"client_id"`
+	RedirectURI  string  `json:"redirect_uri"`
+	AppName      string  `json:"app_name"`
+	LogoURL      *string `json:"logo_url"`
+	AccentColour string  `json:"accent_colour"`
 }
 
 func runMigrations(dsn string) error {

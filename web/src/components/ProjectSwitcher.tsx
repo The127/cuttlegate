@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useLocation, useNavigate } from '@tanstack/react-router'
 import { fetchJSON } from '../api'
 import { useOpenCreateProjectDialog } from './CreateProjectDialog'
+import { useBrand } from '../brand'
 
 interface Project {
   id: string
@@ -34,6 +35,7 @@ export function ProjectSwitcher() {
   const navigate = useNavigate()
   const { projectSlug, envSlug } = useActiveParams()
   const openCreateDialog = useOpenCreateProjectDialog()
+  const { app_name, logo_url } = useBrand()
 
   const projectsQuery = useQuery({
     queryKey: ['projects'],
@@ -61,6 +63,14 @@ export function ProjectSwitcher() {
 
   return (
     <div className="flex items-center gap-3 px-4 py-2 border-b border-gray-200 bg-white">
+      <div className="flex items-center gap-2 mr-2">
+        {logo_url !== null ? (
+          <img src={logo_url} alt={app_name} className="h-6 w-auto" />
+        ) : (
+          <span className="text-sm font-semibold text-gray-900">{app_name}</span>
+        )}
+      </div>
+      <div className="w-px h-5 bg-gray-200" aria-hidden="true" />
       <div className="flex items-center gap-2">
         <label htmlFor="project-select" className="text-xs font-medium text-gray-500 uppercase tracking-wide">
           Project
