@@ -1,4 +1,32 @@
-import { UserManager } from 'oidc-client-ts'
+import { UserManager, WebStorageStateStore } from 'oidc-client-ts'
+
+class InMemoryStorage implements Storage {
+  private data = new Map<string, string>()
+
+  get length(): number {
+    return this.data.size
+  }
+
+  clear(): void {
+    this.data.clear()
+  }
+
+  getItem(key: string): string | null {
+    return this.data.get(key) ?? null
+  }
+
+  key(index: number): string | null {
+    return [...this.data.keys()][index] ?? null
+  }
+
+  removeItem(key: string): void {
+    this.data.delete(key)
+  }
+
+  setItem(key: string, value: string): void {
+    this.data.set(key, value)
+  }
+}
 
 let _userManager: UserManager | null = null
 
@@ -16,6 +44,7 @@ export function initUserManager(config: OIDCConfig): UserManager {
     response_type: 'code',
     scope: 'openid profile email offline_access',
     automaticSilentRenew: true,
+    userStore: new WebStorageStateStore({ store: new InMemoryStorage() }),
   })
   return _userManager
 }

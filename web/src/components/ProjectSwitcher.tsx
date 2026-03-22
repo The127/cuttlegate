@@ -46,7 +46,7 @@ export function ProjectSwitcher() {
   })
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2 border-b border-gray-200 bg-white">
+    <div className="flex items-center gap-3 px-4 py-2">
       {/* Project selector */}
       <div className="flex items-center gap-2">
         <label htmlFor="project-select" className="text-xs font-medium text-gray-500 uppercase tracking-wide">
