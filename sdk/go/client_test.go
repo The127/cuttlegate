@@ -122,38 +122,60 @@ func TestNewClient_NoNetworkCallsAtInit(t *testing.T) {
 	}
 }
 
-// --- @happy: Evaluate ---
+// --- @happy: EvaluateAll ---
 
-func TestEvaluate_ReturnsBulkResults(t *testing.T) {
+func TestEvaluateAll_ReturnsBulkResults(t *testing.T) {
 	// @happy
 	srv := serveBulk(t, bulkResponse, 200)
 	defer srv.Close()
 
 	c, _ := cuttlegate.NewClient(validConfig(srv.URL))
-	results, err := c.Evaluate(context.Background(), cuttlegate.EvalContext{UserID: "u1", Attributes: map[string]any{"plan": "pro"}})
+	results, err := c.EvaluateAll(context.Background(), cuttlegate.EvalContext{UserID: "u1", Attributes: map[string]any{"plan": "pro"}})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if len(results) != 2 {
 		t.Fatalf("expected 2 results, got %d", len(results))
 	}
-	if results[0].Key != "dark-mode" || !results[0].Enabled || results[0].Reason != "rule_match" {
-		t.Errorf("unexpected result[0]: %+v", results[0])
+	dm, ok := results["dark-mode"]
+	if !ok || !dm.Enabled || dm.Reason != "rule_match" {
+		t.Errorf("unexpected dark-mode result: %+v", dm)
 	}
-	// @happy: value_key is "true" for bool flag, Value is "" (nil in wire format)
-	if results[0].ValueKey != "true" {
-		t.Errorf("expected ValueKey=true for bool flag, got %q", results[0].ValueKey)
+	// @happy: Variant is "true" for bool flag
+	if dm.Variant != "true" {
+		t.Errorf("expected Variant=true for bool flag, got %q", dm.Variant)
 	}
-	if results[1].Key != "banner-text" || results[1].Value != "holiday" {
-		t.Errorf("unexpected result[1]: %+v", results[1])
+	bt, ok := results["banner-text"]
+	if !ok || bt.Value != "holiday" {
+		t.Errorf("unexpected banner-text result: %+v", bt)
 	}
-	// @happy: value_key equals value for string flag
-	if results[1].ValueKey != "holiday" {
-		t.Errorf("expected ValueKey=holiday for string flag, got %q", results[1].ValueKey)
+	// @happy: Variant equals value for string flag
+	if bt.Variant != "holiday" {
+		t.Errorf("expected Variant=holiday for string flag, got %q", bt.Variant)
 	}
 }
 
-func TestEvaluate_SetsAuthorizationHeader(t *testing.T) {
+func TestEvaluateAll_UsesBulkEndpoint(t *testing.T) {
+	// @happy — EvaluateAll must make exactly one HTTP request
+	requestCount := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestCount++
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(bulkResponse)
+	}))
+	defer srv.Close()
+
+	c, _ := cuttlegate.NewClient(validConfig(srv.URL))
+	_, err := c.EvaluateAll(context.Background(), cuttlegate.EvalContext{UserID: "u1"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if requestCount != 1 {
+		t.Errorf("expected exactly 1 HTTP request, got %d", requestCount)
+	}
+}
+
+func TestEvaluateAll_SetsAuthorizationHeader(t *testing.T) {
 	// @happy
 	var gotAuth string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -164,22 +186,159 @@ func TestEvaluate_SetsAuthorizationHeader(t *testing.T) {
 	defer srv.Close()
 
 	c, _ := cuttlegate.NewClient(validConfig(srv.URL))
-	c.Evaluate(context.Background(), cuttlegate.EvalContext{UserID: "u1"})
+	c.EvaluateAll(context.Background(), cuttlegate.EvalContext{UserID: "u1"})
 
 	if gotAuth != "Bearer svc_test" {
 		t.Errorf("expected Bearer svc_test, got %q", gotAuth)
 	}
 }
 
+// --- @happy: Evaluate (single flag) ---
+
+func TestEvaluate_ReturnsSingleFlag(t *testing.T) {
+	// @happy
+	srv := serveBulk(t, bulkResponse, 200)
+	defer srv.Close()
+
+	c, _ := cuttlegate.NewClient(validConfig(srv.URL))
+	result, err := c.Evaluate(context.Background(), "dark-mode", cuttlegate.EvalContext{UserID: "u1"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !result.Enabled || result.Reason != "rule_match" {
+		t.Errorf("unexpected result: %+v", result)
+	}
+	if result.Variant != "true" {
+		t.Errorf("expected Variant=true, got %q", result.Variant)
+	}
+}
+
+func TestEvaluate_FlagNotFound_ReturnsNotFoundError(t *testing.T) {
+	// @error-path: missing flag key must return NotFoundError, never silent default
+	srv := serveBulk(t, bulkResponse, 200)
+	defer srv.Close()
+
+	c, _ := cuttlegate.NewClient(validConfig(srv.URL))
+	_, err := c.Evaluate(context.Background(), "ghost-flag", cuttlegate.EvalContext{UserID: "u1"})
+	if err == nil {
+		t.Fatal("expected NotFoundError for missing flag key, got nil")
+	}
+	var nfErr *cuttlegate.NotFoundError
+	if !errors.As(err, &nfErr) {
+		t.Fatalf("expected *NotFoundError, got %T: %v", err, err)
+	}
+	if nfErr.Resource != "flag" {
+		t.Errorf("expected Resource=flag, got %q", nfErr.Resource)
+	}
+	if nfErr.Key != "ghost-flag" {
+		t.Errorf("expected Key=ghost-flag, got %q", nfErr.Key)
+	}
+}
+
+func TestEvaluate_ProjectNotFound_ReturnsNotFoundError(t *testing.T) {
+	// @error-path: 404 from server means project not found (not flag)
+	srv := serveBulk(t, map[string]string{"error": "not_found"}, 404)
+	defer srv.Close()
+
+	c, _ := cuttlegate.NewClient(validConfig(srv.URL))
+	_, err := c.Evaluate(context.Background(), "any-flag", cuttlegate.EvalContext{UserID: "u1"})
+
+	var nfErr *cuttlegate.NotFoundError
+	if !errors.As(err, &nfErr) {
+		t.Fatalf("expected *NotFoundError, got %T: %v", err, err)
+	}
+	if nfErr.Resource != "project" {
+		t.Errorf("expected Resource=project, got %q", nfErr.Resource)
+	}
+}
+
+// --- @happy: Bool ---
+
+func TestBool_ReturnsTrue(t *testing.T) {
+	// @happy: dark-mode has value_key="true"
+	srv := serveBulk(t, bulkResponse, 200)
+	defer srv.Close()
+
+	c, _ := cuttlegate.NewClient(validConfig(srv.URL))
+	val, err := c.Bool(context.Background(), "dark-mode", cuttlegate.EvalContext{UserID: "u1"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !val {
+		t.Error("expected true for dark-mode flag")
+	}
+}
+
+func TestBool_FlagNotFound_ReturnsNotFoundError(t *testing.T) {
+	// @error-path: Bool must return false + NotFoundError, never silent false
+	srv := serveBulk(t, bulkResponse, 200)
+	defer srv.Close()
+
+	c, _ := cuttlegate.NewClient(validConfig(srv.URL))
+	val, err := c.Bool(context.Background(), "ghost-flag", cuttlegate.EvalContext{UserID: "u1"})
+	if err == nil {
+		t.Fatal("expected NotFoundError, got nil")
+	}
+	var nfErr *cuttlegate.NotFoundError
+	if !errors.As(err, &nfErr) {
+		t.Fatalf("expected *NotFoundError, got %T: %v", err, err)
+	}
+	if nfErr.Resource != "flag" {
+		t.Errorf("expected Resource=flag, got %q", nfErr.Resource)
+	}
+	if val {
+		t.Error("expected false zero value on error")
+	}
+}
+
+// --- @happy: String ---
+
+func TestString_ReturnsValue(t *testing.T) {
+	// @happy: banner-text has value="holiday"
+	srv := serveBulk(t, bulkResponse, 200)
+	defer srv.Close()
+
+	c, _ := cuttlegate.NewClient(validConfig(srv.URL))
+	val, err := c.String(context.Background(), "banner-text", cuttlegate.EvalContext{UserID: "u1"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if val != "holiday" {
+		t.Errorf("expected holiday, got %q", val)
+	}
+}
+
+func TestString_FlagNotFound_ReturnsNotFoundError(t *testing.T) {
+	// @error-path: String must return "" + NotFoundError, never silent empty string
+	srv := serveBulk(t, bulkResponse, 200)
+	defer srv.Close()
+
+	c, _ := cuttlegate.NewClient(validConfig(srv.URL))
+	val, err := c.String(context.Background(), "ghost-flag", cuttlegate.EvalContext{UserID: "u1"})
+	if err == nil {
+		t.Fatal("expected NotFoundError, got nil")
+	}
+	var nfErr *cuttlegate.NotFoundError
+	if !errors.As(err, &nfErr) {
+		t.Fatalf("expected *NotFoundError, got %T: %v", err, err)
+	}
+	if nfErr.Resource != "flag" {
+		t.Errorf("expected Resource=flag, got %q", nfErr.Resource)
+	}
+	if val != "" {
+		t.Error("expected empty string zero value on error")
+	}
+}
+
 // --- @auth-bypass: 401/403 ---
 
-func TestEvaluate_Returns_AuthError_On401(t *testing.T) {
+func TestEvaluateAll_Returns_AuthError_On401(t *testing.T) {
 	// @auth-bypass
 	srv := serveBulk(t, map[string]string{"error": "unauthorized"}, 401)
 	defer srv.Close()
 
 	c, _ := cuttlegate.NewClient(validConfig(srv.URL))
-	_, err := c.Evaluate(context.Background(), cuttlegate.EvalContext{UserID: "u1"})
+	_, err := c.EvaluateAll(context.Background(), cuttlegate.EvalContext{UserID: "u1"})
 
 	var authErr *cuttlegate.AuthError
 	if !errors.As(err, &authErr) {
@@ -190,13 +349,13 @@ func TestEvaluate_Returns_AuthError_On401(t *testing.T) {
 	}
 }
 
-func TestEvaluate_Returns_AuthError_On403(t *testing.T) {
+func TestEvaluateAll_Returns_AuthError_On403(t *testing.T) {
 	// @auth-bypass
 	srv := serveBulk(t, map[string]string{"error": "forbidden"}, 403)
 	defer srv.Close()
 
 	c, _ := cuttlegate.NewClient(validConfig(srv.URL))
-	_, err := c.Evaluate(context.Background(), cuttlegate.EvalContext{UserID: "u1"})
+	_, err := c.EvaluateAll(context.Background(), cuttlegate.EvalContext{UserID: "u1"})
 
 	var authErr *cuttlegate.AuthError
 	if !errors.As(err, &authErr) {
@@ -209,13 +368,13 @@ func TestEvaluate_Returns_AuthError_On403(t *testing.T) {
 
 // --- @error-path: ServerError ---
 
-func TestEvaluate_Returns_ServerError_On500(t *testing.T) {
+func TestEvaluateAll_Returns_ServerError_On500(t *testing.T) {
 	// @error-path
 	srv := serveBulk(t, map[string]string{"error": "internal"}, 500)
 	defer srv.Close()
 
 	c, _ := cuttlegate.NewClient(validConfig(srv.URL))
-	_, err := c.Evaluate(context.Background(), cuttlegate.EvalContext{UserID: "u1"})
+	_, err := c.EvaluateAll(context.Background(), cuttlegate.EvalContext{UserID: "u1"})
 
 	var srvErr *cuttlegate.ServerError
 	if !errors.As(err, &srvErr) {
@@ -226,15 +385,15 @@ func TestEvaluate_Returns_ServerError_On500(t *testing.T) {
 	}
 }
 
-// --- @error-path: NotFoundError ---
+// --- @error-path: NotFoundError distinguishes flag vs project ---
 
-func TestEvaluate_Returns_NotFoundError_On404(t *testing.T) {
+func TestEvaluateAll_Returns_NotFoundError_On404(t *testing.T) {
 	// @error-path
 	srv := serveBulk(t, map[string]string{"error": "not_found"}, 404)
 	defer srv.Close()
 
 	c, _ := cuttlegate.NewClient(validConfig(srv.URL))
-	_, err := c.Evaluate(context.Background(), cuttlegate.EvalContext{UserID: "u1"})
+	_, err := c.EvaluateAll(context.Background(), cuttlegate.EvalContext{UserID: "u1"})
 
 	var nfErr *cuttlegate.NotFoundError
 	if !errors.As(err, &nfErr) {
@@ -245,7 +404,7 @@ func TestEvaluate_Returns_NotFoundError_On404(t *testing.T) {
 	}
 }
 
-// --- @happy: EvaluateFlag ---
+// --- @happy: EvaluateFlag (legacy) ---
 
 func TestEvaluateFlag_ReturnsSingleFlag(t *testing.T) {
 	// @happy
@@ -260,9 +419,9 @@ func TestEvaluateFlag_ReturnsSingleFlag(t *testing.T) {
 	if !result.Enabled || result.Reason != "rule_match" {
 		t.Errorf("unexpected result: %+v", result)
 	}
-	// @happy: value_key is present on FlagResult
-	if result.ValueKey != "true" {
-		t.Errorf("expected ValueKey=true for bool flag, got %q", result.ValueKey)
+	// @happy: Variant is present on FlagResult
+	if result.Variant != "true" {
+		t.Errorf("expected Variant=true for bool flag, got %q", result.Variant)
 	}
 }
 
@@ -286,7 +445,7 @@ func TestEvaluateFlag_ReturnsNotFoundReasonForMissingKey(t *testing.T) {
 
 // --- @edge: context cancellation ---
 
-func TestEvaluate_RespectsContextCancellation(t *testing.T) {
+func TestEvaluateAll_RespectsContextCancellation(t *testing.T) {
 	// @edge
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Block until the client cancels.
@@ -299,7 +458,7 @@ func TestEvaluate_RespectsContextCancellation(t *testing.T) {
 	cancel() // cancel immediately
 
 	c, _ := cuttlegate.NewClient(validConfig(srv.URL))
-	_, err := c.Evaluate(ctx, cuttlegate.EvalContext{UserID: "u1"})
+	_, err := c.EvaluateAll(ctx, cuttlegate.EvalContext{UserID: "u1"})
 	if err == nil {
 		t.Fatal("expected error for cancelled context")
 	}
@@ -318,7 +477,7 @@ func TestNewClient_AcceptsCustomHTTPClient(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if _, err := c.Evaluate(context.Background(), cuttlegate.EvalContext{UserID: "u1"}); err != nil {
+	if _, err := c.EvaluateAll(context.Background(), cuttlegate.EvalContext{UserID: "u1"}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

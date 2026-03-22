@@ -10,19 +10,27 @@ type EvalContext struct {
 }
 
 // EvalResult is the result of evaluating a single flag.
+//
+// Variant is the variant key; for bool flags it is "true" or "false".
+// Value is the string representation of the variant value; for bool flags
+// it is empty — use Variant or Bool() instead.
+// Reason describes why this result was produced: "targeting_rule", "default",
+// "disabled", or "percentage_rollout".
 type EvalResult struct {
 	Key         string `json:"key"`
 	Enabled     bool   `json:"enabled"`
-	Value       string `json:"value"`     // empty string for bool flags; deprecated — prefer ValueKey
-	ValueKey    string `json:"value_key"` // always present; "true"/"false" for bool flags, variant key for all others
+	Value       string `json:"value"`   // string value; empty for bool flags
+	Variant     string `json:"variant"` // variant key; "true"/"false" for bool flags
 	Reason      string `json:"reason"`
 	EvaluatedAt string `json:"evaluated_at"`
 }
 
-// FlagResult is the result of evaluating a single flag by key.
+// FlagResult is the result of evaluating a single flag by key via EvaluateFlag.
+// Prefer Evaluate, Bool, or String for new code — they return structured errors
+// rather than encoding not-found as a Reason string.
 type FlagResult struct {
-	Enabled  bool
-	Value    string // empty string for bool flags; deprecated — prefer ValueKey
-	ValueKey string // always present; "true"/"false" for bool flags, variant key for all others
-	Reason   string
+	Enabled bool
+	Value   string // string value; empty for bool flags
+	Variant string // variant key; "true"/"false" for bool flags
+	Reason  string
 }
