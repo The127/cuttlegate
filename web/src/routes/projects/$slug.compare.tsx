@@ -1,0 +1,280 @@
+import { createRoute } from '@tanstack/react-router'
+import { useQuery, useQueries } from '@tanstack/react-query'
+import { useState, useMemo } from 'react'
+import { projectRoute } from './$slug'
+import { fetchJSON } from '../../api'
+
+interface Environment {
+  id: string
+  name: string
+  slug: string
+}
+
+interface EnvFlag {
+  id: string
+  key: string
+  name: string
+  enabled: boolean
+  default_variant_key: string
+}
+
+interface ProjectFlag {
+  id: string
+  key: string
+  name: string
+}
+
+interface CellState {
+  enabled: boolean
+  default_variant_key: string
+}
+
+const PAGE_SIZE = 50
+
+export const compareRoute = createRoute({
+  getParentRoute: () => projectRoute,
+  path: '/compare',
+  component: CompareEnvironmentsPage,
+})
+
+function CompareEnvironmentsPage() {
+  const project = projectRoute.useLoaderData()
+  const [page, setPage] = useState(0)
+
+  const envsQuery = useQuery({
+    queryKey: ['environments', project.slug],
+    queryFn: () =>
+      fetchJSON<{ environments: Environment[] }>(
+        `/api/v1/projects/${project.slug}/environments`,
+      ).then((d) => d.environments),
+  })
+
+  const flagsQuery = useQuery({
+    queryKey: ['flags', project.slug],
+    queryFn: () =>
+      fetchJSON<{ flags: ProjectFlag[] }>(
+        `/api/v1/projects/${project.slug}/flags`,
+      ).then((d) => d.flags),
+  })
+
+  const envs = envsQuery.data ?? []
+
+  const envFlagQueries = useQueries({
+    queries: envs.map((env) => ({
+      queryKey: ['flags', project.slug, env.slug],
+      queryFn: () =>
+        fetchJSON<{ flags: EnvFlag[] }>(
+          `/api/v1/projects/${project.slug}/environments/${env.slug}/flags`,
+        ).then((d) => d.flags),
+    })),
+  })
+
+  const isLoading =
+    envsQuery.isLoading || flagsQuery.isLoading || envFlagQueries.some((q) => q.isLoading)
+  const isError =
+    envsQuery.isError || flagsQuery.isError || envFlagQueries.some((q) => q.isError)
+
+  // Build matrix: flagKey → envSlug → CellState
+  const matrix = useMemo<Map<string, Map<string, CellState>>>(() => {
+    const m = new Map<string, Map<string, CellState>>()
+    envFlagQueries.forEach((q, i) => {
+      if (!q.data) return
+      const env = envs[i]
+      q.data.forEach((flag) => {
+        if (!m.has(flag.key)) m.set(flag.key, new Map())
+        m.get(flag.key)!.set(env.slug, {
+          enabled: flag.enabled,
+          default_variant_key: flag.default_variant_key,
+        })
+      })
+    })
+    return m
+  }, [envFlagQueries, envs])
+
+  const sortedFlags = useMemo(
+    () => [...(flagsQuery.data ?? [])].sort((a, b) => a.key.localeCompare(b.key)),
+    [flagsQuery.data],
+  )
+
+  const totalPages = Math.ceil(sortedFlags.length / PAGE_SIZE)
+  const pagedFlags = sortedFlags.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+
+  function retry() {
+    void envsQuery.refetch()
+    void flagsQuery.refetch()
+    envFlagQueries.forEach((q) => void q.refetch())
+  }
+
+  return (
+    <div className="p-6">
+      <h1 className="text-lg font-semibold text-gray-900 mb-6">Compare Environments</h1>
+
+      {isLoading ? (
+        <MatrixSkeleton />
+      ) : isError ? (
+        <MatrixError onRetry={retry} />
+      ) : sortedFlags.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <>
+          <div className="overflow-x-auto border border-gray-200 rounded-lg bg-white">
+            <table className="min-w-full text-sm" aria-label="Flag environment comparison matrix">
+              <thead>
+                <tr className="border-b border-gray-200 bg-gray-50">
+                  <th
+                    scope="col"
+                    className="sticky left-0 z-10 bg-gray-50 px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide w-64"
+                  >
+                    Flag
+                  </th>
+                  {envs.map((env) => (
+                    <th
+                      key={env.id}
+                      scope="col"
+                      className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide whitespace-nowrap"
+                    >
+                      <span className="font-mono">{env.slug}</span>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {pagedFlags.map((flag) => (
+                  <tr key={flag.id} className="group hover:bg-gray-50 transition-colors">
+                    <td className="sticky left-0 z-10 bg-white group-hover:bg-gray-50 px-4 py-2.5 w-64">
+                      <span className="font-mono text-xs text-gray-800 bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5">
+                        {flag.key}
+                      </span>
+                    </td>
+                    {envs.map((env) => {
+                      const cell = matrix.get(flag.key)?.get(env.slug)
+                      return (
+                        <td key={env.id} className="px-4 py-2.5">
+                          {cell ? (
+                            <MatrixCell cell={cell} />
+                          ) : (
+                            <span className="text-xs text-gray-300">—</span>
+                          )}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {totalPages > 1 && (
+            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+function MatrixCell({ cell }: { cell: CellState }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border w-fit ${
+          cell.enabled
+            ? 'bg-green-50 text-green-700 border-green-200'
+            : 'bg-gray-100 text-gray-500 border-gray-200'
+        }`}
+      >
+        <span
+          className={`w-1.5 h-1.5 rounded-full ${cell.enabled ? 'bg-green-500' : 'bg-gray-400'}`}
+          aria-hidden="true"
+        />
+        {cell.enabled ? 'Enabled' : 'Disabled'}
+      </span>
+      <span className="font-mono text-xs text-gray-500">{cell.default_variant_key}</span>
+    </div>
+  )
+}
+
+function Pagination({
+  page,
+  totalPages,
+  onPageChange,
+}: {
+  page: number
+  totalPages: number
+  onPageChange: (p: number) => void
+}) {
+  return (
+    <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
+      <span>
+        Page {page + 1} of {totalPages}
+      </span>
+      <div className="flex gap-2">
+        <button
+          onClick={() => onPageChange(page - 1)}
+          disabled={page === 0}
+          className="px-3 py-1.5 border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          Previous
+        </button>
+        <button
+          onClick={() => onPageChange(page + 1)}
+          disabled={page >= totalPages - 1}
+          className="px-3 py-1.5 border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function EmptyState() {
+  return (
+    <div className="text-center py-16 px-6 border border-gray-200 rounded-lg bg-white">
+      <p className="text-sm text-gray-500">
+        No flags in this project yet. Create a flag to see the comparison matrix.
+      </p>
+    </div>
+  )
+}
+
+function MatrixSkeleton() {
+  return (
+    <div className="border border-gray-200 rounded-lg bg-white overflow-hidden">
+      <div className="flex gap-4 px-4 py-2.5 border-b border-gray-200 bg-gray-50">
+        <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+        ))}
+      </div>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div
+          key={i}
+          className="flex gap-4 px-4 py-3 border-b border-gray-100 last:border-0"
+        >
+          <div className="h-5 w-36 bg-gray-100 rounded animate-pulse" />
+          {[1, 2, 3].map((j) => (
+            <div key={j} className="flex flex-col gap-1">
+              <div className="h-5 w-16 bg-gray-100 rounded-full animate-pulse" />
+              <div className="h-3 w-10 bg-gray-100 rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function MatrixError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div>
+      <span className="text-sm text-red-600">Failed to load comparison matrix. </span>
+      <button
+        onClick={onRetry}
+        className="text-sm text-red-600 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
+      >
+        Retry
+      </button>
+    </div>
+  )
+}

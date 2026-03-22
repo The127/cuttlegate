@@ -10,6 +10,7 @@ import { flagListRoute } from './routes/projects/$slug.environments.$envSlug.fla
 import { flagDetailRoute } from './routes/projects/$slug.environments.$envSlug.flags.$key'
 import { flagRulesRoute } from './routes/projects/$slug.environments.$envSlug.flags.$key.rules'
 import { segmentListRoute } from './routes/projects/$slug.segments'
+import { compareRoute } from './routes/projects/$slug.compare'
 
 const routeTree = rootRoute.addChildren([
   authenticatedRoute.addChildren([
@@ -17,6 +18,7 @@ const routeTree = rootRoute.addChildren([
     projectRoute.addChildren([
       projectIndexRoute,
       segmentListRoute,
+      compareRoute,
       projectEnvRoute.addChildren([flagListRoute, flagDetailRoute, flagRulesRoute]),
     ]),
   ]),
