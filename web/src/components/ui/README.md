@@ -19,6 +19,34 @@ Shared interactive element components for the Cuttlegate SPA.
 - Read-only display elements that happen to use a tag name (e.g. `<span>`)
 - Inline text-link style triggers that are not form action buttons (e.g. `+ Add condition` in rule editors — these are micro-interactions, not submit/save/delete actions)
 
+## FormField + Input auto-wiring
+
+When `<Input>` is a direct or nested child of `<FormField>`, the label-to-input association is
+handled automatically — no `htmlFor` or `id` props are needed:
+
+```tsx
+// Correct — no manual id wiring required
+<FormField label="Project name">
+  <Input value={name} onChange={...} />
+</FormField>
+
+// Also correct — explicit id overrides auto-generated one
+<FormField label="Slug" htmlFor="project-slug">
+  <Input id="project-slug" ref={slugRef} />
+</FormField>
+```
+
+`FormField` passes a generated `fieldId` and `errorId` via React context. `Input` reads the
+context and applies `id` and `aria-describedby` only when not already supplied by the caller.
+
+For non-`Input` children (e.g. `<textarea>`), manual wiring is still required:
+
+```tsx
+<FormField label="Notes" htmlFor="notes">
+  <textarea id="notes" />
+</FormField>
+```
+
 ## Accent colour
 
 The `Button` (primary variant) and all focus rings use `--color-accent` (default: `#2563eb`).

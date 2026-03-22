@@ -27,6 +27,14 @@ describe('Input', () => {
     expect(input).toHaveAttribute('aria-invalid', 'true')
   })
 
+  // @edge: Input used outside FormField context — no auto-injected id or aria-describedby
+  it('renders without error and has no auto-injected id or aria-describedby when outside FormField', () => {
+    render(<Input aria-label="Standalone" />)
+    const input = screen.getByRole('textbox', { name: 'Standalone' })
+    expect(input).not.toHaveAttribute('id')
+    expect(input).not.toHaveAttribute('aria-describedby')
+  })
+
   it('passes axe accessibility check — default', async () => {
     const { axeResults } = await renderWithAxe(
       <label>
