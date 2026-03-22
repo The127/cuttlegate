@@ -74,6 +74,33 @@ func (r *PostgresSegmentRepository) List(ctx context.Context, projectID string) 
 	return segments, rows.Err()
 }
 
+func (r *PostgresSegmentRepository) ListWithCount(ctx context.Context, projectID string) ([]*ports.SegmentWithCount, error) {
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT s.id, s.slug, s.name, s.project_id, s.created_at, COUNT(sm.user_key) AS member_count
+		FROM segments s
+		LEFT JOIN segment_members sm ON sm.segment_id = s.id
+		WHERE s.project_id = $1
+		GROUP BY s.id
+		ORDER BY s.created_at`,
+		projectID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := make([]*ports.SegmentWithCount, 0)
+	for rows.Next() {
+		var s domain.Segment
+		var count int
+		if err := rows.Scan(&s.ID, &s.Slug, &s.Name, &s.ProjectID, &s.CreatedAt, &count); err != nil {
+			return nil, err
+		}
+		items = append(items, &ports.SegmentWithCount{Segment: &s, MemberCount: count})
+	}
+	return items, rows.Err()
+}
+
 func (r *PostgresSegmentRepository) UpdateName(ctx context.Context, id, name string) error {
 	res, err := r.db.ExecContext(ctx, `UPDATE segments SET name = $1 WHERE id = $2`, name, id)
 	if err != nil {

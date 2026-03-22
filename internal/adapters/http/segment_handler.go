@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/karo/cuttlegate/internal/domain"
+	"github.com/karo/cuttlegate/internal/domain/ports"
 )
 
 // segmentService is the use-case interface required by SegmentHandler.
@@ -14,6 +15,7 @@ type segmentService interface {
 	Create(ctx context.Context, projectID, slug, name string) (*domain.Segment, error)
 	GetBySlug(ctx context.Context, projectID, slug string) (*domain.Segment, error)
 	List(ctx context.Context, projectID string) ([]*domain.Segment, error)
+	ListWithCount(ctx context.Context, projectID string) ([]*ports.SegmentWithCount, error)
 	UpdateName(ctx context.Context, id, name string) error
 	Delete(ctx context.Context, projectID, slug string) error
 	SetMembers(ctx context.Context, segmentID string, userKeys []string) error
@@ -44,11 +46,12 @@ func (h *SegmentHandler) RegisterRoutes(mux *http.ServeMux, auth func(http.Handl
 
 // segmentResponse is the JSON representation of a domain.Segment.
 type segmentResponse struct {
-	ID        string    `json:"id"`
-	Slug      string    `json:"slug"`
-	Name      string    `json:"name"`
-	ProjectID string    `json:"projectId"`
-	CreatedAt time.Time `json:"createdAt"`
+	ID          string    `json:"id"`
+	Slug        string    `json:"slug"`
+	Name        string    `json:"name"`
+	ProjectID   string    `json:"projectId"`
+	CreatedAt   time.Time `json:"createdAt"`
+	MemberCount int       `json:"memberCount"`
 }
 
 func toSegmentResponse(s *domain.Segment) segmentResponse {
@@ -59,6 +62,12 @@ func toSegmentResponse(s *domain.Segment) segmentResponse {
 		ProjectID: s.ProjectID,
 		CreatedAt: s.CreatedAt.UTC(),
 	}
+}
+
+func toSegmentResponseWithCount(swc *ports.SegmentWithCount) segmentResponse {
+	r := toSegmentResponse(swc.Segment)
+	r.MemberCount = swc.MemberCount
+	return r
 }
 
 func (h *SegmentHandler) create(w http.ResponseWriter, r *http.Request) {
@@ -92,7 +101,7 @@ func (h *SegmentHandler) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	segments, err := h.svc.List(r.Context(), proj.ID)
+	segments, err := h.svc.ListWithCount(r.Context(), proj.ID)
 	if err != nil {
 		WriteError(w, err)
 		return
@@ -100,7 +109,7 @@ func (h *SegmentHandler) list(w http.ResponseWriter, r *http.Request) {
 
 	items := make([]segmentResponse, 0, len(segments))
 	for _, s := range segments {
-		items = append(items, toSegmentResponse(s))
+		items = append(items, toSegmentResponseWithCount(s))
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"segments": items})
 }

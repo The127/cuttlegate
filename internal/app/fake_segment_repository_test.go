@@ -63,6 +63,20 @@ func (r *fakeSegmentRepository) List(_ context.Context, projectID string) ([]*do
 	return out, nil
 }
 
+func (r *fakeSegmentRepository) ListWithCount(_ context.Context, projectID string) ([]*ports.SegmentWithCount, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	var out []*ports.SegmentWithCount
+	for _, s := range r.byID {
+		if s.ProjectID == projectID {
+			cp := *s
+			count := len(r.members[s.ID])
+			out = append(out, &ports.SegmentWithCount{Segment: &cp, MemberCount: count})
+		}
+	}
+	return out, nil
+}
+
 func (r *fakeSegmentRepository) UpdateName(_ context.Context, id, name string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()

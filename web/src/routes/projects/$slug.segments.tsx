@@ -12,6 +12,7 @@ interface Segment {
   name: string
   projectId: string
   createdAt: string
+  memberCount: number
 }
 
 export const segmentListRoute = createRoute({
@@ -158,6 +159,9 @@ function SegmentRow({
           {segment.slug}
         </span>
         <span className="text-sm text-gray-700 truncate">{segment.name}</span>
+        <span className="text-xs text-gray-400 shrink-0">
+          {t('members_count', { count: segment.memberCount })}
+        </span>
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <time

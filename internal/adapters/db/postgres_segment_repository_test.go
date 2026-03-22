@@ -244,4 +244,52 @@ func TestPostgresSegmentRepository(t *testing.T) {
 			t.Error("expected bob not to be a member")
 		}
 	})
+
+	t.Run("ListWithCount returns correct member counts", func(t *testing.T) {
+		const countProjID = "eeeeeeee-3333-4333-8333-333333333333"
+		if err := projRepo.Create(ctx, domain.Project{
+			ID:        countProjID,
+			Name:      "count-proj",
+			Slug:      "count-proj",
+			CreatedAt: time.Now().UTC().Truncate(time.Microsecond),
+		}); err != nil {
+			t.Fatalf("seed count project: %v", err)
+		}
+
+		// Segment with 2 members.
+		sA := newSeg("00000042-0000-4000-8000-000000000010", "count-a")
+		sA.ProjectID = countProjID
+		if err := segRepo.Create(ctx, sA); err != nil {
+			t.Fatalf("Create sA: %v", err)
+		}
+		if err := segRepo.SetMembers(ctx, sA.ID, []string{"u1", "u2"}); err != nil {
+			t.Fatalf("SetMembers sA: %v", err)
+		}
+
+		// Segment with 0 members.
+		sB := newSeg("00000042-0000-4000-8000-000000000011", "count-b")
+		sB.ProjectID = countProjID
+		if err := segRepo.Create(ctx, sB); err != nil {
+			t.Fatalf("Create sB: %v", err)
+		}
+
+		items, err := segRepo.ListWithCount(ctx, countProjID)
+		if err != nil {
+			t.Fatalf("ListWithCount: %v", err)
+		}
+		if len(items) != 2 {
+			t.Fatalf("expected 2 items, got %d", len(items))
+		}
+
+		bySlug := make(map[string]int, len(items))
+		for _, item := range items {
+			bySlug[item.Segment.Slug] = item.MemberCount
+		}
+		if bySlug["count-a"] != 2 {
+			t.Errorf("count-a: expected 2 members, got %d", bySlug["count-a"])
+		}
+		if bySlug["count-b"] != 0 {
+			t.Errorf("count-b: expected 0 members, got %d", bySlug["count-b"])
+		}
+	})
 }

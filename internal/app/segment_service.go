@@ -59,6 +59,15 @@ func (s *SegmentService) List(ctx context.Context, projectID string) ([]*domain.
 	return s.repo.List(ctx, projectID)
 }
 
+// ListWithCount returns all segments in a project with their member counts.
+// Requires at least viewer role.
+func (s *SegmentService) ListWithCount(ctx context.Context, projectID string) ([]*ports.SegmentWithCount, error) {
+	if _, err := requireRole(ctx, domain.RoleViewer); err != nil {
+		return nil, err
+	}
+	return s.repo.ListWithCount(ctx, projectID)
+}
+
 // UpdateName renames a segment. Requires at least editor role.
 func (s *SegmentService) UpdateName(ctx context.Context, id, name string) error {
 	if _, err := requireRole(ctx, domain.RoleEditor); err != nil {
