@@ -53,12 +53,12 @@ func (f *Flag) Validate() error {
 		return &ValidationError{Field: "variants", Message: "flag must have at least one variant"}
 	}
 	// duplicate variant keys
-	seen := make(map[string]struct{}, len(f.Variants))
+	seen := NewSet()
 	for _, v := range f.Variants {
-		if _, dup := seen[v.Key]; dup {
+		if seen.Contains(v.Key) {
 			return &ValidationError{Field: "variants", Message: "duplicate variant key: " + v.Key}
 		}
-		seen[v.Key] = struct{}{}
+		seen.Add(v.Key)
 	}
 	// bool invariant
 	if f.Type == FlagTypeBool {
@@ -71,7 +71,7 @@ func (f *Flag) Validate() error {
 		}
 	}
 	// default variant key present
-	if _, ok := seen[f.DefaultVariantKey]; !ok {
+	if !seen.Contains(f.DefaultVariantKey) {
 		return &ValidationError{Field: "default_variant_key", Message: "default_variant_key does not match any variant key"}
 	}
 	return nil

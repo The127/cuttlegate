@@ -169,12 +169,12 @@ func TestEvaluate_SegmentOperators(t *testing.T) {
 	state := enabledState()
 	ctx := EvalContext{UserID: "user-1", Attributes: map[string]string{}}
 
-	inBeta := map[string]struct{}{"beta": {}}
+	inBeta := NewSet("beta")
 
 	tests := []struct {
 		name         string
 		condition    Condition
-		segmentSlugs map[string]struct{}
+		segmentSlugs Set
 		wantMatch    bool
 	}{
 		{"in_segment: user is member", cond("", OperatorInSegment, "beta"), inBeta, true},

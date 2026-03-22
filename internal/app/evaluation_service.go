@@ -147,14 +147,14 @@ func (s *EvaluationService) EvaluateAll(ctx context.Context, projectID, environm
 // Segments that no longer exist are silently skipped (treated as non-membership).
 // An empty userKey (unauthenticated caller) always resolves to an empty set —
 // IsMember returns false for "", so in_segment conditions always miss.
-func (s *EvaluationService) resolveSegments(ctx context.Context, projectID string, rules []*domain.Rule, userKey string) (map[string]struct{}, error) {
+func (s *EvaluationService) resolveSegments(ctx context.Context, projectID string, rules []*domain.Rule, userKey string) (domain.Set, error) {
 	// Collect distinct segment slugs from rule conditions.
-	slugs := make(map[string]struct{})
+	slugs := domain.NewSet()
 	for _, rule := range rules {
 		for _, c := range rule.Conditions {
 			if c.Operator == domain.OperatorInSegment || c.Operator == domain.OperatorNotInSegment {
 				if len(c.Values) > 0 {
-					slugs[c.Values[0]] = struct{}{}
+					slugs.Add(c.Values[0])
 				}
 			}
 		}
@@ -163,7 +163,7 @@ func (s *EvaluationService) resolveSegments(ctx context.Context, projectID strin
 		return nil, nil
 	}
 
-	userSegments := make(map[string]struct{})
+	userSegments := domain.NewSet()
 	for slug := range slugs {
 		seg, err := s.segmentRepo.GetBySlug(ctx, projectID, slug)
 		if err != nil {
@@ -177,7 +177,7 @@ func (s *EvaluationService) resolveSegments(ctx context.Context, projectID strin
 			return nil, err
 		}
 		if member {
-			userSegments[slug] = struct{}{}
+			userSegments.Add(slug)
 		}
 	}
 	return userSegments, nil
