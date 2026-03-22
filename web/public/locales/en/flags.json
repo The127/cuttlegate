@@ -70,6 +70,26 @@
     "reason_default": "No rules matched — default",
     "reason_rule_match": "Matched a targeting rule"
   },
+  "audit": {
+    "tab_title": "Evaluations",
+    "loading": "Loading evaluations…",
+    "load_error": "Failed to load evaluations.",
+    "empty_state": "No evaluations recorded yet.",
+    "load_more": "Load more",
+    "col_timestamp": "Timestamp",
+    "col_user": "User",
+    "col_context": "Context",
+    "col_rule": "Matched rule",
+    "col_variant": "Variant",
+    "col_reason": "Reason",
+    "no_rule_matched": "No rule",
+    "reason_flag_disabled": "Flag disabled",
+    "reason_no_match": "No match",
+    "reason_rule_match": "Rule matched",
+    "reason_override": "Override",
+    "context_expand_aria": "Expand input context for row {{id}}",
+    "rule_id_label": "Rule"
+  },
   "compare": {
     "title": "Compare Environments",
     "flag_column": "Flag",

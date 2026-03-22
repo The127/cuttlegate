@@ -22,8 +22,10 @@ const (
 
 // EvalResult is the outcome of evaluating a flag for a given context.
 type EvalResult struct {
-	VariantKey string
-	Reason     EvalReason
+	VariantKey      string
+	Reason          EvalReason
+	MatchedRuleID   string // empty when Reason != ReasonRuleMatch
+	MatchedRuleName string // empty when Reason != ReasonRuleMatch
 }
 
 // Evaluate returns the variant and reason for a flag given a user context.
@@ -50,7 +52,12 @@ func Evaluate(flag *Flag, state *FlagEnvironmentState, rules []*Rule, ctx EvalCo
 			continue
 		}
 		if matchesAll(rule.Conditions, ctx, segmentSlugs) {
-			return EvalResult{VariantKey: rule.VariantKey, Reason: ReasonRuleMatch}
+			return EvalResult{
+				VariantKey:    rule.VariantKey,
+				Reason:        ReasonRuleMatch,
+				MatchedRuleID: rule.ID,
+				// MatchedRuleName: rules do not have a name field yet; left empty.
+			}
 		}
 	}
 

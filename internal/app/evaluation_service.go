@@ -2,7 +2,9 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/karo/cuttlegate/internal/domain"
@@ -25,6 +27,7 @@ type EvaluationService struct {
 	stateRepo   ports.FlagEnvironmentStateRepository
 	ruleRepo    ports.RuleRepository
 	segmentRepo ports.SegmentRepository
+	publisher   ports.EvaluationEventPublisher // nil = no-op
 }
 
 // NewEvaluationService constructs an EvaluationService.
@@ -33,13 +36,48 @@ func NewEvaluationService(
 	stateRepo ports.FlagEnvironmentStateRepository,
 	ruleRepo ports.RuleRepository,
 	segmentRepo ports.SegmentRepository,
+	publisher ports.EvaluationEventPublisher,
 ) *EvaluationService {
 	return &EvaluationService{
 		flagRepo:    flagRepo,
 		stateRepo:   stateRepo,
 		ruleRepo:    ruleRepo,
 		segmentRepo: segmentRepo,
+		publisher:   publisher,
 	}
+}
+
+// publishEvent fires a best-effort evaluation event in a goroutine.
+// Errors are logged but never returned — the eval response path must not be
+// affected by publish failures.
+func (s *EvaluationService) publishEvent(projectID, environmentID string, flag *domain.Flag, evalCtx domain.EvalContext, result domain.EvalResult, id string, now time.Time) {
+	if s.publisher == nil {
+		return
+	}
+	// Serialise input context attributes in the calling goroutine (map is safe to read here).
+	ctxJSON, err := json.Marshal(evalCtx.Attributes)
+	if err != nil {
+		ctxJSON = []byte("{}")
+	}
+	event := &domain.EvaluationEvent{
+		ID:              id,
+		FlagKey:         flag.Key,
+		ProjectID:       projectID,
+		EnvironmentID:   environmentID,
+		UserID:          evalCtx.UserID,
+		InputContext:    string(ctxJSON),
+		MatchedRuleID:   result.MatchedRuleID,
+		MatchedRuleName: result.MatchedRuleName,
+		VariantKey:      result.VariantKey,
+		Reason:          result.Reason,
+		OccurredAt:      now,
+	}
+	pub := s.publisher
+	go func() {
+		if err := pub.Publish(context.Background(), event); err != nil {
+			slog.Error("evaluation event publish failed", "flag_key", flag.Key, "err", err)
+		}
+	}()
 }
 
 // Evaluate evaluates a flag for the given user context. Requires at least viewer role.
@@ -72,7 +110,12 @@ func (s *EvaluationService) Evaluate(ctx context.Context, projectID, environment
 		return nil, err
 	}
 
+	now := time.Now().UTC()
 	result := domain.Evaluate(flag, state, rules, evalCtx, userSegments)
+
+	if id, err := newUUID(); err == nil {
+		s.publishEvent(projectID, environmentID, flag, evalCtx, result, id, now)
+	}
 
 	view := &EvalView{
 		Key:      flag.Key,

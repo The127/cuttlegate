@@ -22,11 +22,13 @@ type Config struct {
 	Addr                  string                        // listen address (default: :8080)
 	DSN                   string                        // postgres DATABASE_URL; required when AutoMigrate is true
 	AutoMigrate           bool                          // run migrations at startup — dev/test only; unsafe in production (rolling restarts can race between old pods and a migrated schema)
-	EvalRateLimit         int                           // max evaluation requests per user per EvalRateLimitWindow (default: 600)
-	EvalRateLimitWindow   time.Duration                 // window size for eval rate limiting (default: 1m)
-	UIAppName             string                        // application name shown in the SPA (default: "Cuttlegate"); env: UI_APP_NAME
-	UILogoURL             string                        // URL of the logo shown in the SPA nav bar; empty = text name (env: UI_LOGO_URL)
-	UIAccentColour        string                        // CSS hex colour for the SPA accent (default: "#2563eb"); env: UI_ACCENT_COLOUR
+	EvalRateLimit              int                           // max evaluation requests per user per EvalRateLimitWindow (default: 600)
+	EvalRateLimitWindow        time.Duration                 // window size for eval rate limiting (default: 1m)
+	EvalEventRetentionDays     int                           // days to retain evaluation events (default: 30); env: EVAL_EVENT_RETENTION_DAYS
+	EvalEventRetentionInterval time.Duration                 // how often the retention worker runs (default: 24h); env: EVAL_EVENT_RETENTION_INTERVAL
+	UIAppName                  string                        // application name shown in the SPA (default: "Cuttlegate"); env: UI_APP_NAME
+	UILogoURL                  string                        // URL of the logo shown in the SPA nav bar; empty = text name (env: UI_LOGO_URL)
+	UIAccentColour             string                        // CSS hex colour for the SPA accent (default: "#2563eb"); env: UI_ACCENT_COLOUR
 }
 
 // Load reads configuration from environment variables.
@@ -65,6 +67,18 @@ func Load() (Config, error) {
 			evalRateLimitWindow = d
 		}
 	}
+	evalEventRetentionDays := 30
+	if v := os.Getenv("EVAL_EVENT_RETENTION_DAYS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			evalEventRetentionDays = n
+		}
+	}
+	evalEventRetentionInterval := 24 * time.Hour
+	if v := os.Getenv("EVAL_EVENT_RETENTION_INTERVAL"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil && d > 0 {
+			evalEventRetentionInterval = d
+		}
+	}
 
 	spaAuthority := os.Getenv("OIDC_SPA_AUTHORITY")
 
@@ -88,9 +102,11 @@ func Load() (Config, error) {
 		Addr:                  addr,
 		DSN:                   os.Getenv("DATABASE_URL"),
 		AutoMigrate:           os.Getenv("AUTO_MIGRATE") == "true",
-		EvalRateLimit:         evalRateLimit,
-		EvalRateLimitWindow:   evalRateLimitWindow,
-		UIAppName:             uiAppName,
+		EvalRateLimit:              evalRateLimit,
+		EvalRateLimitWindow:        evalRateLimitWindow,
+		EvalEventRetentionDays:     evalEventRetentionDays,
+		EvalEventRetentionInterval: evalEventRetentionInterval,
+		UIAppName:                  uiAppName,
 		UILogoURL:             os.Getenv("UI_LOGO_URL"),
 		UIAccentColour:        uiAccentColour,
 	}
