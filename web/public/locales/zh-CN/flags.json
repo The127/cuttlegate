@@ -1,0 +1,86 @@
+{
+  "list": {
+    "title": "功能标志",
+    "new_flag": "新建标志",
+    "empty_state": "暂无标志。创建您的第一个标志以开始定向用户。",
+    "error": "加载标志失败。",
+    "not_found": "未找到标志。",
+    "failed_to_load": "加载标志失败。",
+    "back_to_flags": "返回标志列表",
+    "copy_key_aria": "复制标志键 {{key}}",
+    "delete_flag_aria": "删除标志 {{key}}"
+  },
+  "toggle": {
+    "enable": "启用标志",
+    "disable": "禁用标志",
+    "enabled": "已启用",
+    "disabled": "已禁用",
+    "failed": "失败",
+    "enable_in_env": "在 {{env}} 中启用标志",
+    "disable_in_env": "在 {{env}} 中禁用标志"
+  },
+  "delete": {
+    "title": "删除标志？",
+    "body": "这将从所有环境中永久删除 <mono>{{key}}</mono>。此操作无法撤销。",
+    "failed": "删除失败。请重试。"
+  },
+  "create": {
+    "title": "创建标志",
+    "key_label": "键",
+    "name_label": "名称",
+    "type_label": "类型",
+    "key_placeholder": "my-feature-flag",
+    "name_placeholder": "我的功能标志",
+    "key_required": "标志键为必填项",
+    "key_too_long": "标志键不能超过 {{max}} 个字符",
+    "key_invalid": "标志键必须以字母或数字开头，且只能包含小写字母、数字和连字符",
+    "key_conflict": "此项目中已存在具有该键的标志",
+    "server_error": "出了些问题。请重试。",
+    "type_bool": "布尔值",
+    "type_string": "字符串",
+    "type_number": "数字",
+    "type_json": "JSON",
+    "type_aria": "标志类型"
+  },
+  "detail": {
+    "name_label": "名称",
+    "variants_label": "变体",
+    "default_variant_label": "默认变体",
+    "status_label": "在 {{env}} 中的状态",
+    "save_failed": "保存失败。请重试。",
+    "delete_aria": "删除标志",
+    "variant_name_aria": "{{key}} 的变体名称",
+    "default_variant_aria": "默认变体",
+    "targeting_rules": "定向规则 →",
+    "environments_section": "环境",
+    "env_error": "加载环境失败。",
+    "env_row_error": "加载失败",
+    "loading_aria": "加载中"
+  },
+  "eval": {
+    "title": "评估演练场",
+    "context_label": "评估上下文（JSON）",
+    "evaluate": "评估",
+    "evaluating": "评估中…",
+    "invalid_json": "无效的 JSON",
+    "eval_failed": "评估失败。请重试。",
+    "result_label": "结果",
+    "reason_label": "原因",
+    "reason_disabled": "标志已禁用",
+    "reason_default": "无规则匹配 — 默认值",
+    "reason_rule_match": "匹配到定向规则"
+  },
+  "compare": {
+    "title": "比较环境",
+    "flag_column": "标志",
+    "empty_state": "此项目中暂无标志。创建标志以查看比较矩阵。",
+    "error": "加载比较矩阵失败。",
+    "page_info": "第 {{page}} 页，共 {{total}} 页",
+    "previous": "上一页",
+    "next": "下一页",
+    "matrix_aria": "标志环境比较矩阵"
+  },
+  "api_key": {
+    "show_once_warning": "请立即复制此密钥。它不会再次显示。"
+  }
+}
