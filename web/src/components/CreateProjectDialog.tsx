@@ -2,6 +2,7 @@ import { createContext, useContext, useRef, useState, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { postJSON, APIError } from '../api'
+import { Button, Input, Label } from './ui'
 
 interface ProjectResponse {
   id: string
@@ -127,33 +128,28 @@ function CreateProjectDialog({ open, onClose }: CreateProjectDialogProps) {
 
         <div className="mt-4 space-y-4">
           <div>
-            <label htmlFor="project-name" className="block text-sm font-medium text-gray-700">
-              Name
-            </label>
-            <input
+            <Label htmlFor="project-name">Name</Label>
+            <Input
               ref={nameRef}
               id="project-name"
               type="text"
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
               placeholder="My Project"
-              className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1"
             />
           </div>
 
           <div>
-            <label htmlFor="project-slug" className="block text-sm font-medium text-gray-700">
-              Slug
-            </label>
-            <input
+            <Label htmlFor="project-slug">Slug</Label>
+            <Input
               id="project-slug"
               type="text"
               value={slug}
               onChange={(e) => handleSlugChange(e.target.value)}
               placeholder="my-project"
-              className={`mt-1 block w-full rounded border px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                !slugValid ? 'border-red-400' : 'border-gray-300'
-              }`}
+              hasError={!slugValid}
+              className="mt-1 font-mono"
             />
             {!slugValid && (
               <p className="mt-1 text-xs text-red-600">
@@ -168,20 +164,12 @@ function CreateProjectDialog({ open, onClose }: CreateProjectDialogProps) {
         )}
 
         <div className="mt-6 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={handleClose}
-            className="px-3 py-2 text-sm text-gray-700 hover:text-gray-900"
-          >
+          <Button type="button" variant="ghost" size="lg" onClick={handleClose}>
             Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          </Button>
+          <Button type="submit" variant="primary" size="lg" disabled={!canSubmit}>
             {mutation.isPending ? 'Creating…' : 'Create'}
-          </button>
+          </Button>
         </div>
       </form>
     </dialog>

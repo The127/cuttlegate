@@ -4,6 +4,7 @@ import { useState, type ChangeEvent } from 'react'
 import { projectEnvRoute } from './$slug.environments.$envSlug'
 import { fetchJSON, patchJSON, postJSON, deleteRequest, APIError } from '../../api'
 import { useFlagSSE } from '../../hooks/useFlagSSE'
+import { Button, Input, Select, SelectItem } from '../../components/ui'
 
 interface Variant {
   key: string
@@ -197,20 +198,13 @@ function FlagDetailCard({
         </div>
         <div className="flex items-center gap-2">
           {!editing && (
-            <button
-              onClick={() => setEditing(true)}
-              className="px-3 py-1 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
-            >
+            <Button variant="secondary" size="sm" onClick={() => setEditing(true)}>
               Edit
-            </button>
+            </Button>
           )}
-          <button
-            onClick={onDeleteIntent}
-            aria-label="Delete flag"
-            className="px-3 py-1 text-sm font-medium text-red-600 border border-red-200 rounded hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500"
-          >
+          <Button variant="danger-outline" size="sm" aria-label="Delete flag" onClick={onDeleteIntent}>
             Delete
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -220,11 +214,11 @@ function FlagDetailCard({
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-1">Name</label>
           {editing ? (
-            <input
+            <Input
               type="text"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              className="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="py-1.5 px-2"
             />
           ) : (
             <p className="text-sm text-gray-900">{flag.name}</p>
@@ -241,7 +235,7 @@ function FlagDetailCard({
                   {v.key}
                 </span>
                 {editing ? (
-                  <input
+                  <Input
                     type="text"
                     value={editVariants[i].name}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => {
@@ -250,8 +244,8 @@ function FlagDetailCard({
                       )
                       setEditVariants(updated)
                     }}
-                    className="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     aria-label={`Variant name for ${v.key}`}
+                    className="py-1 px-2"
                   />
                 ) : (
                   <span className="text-sm text-gray-700">{v.name}</span>
@@ -265,17 +259,17 @@ function FlagDetailCard({
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-1">Default variant</label>
           {editing ? (
-            <select
+            <Select
               value={editDefaultVariantKey}
-              onChange={(e: ChangeEvent<HTMLSelectElement>) => setEditDefaultVariantKey(e.target.value)}
-              className="text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onValueChange={setEditDefaultVariantKey}
+              aria-label="Default variant"
             >
               {editVariants.map((v: Variant) => (
-                <option key={v.key} value={v.key}>
+                <SelectItem key={v.key} value={v.key}>
                   {v.key}
-                </option>
+                </SelectItem>
               ))}
-            </select>
+            </Select>
           ) : (
             <span className="font-mono text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5">
               {flag.default_variant_key}
@@ -311,20 +305,19 @@ function FlagDetailCard({
       {/* Edit actions */}
       {editing && (
         <div className="px-5 py-3 border-t border-gray-100 flex items-center gap-3">
-          <button
+          <Button
             onClick={() => updateMutation.mutate()}
             disabled={updateMutation.isPending}
-            className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {updateMutation.isPending ? 'Saving…' : 'Save'}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="secondary"
             onClick={cancelEdit}
             disabled={updateMutation.isPending}
-            className="px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
           >
             Cancel
-          </button>
+          </Button>
           {saveError && (
             <p className="text-xs text-red-600">{saveError}</p>
           )}
@@ -368,21 +361,12 @@ function DeleteConfirmModal({
           <p className="mt-3 text-xs text-red-600">Failed to delete. Please try again.</p>
         )}
         <div className="mt-5 flex justify-end gap-3">
-          <button
-            autoFocus
-            onClick={onCancel}
-            disabled={isDeleting}
-            className="px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
-          >
+          <Button autoFocus variant="secondary" onClick={onCancel} disabled={isDeleting}>
             Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={isDeleting}
-            className="px-3 py-1.5 text-sm font-medium bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500"
-          >
+          </Button>
+          <Button variant="danger" onClick={onConfirm} disabled={isDeleting}>
             {isDeleting ? 'Deleting…' : 'Delete'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -459,7 +443,7 @@ function EnvironmentToggleRow({
           <span className="text-xs text-red-600">Failed to load</span>
           <button
             onClick={() => void refetch()}
-            className="text-xs text-blue-600 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+            className="text-xs text-blue-600 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
           >
             Retry
           </button>
@@ -569,7 +553,7 @@ function EvaluationPanel({
       <button
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="w-full flex items-center justify-between px-5 py-3 text-left focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+        className="w-full flex items-center justify-between px-5 py-3 text-left focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--color-accent)]"
       >
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
           Evaluation playground
@@ -594,7 +578,7 @@ function EvaluationPanel({
               onChange={handleInputChange}
               rows={4}
               spellCheck={false}
-              className="w-full font-mono text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+              className="w-full font-mono text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] resize-y"
             />
             {jsonError && (
               <p className="mt-1 text-xs text-red-600" role="alert">
@@ -603,13 +587,12 @@ function EvaluationPanel({
             )}
           </div>
 
-          <button
+          <Button
             onClick={handleEvaluate}
             disabled={mutation.isPending || jsonError !== null}
-            className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {mutation.isPending ? 'Evaluating…' : 'Evaluate'}
-          </button>
+          </Button>
 
           {mutation.isError && (
             <p className="text-xs text-red-600" role="alert">
