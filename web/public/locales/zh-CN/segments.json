@@ -1,0 +1,52 @@
+{
+  "title": "用户分群",
+  "new_segment": "新建分群",
+  "empty_state": "暂无用户分群 — 用户分群可让您将功能标志定向到特定用户群体。",
+  "error": "加载用户分群失败。",
+  "edit_aria": "编辑分群 {{slug}}",
+  "delete_aria": "删除分群 {{slug}}",
+  "create": {
+    "title": "创建用户分群",
+    "name_label": "名称",
+    "name_placeholder": "Beta 用户",
+    "slug_label": "标识符",
+    "slug_placeholder": "beta-users",
+    "slug_conflict": "此项目中已存在具有该标识符的用户分群",
+    "slug_required": "标识符为必填项",
+    "slug_too_long": "标识符不能超过 {{max}} 个字符",
+    "slug_invalid": "标识符必须以字母或数字开头，且只能包含小写字母、数字和连字符",
+    "server_error": "出了些问题。请重试。"
+  },
+  "edit": {
+    "title": "编辑用户分群",
+    "name_label": "名称",
+    "slug_label": "标识符",
+    "slug_immutable": "标识符创建后不可更改。",
+    "server_error": "出了些问题。请重试。"
+  },
+  "delete": {
+    "title": "删除用户分群？",
+    "body": "这将永久删除 <mono>{{slug}}</mono>。",
+    "warning": "删除此用户分群可能会破坏引用它的定向规则。",
+    "failed": "删除失败。请重试。"
+  },
+  "members": {
+    "title": "成员 — {{slug}}",
+    "close_aria": "关闭",
+    "add_placeholder": "用户键",
+    "add_aria": "要添加的用户键",
+    "add_button": "添加",
+    "duplicate_key": "此键已是成员",
+    "no_members": "暂无成员。",
+    "bulk_show": "批量导入（替换所有）",
+    "bulk_hide": "隐藏批量导入",
+    "bulk_placeholder": "每行一个用户键",
+    "bulk_aria": "批量成员导入",
+    "bulk_apply": "替换全部",
+    "save_failed": "保存成员失败。请重试。",
+    "remove_aria": "移除 {{key}}",
+    "failed_to_load": "加载成员失败。",
+    "members_button": "成员",
+    "saving": "保存中…"
+  }
+}
