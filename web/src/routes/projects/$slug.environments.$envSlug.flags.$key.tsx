@@ -117,13 +117,20 @@ function FlagDetailPage() {
 
       <EnvironmentTogglePanel slug={slug} flagKey={key} />
 
-      <div className="mt-4">
+      <div className="mt-4 flex gap-4">
         <Link
           to="/projects/$slug/environments/$envSlug/flags/$key/rules"
           params={{ slug, envSlug, key }}
           className="text-sm text-blue-600 hover:underline"
         >
           {t('detail.targeting_rules')}
+        </Link>
+        <Link
+          to="/projects/$slug/environments/$envSlug/flags/$key/evaluations"
+          params={{ slug, envSlug, key }}
+          className="text-sm text-blue-600 hover:underline"
+        >
+          {t('audit.tab_title')}
         </Link>
       </div>
 

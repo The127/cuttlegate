@@ -22,12 +22,14 @@ func viewerCtx() context.Context {
 }
 
 // newEvalSvcFromDB constructs an EvaluationService backed by real Postgres adapters.
+// publisher is nil — fire-and-forget events are not tested here.
 func newEvalSvcFromDB(db *sql.DB) *app.EvaluationService {
 	return app.NewEvaluationService(
 		dbadapter.NewPostgresFlagRepository(db),
 		dbadapter.NewPostgresFlagEnvironmentStateRepository(db),
 		dbadapter.NewPostgresRuleRepository(db),
 		dbadapter.NewPostgresSegmentRepository(db),
+		nil,
 	)
 }
 

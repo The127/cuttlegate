@@ -25,8 +25,9 @@ func (c *countingRuleRepository) ListByEnvironment(ctx context.Context, environm
 }
 
 // newEvalSvc constructs an EvaluationService with in-memory fakes.
+// publisher is nil — fire-and-forget events are skipped in unit tests.
 func newEvalSvc(flagRepo *fakeFlagRepository, stateRepo *fakeFlagEnvironmentStateRepository, ruleRepo *countingRuleRepository) *app.EvaluationService {
-	return app.NewEvaluationService(flagRepo, stateRepo, ruleRepo, newFakeSegmentRepository())
+	return app.NewEvaluationService(flagRepo, stateRepo, ruleRepo, newFakeSegmentRepository(), nil)
 }
 
 func seedFlag(t *testing.T, flagRepo *fakeFlagRepository, id, projectID, key string) *domain.Flag {

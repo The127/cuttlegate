@@ -93,6 +93,11 @@ func run() error {
 		json.NewEncoder(w).Encode(clientCfg) //nolint:errcheck
 	})
 
+	// ── Signal context (needed by retention worker before server start) ───────
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	// ── Database connection ──────────────────────────────────────────────────
 
 	var conn *sql.DB
@@ -116,6 +121,7 @@ func run() error {
 		segmentRepo := dbadapter.NewPostgresSegmentRepository(conn)
 		apiKeyRepo := dbadapter.NewPostgresAPIKeyRepository(conn)
 		auditRepo := dbadapter.NewPostgresAuditRepository(conn)
+		evalEventRepo := dbadapter.NewPostgresEvaluationEventRepository(conn)
 		uowFactory := dbadapter.NewPostgresUnitOfWorkFactory(conn)
 
 		requireBearer := httpadapter.RequireBearer(verifier, userRepo)
@@ -126,10 +132,14 @@ func run() error {
 		flagSvc := app.NewFlagService(flagRepo, envRepo, stateRepo, broker, auditRepo)
 		ruleSvc := app.NewRuleService(ruleRepo)
 		segmentSvc := app.NewSegmentService(segmentRepo)
-		evalSvc := app.NewEvaluationService(flagRepo, stateRepo, ruleRepo, segmentRepo)
+		evalSvc := app.NewEvaluationService(flagRepo, stateRepo, ruleRepo, segmentRepo, evalEventRepo)
+		evalAuditSvc := app.NewEvaluationAuditService(evalEventRepo, flagRepo)
 		apiKeySvc := app.NewAPIKeyService(apiKeyRepo)
 		auditSvc := app.NewAuditService(auditRepo)
 		promotionSvc := app.NewPromotionService(uowFactory, flagRepo)
+
+		// Start retention worker — runs in background, exits when ctx is cancelled.
+		dbadapter.StartEvaluationRetentionWorker(ctx, evalEventRepo, cfg.EvalEventRetentionDays, cfg.EvalEventRetentionInterval)
 
 		httpadapter.NewProjectHandler(projSvc).RegisterRoutes(mux, requireBearer)
 		httpadapter.NewEnvironmentHandler(envSvc, projSvc).RegisterRoutes(mux, requireBearer)
@@ -144,6 +154,7 @@ func run() error {
 		requireBearerOrAPIKey := httpadapter.RequireBearerOrAPIKey(verifier, apiKeySvc)
 		evalAuth := func(h http.Handler) http.Handler { return requireBearerOrAPIKey(evalRateLimiter.Limit(h)) }
 		httpadapter.NewEvaluationHandler(evalSvc, projSvc, envSvc).RegisterRoutes(mux, evalAuth)
+		httpadapter.NewEvaluationAuditHandler(evalAuditSvc, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
 
 		httpadapter.NewSSEHandler(broker, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
 		httpadapter.NewAuditHandler(auditSvc, projSvc).RegisterRoutes(mux, requireBearer)
@@ -184,9 +195,6 @@ func run() error {
 		Addr:    cfg.Addr,
 		Handler: mux,
 	}
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 
 	go func() {
 		log.Printf("listening on %s", cfg.Addr)

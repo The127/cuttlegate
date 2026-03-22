@@ -9,6 +9,7 @@ import { projectEnvRoute } from './routes/projects/$slug.environments.$envSlug'
 import { flagListRoute } from './routes/projects/$slug.environments.$envSlug.flags'
 import { flagDetailRoute } from './routes/projects/$slug.environments.$envSlug.flags.$key'
 import { flagRulesRoute } from './routes/projects/$slug.environments.$envSlug.flags.$key.rules'
+import { flagEvaluationsRoute } from './routes/projects/$slug.environments.$envSlug.flags.$key.evaluations'
 import { segmentListRoute } from './routes/projects/$slug.segments'
 import { environmentSettingsRoute } from './routes/projects/$slug.settings.environments'
 import { compareRoute } from './routes/projects/$slug.compare'
@@ -27,7 +28,7 @@ const routeTree = rootRoute.addChildren([
       compareRoute,
       apiKeyListRoute,
       memberListRoute,
-      projectEnvRoute.addChildren([flagListRoute, flagDetailRoute, flagRulesRoute]),
+      projectEnvRoute.addChildren([flagListRoute, flagDetailRoute, flagRulesRoute, flagEvaluationsRoute]),
     ]),
   ]),
   callbackRoute,
