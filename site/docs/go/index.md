@@ -84,7 +84,7 @@ type EvalResult struct {
 All methods return typed errors — no string-only errors.
 
 ```go
-result, err := client.EvaluateAll(ctx, evalCtx)
+results, err := client.EvaluateAll(ctx, evalCtx)
 if err != nil {
     var authErr *cuttlegate.AuthError
     var notFoundErr *cuttlegate.NotFoundError
