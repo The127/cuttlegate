@@ -1,9 +1,10 @@
 import { createRoute } from '@tanstack/react-router'
-import { useQuery, useQueries } from '@tanstack/react-query'
+import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query'
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { projectRoute } from './$slug'
 import { fetchJSON } from '../../api'
+import { PromoteDialog } from '../../components/PromoteDialog'
 
 interface Environment {
   id: string
@@ -40,8 +41,12 @@ export const compareRoute = createRoute({
 
 function CompareEnvironmentsPage() {
   const { t } = useTranslation('projects')
+  const { t: tFlags } = useTranslation('flags')
   const project = projectRoute.useLoaderData()
+  const queryClient = useQueryClient()
   const [page, setPage] = useState(0)
+  // slug of the env being promoted from; null when dialog is closed
+  const [promoteSourceEnv, setPromoteSourceEnv] = useState<string | null>(null)
 
   const envsQuery = useQuery({
     queryKey: ['environments', project.slug],
@@ -135,7 +140,16 @@ function CompareEnvironmentsPage() {
                       scope="col"
                       className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide whitespace-nowrap"
                     >
-                      <span className="font-mono">{env.slug}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono">{env.slug}</span>
+                        <button
+                          onClick={() => setPromoteSourceEnv(env.slug)}
+                          className="text-blue-500 hover:text-blue-700 text-xs font-normal normal-case tracking-normal focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                          aria-label={tFlags('promote.bulk_button') + ' ' + env.slug}
+                        >
+                          {tFlags('promote.bulk_button')}
+                        </button>
+                      </div>
                     </th>
                   ))}
                 </tr>
@@ -170,6 +184,20 @@ function CompareEnvironmentsPage() {
             <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
           )}
         </>
+      )}
+
+      {promoteSourceEnv && (
+        <PromoteDialog
+          mode="bulk"
+          projectSlug={project.slug}
+          sourceEnvSlug={promoteSourceEnv}
+          environments={envs}
+          onClose={() => setPromoteSourceEnv(null)}
+          onSuccess={() => {
+            // Invalidate all env-flag queries so the matrix refreshes
+            void queryClient.invalidateQueries({ queryKey: ['flags', project.slug] })
+          }}
+        />
       )}
     </div>
   )
