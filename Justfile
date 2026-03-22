@@ -158,3 +158,12 @@ index:
       echo '```'
     } > "$OUT"
     echo "Index written to $OUT"
+    just index-web
+
+# Generate a frontend orientation index for AI sessions (writes to docs/frontend-index.md)
+# Covers routes, components, hooks, and API surface of the web/ SPA.
+index-web:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    [[ -x web/node_modules/.bin/tsx ]] || npm --prefix web install --silent
+    web/node_modules/.bin/tsx web/scripts/gen-frontend-index.ts

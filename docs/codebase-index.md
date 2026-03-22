@@ -1,6 +1,6 @@
 # Codebase Index
 
-_Generated 2026-03-21 02:44 UTC. Read this at session start for orientation._
+_Generated 2026-03-22 15:38 UTC. Read this at session start for orientation._
 
 ## Packages
 ```
@@ -17,6 +17,8 @@ internal/domain/ports
 
 ## Domain ports — interfaces (internal/domain/ports/)
 ```
+type APIKeyRepository interface {
+type AuditRepository interface {
 type DomainEvent interface {
 type EnvironmentRepository interface {
 type EventPublisher interface {
@@ -25,21 +27,29 @@ type FlagRepository interface {
 type ProjectMemberRepository interface {
 type ProjectRepository interface {
 type RuleRepository interface {
+type SegmentRepository interface {
 type TokenVerifier interface {
+type UnitOfWorkFactory interface {
+type UnitOfWork interface {
 ```
 
 ## Domain types — structs (internal/domain/)
 ```
+type APIKey struct {
+type AuditEvent struct {
+type AuditFilter struct {
 type AuthContext struct {
 type Condition struct {
 type Environment struct {
 type EvalContext struct {
 type EvalResult struct {
 type FlagEnvironmentState struct {
+type FlagStateChangedEvent struct {
 type Flag struct {
 type ProjectMember struct {
 type Project struct {
 type Rule struct {
+type Segment struct {
 type User struct {
 type ValidationError struct {
 type Variant struct {
@@ -47,18 +57,30 @@ type Variant struct {
 
 ## App services (internal/app/)
 ```
+type APIKeyCreateResult struct {
+type APIKeyService struct {
+type APIKeyView struct {
+type AuditService struct {
 type EnvironmentService struct {
 type EvaluationService struct {
 type EvalView struct {
 type FlagEnvironmentView struct {
+type FlagPromotionDiff struct {
 type FlagService struct {
 type ProjectMemberService struct {
 type ProjectService struct {
+type PromotionService struct {
 type RuleService struct {
+type SegmentService struct {
+type SetEnabledParams struct {
 ```
 
 ## HTTP handlers & middleware (internal/adapters/http/)
 ```
+type APIKeyHandler struct {
+type APIKeyScope struct {
+type AuditHandler struct {
+type Broker struct {
 type EnvironmentHandler struct {
 type EvaluationHandler struct {
 type FlagEnvironmentHandler struct {
@@ -67,16 +89,25 @@ type FlagVariantHandler struct {
 type OIDCVerifier struct {
 type ProjectHandler struct {
 type ProjectMemberHandler struct {
+type PromotionHandler struct {
+type RateLimiter struct {
 type RuleHandler struct {
+type SegmentHandler struct {
+type SSEHandler struct {
 ```
 
 ## DB adapters (internal/adapters/db/)
 ```
-type NoOpRuleRepository struct{}
+type FakeSegmentRepository struct {
+type PostgresAPIKeyRepository struct {
+type PostgresAuditRepository struct {
 type PostgresEnvironmentRepository struct {
 type PostgresFlagEnvironmentStateRepository struct {
 type PostgresFlagRepository struct {
 type PostgresProjectMemberRepository struct {
 type PostgresProjectRepository struct {
 type PostgresRuleRepository struct {
+type PostgresSegmentRepository struct {
+type PostgresUnitOfWorkFactory struct {
+type PostgresUnitOfWork struct {
 ```
