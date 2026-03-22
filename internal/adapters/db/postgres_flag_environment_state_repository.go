@@ -69,6 +69,15 @@ func (r *PostgresFlagEnvironmentStateRepository) GetByFlagAndEnvironment(ctx con
 	return &s, nil
 }
 
+func (r *PostgresFlagEnvironmentStateRepository) Upsert(ctx context.Context, state *domain.FlagEnvironmentState) error {
+	_, err := r.db.ExecContext(ctx,
+		`INSERT INTO flag_environment_states (flag_id, environment_id, enabled) VALUES ($1, $2, $3)
+		 ON CONFLICT (flag_id, environment_id) DO UPDATE SET enabled = EXCLUDED.enabled`,
+		state.FlagID, state.EnvironmentID, state.Enabled,
+	)
+	return err
+}
+
 func (r *PostgresFlagEnvironmentStateRepository) SetEnabled(ctx context.Context, flagID, environmentID string, enabled bool) error {
 	res, err := r.db.ExecContext(ctx,
 		`UPDATE flag_environment_states SET enabled = $1 WHERE flag_id = $2 AND environment_id = $3`,

@@ -37,6 +37,8 @@ type RuleRepository interface {
 	ListByFlagEnvironment(ctx context.Context, flagID, environmentID string) ([]*domain.Rule, error)
 	Upsert(ctx context.Context, rule *domain.Rule) error
 	Delete(ctx context.Context, id string) error
+	// DeleteByFlagEnvironment removes all rules for a given flag+environment pair in one operation.
+	DeleteByFlagEnvironment(ctx context.Context, flagID, environmentID string) error
 }
 
 // SegmentRepository is the port for persisting and retrieving user segments.

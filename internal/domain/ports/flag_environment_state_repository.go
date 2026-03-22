@@ -19,4 +19,6 @@ type FlagEnvironmentStateRepository interface {
 	// SetEnabled updates the enabled field for a specific flag+environment pair.
 	// Returns ErrNotFound if no state row exists for that combination.
 	SetEnabled(ctx context.Context, flagID, environmentID string, enabled bool) error
+	// Upsert inserts a state row or updates the enabled field if one already exists.
+	Upsert(ctx context.Context, state *domain.FlagEnvironmentState) error
 }

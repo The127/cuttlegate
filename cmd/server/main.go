@@ -108,7 +108,7 @@ func run() error {
 		segmentRepo := dbadapter.NewPostgresSegmentRepository(conn)
 		apiKeyRepo := dbadapter.NewPostgresAPIKeyRepository(conn)
 		auditRepo := dbadapter.NewPostgresAuditRepository(conn)
-		_ = dbadapter.NewPostgresUnitOfWorkFactory(conn) // wired for future service injection
+		uowFactory := dbadapter.NewPostgresUnitOfWorkFactory(conn)
 
 		projSvc := app.NewProjectService(projRepo)
 		envSvc := app.NewEnvironmentService(envRepo, projRepo)
@@ -119,6 +119,7 @@ func run() error {
 		evalSvc := app.NewEvaluationService(flagRepo, stateRepo, ruleRepo, segmentRepo)
 		apiKeySvc := app.NewAPIKeyService(apiKeyRepo)
 		auditSvc := app.NewAuditService(auditRepo)
+		promotionSvc := app.NewPromotionService(uowFactory, flagRepo)
 
 		httpadapter.NewProjectHandler(projSvc).RegisterRoutes(mux, requireBearer)
 		httpadapter.NewEnvironmentHandler(envSvc, projSvc).RegisterRoutes(mux, requireBearer)
@@ -136,6 +137,7 @@ func run() error {
 
 		httpadapter.NewSSEHandler(broker, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
 		httpadapter.NewAuditHandler(auditSvc, projSvc).RegisterRoutes(mux, requireBearer)
+		httpadapter.NewPromotionHandler(promotionSvc, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
 	}
 
 	// Health checks — public, no auth required.
