@@ -99,6 +99,7 @@ func (s *ProjectMemberService) AddMember(ctx context.Context, projectSlug, userI
 
 // UpdateRole changes the role of an existing project member. Requires admin role.
 // The caller cannot assign a role higher than their own.
+// Returns ErrLastAdmin if demoting the last admin would leave the project with no admins.
 func (s *ProjectMemberService) UpdateRole(ctx context.Context, projectSlug, userID string, role domain.Role) error {
 	ac, err := requireRole(ctx, domain.RoleAdmin)
 	if err != nil {
@@ -110,6 +111,26 @@ func (s *ProjectMemberService) UpdateRole(ctx context.Context, projectSlug, user
 	proj, err := s.project.GetBySlug(ctx, projectSlug)
 	if err != nil {
 		return err
+	}
+	// Guard: if demoting an admin, ensure at least one other admin remains.
+	if role != domain.RoleAdmin {
+		members, err := s.repo.ListMembers(ctx, proj.ID)
+		if err != nil {
+			return err
+		}
+		var targetIsAdmin bool
+		adminCount := 0
+		for _, m := range members {
+			if m.Role == domain.RoleAdmin {
+				adminCount++
+			}
+			if m.UserID == userID && m.Role == domain.RoleAdmin {
+				targetIsAdmin = true
+			}
+		}
+		if targetIsAdmin && adminCount == 1 {
+			return domain.ErrLastAdmin
+		}
 	}
 	return s.repo.UpdateRole(ctx, proj.ID, userID, role)
 }

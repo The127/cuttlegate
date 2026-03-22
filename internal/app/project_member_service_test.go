@@ -169,6 +169,44 @@ func TestProjectMemberService_UpdateRole_AdminSucceeds(t *testing.T) {
 	}
 }
 
+// ── Scenario 5b: demoting the last admin returns ErrLastAdmin ────────────────
+
+func TestProjectMemberService_UpdateRole_LastAdminDemotionReturnsErrLastAdmin(t *testing.T) {
+	svc, projRepo, memberRepo := newMemberSvc()
+	projID := seedProject(projRepo, "acme")
+	memberRepo.members[projID] = []*domain.ProjectMember{
+		{ProjectID: projID, UserID: "admin-1", Role: domain.RoleAdmin},
+	}
+
+	err := svc.UpdateRole(authCtx("admin-1", domain.RoleAdmin), "acme", "admin-1", domain.RoleViewer)
+	if !errors.Is(err, domain.ErrLastAdmin) {
+		t.Errorf("expected ErrLastAdmin, got %v", err)
+	}
+	// role must not have changed
+	if memberRepo.members[projID][0].Role != domain.RoleAdmin {
+		t.Errorf("role was changed despite ErrLastAdmin")
+	}
+}
+
+// ── Scenario 5c: demoting one of two admins succeeds ─────────────────────────
+
+func TestProjectMemberService_UpdateRole_DemotingOneOfTwoAdminsSucceeds(t *testing.T) {
+	svc, projRepo, memberRepo := newMemberSvc()
+	projID := seedProject(projRepo, "acme")
+	memberRepo.members[projID] = []*domain.ProjectMember{
+		{ProjectID: projID, UserID: "admin-1", Role: domain.RoleAdmin},
+		{ProjectID: projID, UserID: "admin-2", Role: domain.RoleAdmin},
+	}
+
+	err := svc.UpdateRole(authCtx("admin-1", domain.RoleAdmin), "acme", "admin-2", domain.RoleViewer)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if memberRepo.members[projID][1].Role != domain.RoleViewer {
+		t.Errorf("role not updated: got %q", memberRepo.members[projID][1].Role)
+	}
+}
+
 // ── Scenario 6: editor cannot change roles ────────────────────────────────────
 
 func TestProjectMemberService_UpdateRole_EditorForbidden(t *testing.T) {
