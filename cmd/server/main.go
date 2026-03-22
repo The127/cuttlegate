@@ -122,6 +122,7 @@ func run() error {
 		apiKeyRepo := dbadapter.NewPostgresAPIKeyRepository(conn)
 		auditRepo := dbadapter.NewPostgresAuditRepository(conn)
 		evalEventRepo := dbadapter.NewPostgresEvaluationEventRepository(conn)
+		evalStatsRepo := dbadapter.NewPostgresFlagEvaluationStatsRepository(conn)
 		uowFactory := dbadapter.NewPostgresUnitOfWorkFactory(conn)
 
 		requireBearer := httpadapter.RequireBearer(verifier, userRepo)
@@ -132,8 +133,9 @@ func run() error {
 		flagSvc := app.NewFlagService(flagRepo, envRepo, stateRepo, broker, auditRepo)
 		ruleSvc := app.NewRuleService(ruleRepo)
 		segmentSvc := app.NewSegmentService(segmentRepo)
-		evalSvc := app.NewEvaluationService(flagRepo, stateRepo, ruleRepo, segmentRepo, evalEventRepo)
+		evalSvc := app.NewEvaluationService(flagRepo, stateRepo, ruleRepo, segmentRepo, evalEventRepo).WithStatsRepo(evalStatsRepo)
 		evalAuditSvc := app.NewEvaluationAuditService(evalEventRepo, flagRepo)
+		evalStatsSvc := app.NewEvaluationStatsService(evalStatsRepo, flagRepo)
 		apiKeySvc := app.NewAPIKeyService(apiKeyRepo)
 		auditSvc := app.NewAuditService(auditRepo)
 		promotionSvc := app.NewPromotionService(uowFactory, flagRepo)
@@ -155,6 +157,7 @@ func run() error {
 		evalAuth := func(h http.Handler) http.Handler { return requireBearerOrAPIKey(evalRateLimiter.Limit(h)) }
 		httpadapter.NewEvaluationHandler(evalSvc, projSvc, envSvc).RegisterRoutes(mux, evalAuth)
 		httpadapter.NewEvaluationAuditHandler(evalAuditSvc, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
+		httpadapter.NewEvaluationStatsHandler(evalStatsSvc, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
 
 		httpadapter.NewSSEHandler(broker, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
 		httpadapter.NewAuditHandler(auditSvc, projSvc).RegisterRoutes(mux, requireBearer)

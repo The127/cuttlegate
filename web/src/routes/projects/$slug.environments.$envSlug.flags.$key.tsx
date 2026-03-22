@@ -7,6 +7,7 @@ import { fetchJSON, patchJSON, postJSON, deleteRequest, APIError } from '../../a
 import { useFlagSSE } from '../../hooks/useFlagSSE'
 import { Button, Input, Select, SelectItem } from '../../components/ui'
 import { PromoteDialog } from '../../components/PromoteDialog'
+import { formatRelativeDate } from '../../utils/date'
 
 interface Variant {
   key: string
@@ -31,6 +32,11 @@ interface Environment {
 
 interface FlagEnvState {
   enabled: boolean
+}
+
+interface FlagStats {
+  last_evaluated_at: string | null
+  evaluation_count: number
 }
 
 const REASON_KEY_MAP: Record<string, string> = {
@@ -144,6 +150,8 @@ function FlagDetailPage() {
         </Link>
       </div>
 
+      <FlagStatsPanel slug={slug} envSlug={envSlug} flagKey={key} />
+
       <EvaluationPanel slug={slug} envSlug={envSlug} flagKey={key} />
 
       {pendingDelete && (
@@ -167,6 +175,62 @@ function FlagDetailPage() {
           onSuccess={() => void queryClient.invalidateQueries({ queryKey })}
         />
       )}
+    </div>
+  )
+}
+
+function FlagStatsPanel({
+  slug,
+  envSlug,
+  flagKey,
+}: {
+  slug: string
+  envSlug: string
+  flagKey: string
+}) {
+  const { t } = useTranslation('flags')
+
+  const { data, isError } = useQuery<FlagStats>({
+    queryKey: ['flag-stats', slug, envSlug, flagKey],
+    queryFn: () =>
+      fetchJSON<FlagStats>(
+        `/api/v1/projects/${slug}/environments/${envSlug}/flags/${flagKey}/stats`,
+      ),
+    refetchInterval: 30_000,
+  })
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg mt-4">
+      <div className="px-5 py-3 border-b border-gray-100">
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+          {t('stats.last_evaluated_label')} &amp; {t('stats.evaluation_count_label')}
+        </h2>
+      </div>
+      <div className="px-5 py-4">
+        {isError ? (
+          <p className="text-sm text-red-600">{t('stats.load_error')}</p>
+        ) : !data ? (
+          <div className="flex gap-8">
+            <div className="h-4 w-24 bg-gray-100 rounded animate-pulse" />
+            <div className="h-4 w-16 bg-gray-100 rounded animate-pulse" />
+          </div>
+        ) : (
+          <div className="flex gap-8">
+            <div>
+              <p className="text-xs font-medium text-gray-500 mb-0.5">{t('stats.last_evaluated_label')}</p>
+              <p className="text-sm text-gray-900">
+                {!data.last_evaluated_at || data.evaluation_count === 0
+                  ? t('stats.never_evaluated')
+                  : formatRelativeDate(data.last_evaluated_at)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-gray-500 mb-0.5">{t('stats.evaluation_count_label')}</p>
+              <p className="text-sm text-gray-900 font-mono">{data.evaluation_count.toLocaleString()}</p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

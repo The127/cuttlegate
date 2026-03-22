@@ -94,7 +94,14 @@
     "col_key": "Key",
     "col_name": "Name",
     "col_default_variant": "Default",
-    "col_status": "Status"
+    "col_status": "Status",
+    "col_last_evaluated": "Last evaluated"
+  },
+  "stats": {
+    "never_evaluated": "Never",
+    "last_evaluated_label": "Last evaluated",
+    "evaluation_count_label": "Evaluation count",
+    "load_error": "Failed to load stats."
   },
   "compare": {
     "title": "Compare Environments",

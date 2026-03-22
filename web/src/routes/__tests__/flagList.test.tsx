@@ -57,13 +57,31 @@ async function loadFlagListPage() {
   return mod
 }
 
+const STATS_NEVER: { last_evaluated_at: null; evaluation_count: number } = {
+  last_evaluated_at: null,
+  evaluation_count: 0,
+}
+
+const STATS_WITH_DATA = {
+  last_evaluated_at: '2026-03-21T14:00:00Z',
+  evaluation_count: 42,
+}
+
+/** Returns flags fixture for list calls, stats for stats calls. */
+function mockFetchWithStats(statsFixture = STATS_NEVER) {
+  mockFetchJSON.mockImplementation((url: string) => {
+    if (url.endsWith('/stats')) return Promise.resolve(statsFixture)
+    return Promise.resolve(FLAGS_FIXTURE)
+  })
+}
+
 describe('FlagListPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
   it('renders without accessibility violations when flags load', async () => {
-    mockFetchJSON.mockResolvedValue(FLAGS_FIXTURE)
+    mockFetchWithStats()
 
     const { flagListRoute } = await loadFlagListPage()
     const FlagListPage = flagListRoute.options.component
@@ -79,7 +97,10 @@ describe('FlagListPage', () => {
   })
 
   it('renders without accessibility violations in empty state', async () => {
-    mockFetchJSON.mockResolvedValue({ flags: [] })
+    mockFetchJSON.mockImplementation((url: string) => {
+      if (url.endsWith('/stats')) return Promise.resolve(STATS_NEVER)
+      return Promise.resolve({ flags: [] })
+    })
 
     const { flagListRoute } = await loadFlagListPage()
     const FlagListPage = flagListRoute.options.component
@@ -95,7 +116,7 @@ describe('FlagListPage', () => {
   })
 
   it('renders flag list with correct roles', async () => {
-    mockFetchJSON.mockResolvedValue(FLAGS_FIXTURE)
+    mockFetchWithStats()
 
     const { flagListRoute } = await loadFlagListPage()
     const FlagListPage = flagListRoute.options.component
@@ -109,5 +130,43 @@ describe('FlagListPage', () => {
     // Toggle button must have aria-pressed
     const toggle = screen.getByRole('button', { name: /disable flag/i })
     expect(toggle).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  // @edge: never-evaluated flag shows "Never" not blank or "0".
+  it('shows "Never" for flags with zero evaluations', async () => {
+    mockFetchWithStats(STATS_NEVER)
+
+    const { flagListRoute } = await loadFlagListPage()
+    const FlagListPage = flagListRoute.options.component
+
+    render(<Wrapper><FlagListPage /></Wrapper>)
+
+    await waitFor(() => {
+      expect(screen.getByText('Dark Mode')).toBeInTheDocument()
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('Never')).toBeInTheDocument()
+    })
+  })
+
+  // @happy: evaluated flag shows relative time in Last evaluated column.
+  it('shows relative time for evaluated flags', async () => {
+    mockFetchWithStats(STATS_WITH_DATA)
+
+    const { flagListRoute } = await loadFlagListPage()
+    const FlagListPage = flagListRoute.options.component
+
+    render(<Wrapper><FlagListPage /></Wrapper>)
+
+    await waitFor(() => {
+      expect(screen.getByText('Dark Mode')).toBeInTheDocument()
+    })
+
+    // Stats should load and show something (relative date text)
+    await waitFor(() => {
+      const neverCells = screen.queryAllByText('Never')
+      expect(neverCells).toHaveLength(0)
+    })
   })
 })

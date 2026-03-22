@@ -27,7 +27,8 @@ type EvaluationService struct {
 	stateRepo   ports.FlagEnvironmentStateRepository
 	ruleRepo    ports.RuleRepository
 	segmentRepo ports.SegmentRepository
-	publisher   ports.EvaluationEventPublisher // nil = no-op
+	publisher   ports.EvaluationEventPublisher      // nil = no-op
+	statsRepo   ports.FlagEvaluationStatsRepository // nil = no-op
 }
 
 // NewEvaluationService constructs an EvaluationService.
@@ -47,11 +48,20 @@ func NewEvaluationService(
 	}
 }
 
-// publishEvent fires a best-effort evaluation event in a goroutine.
-// Errors are logged but never returned — the eval response path must not be
-// affected by publish failures.
+// WithStatsRepo attaches a FlagEvaluationStatsRepository so that evaluation
+// stats are upserted on each evaluation. The method returns the service to
+// allow chaining at construction time.
+func (s *EvaluationService) WithStatsRepo(statsRepo ports.FlagEvaluationStatsRepository) *EvaluationService {
+	s.statsRepo = statsRepo
+	return s
+}
+
+// publishEvent fires a best-effort evaluation event and stats upsert in a
+// goroutine. Errors are logged but never returned — the eval response path must
+// not be affected by publish or upsert failures.
 func (s *EvaluationService) publishEvent(projectID, environmentID string, flag *domain.Flag, evalCtx domain.EvalContext, result domain.EvalResult, id string, now time.Time) {
-	if s.publisher == nil {
+	hasWork := s.publisher != nil || s.statsRepo != nil
+	if !hasWork {
 		return
 	}
 	// Serialise input context attributes in the calling goroutine (map is safe to read here).
@@ -59,23 +69,40 @@ func (s *EvaluationService) publishEvent(projectID, environmentID string, flag *
 	if err != nil {
 		ctxJSON = []byte("{}")
 	}
-	event := &domain.EvaluationEvent{
-		ID:              id,
-		FlagKey:         flag.Key,
-		ProjectID:       projectID,
-		EnvironmentID:   environmentID,
-		UserID:          evalCtx.UserID,
-		InputContext:    string(ctxJSON),
-		MatchedRuleID:   result.MatchedRuleID,
-		MatchedRuleName: result.MatchedRuleName,
-		VariantKey:      result.VariantKey,
-		Reason:          result.Reason,
-		OccurredAt:      now,
-	}
+
 	pub := s.publisher
+	stats := s.statsRepo
+	flagID := flag.ID
+	flagKey := flag.Key
+
+	var event *domain.EvaluationEvent
+	if pub != nil {
+		event = &domain.EvaluationEvent{
+			ID:              id,
+			FlagKey:         flagKey,
+			ProjectID:       projectID,
+			EnvironmentID:   environmentID,
+			UserID:          evalCtx.UserID,
+			InputContext:    string(ctxJSON),
+			MatchedRuleID:   result.MatchedRuleID,
+			MatchedRuleName: result.MatchedRuleName,
+			VariantKey:      result.VariantKey,
+			Reason:          result.Reason,
+			OccurredAt:      now,
+		}
+	}
+
 	go func() {
-		if err := pub.Publish(context.Background(), event); err != nil {
-			slog.Error("evaluation event publish failed", "flag_key", flag.Key, "err", err)
+		ctx := context.Background()
+		if pub != nil {
+			if err := pub.Publish(ctx, event); err != nil {
+				slog.Error("evaluation event publish failed", "flag_key", flagKey, "err", err)
+			}
+		}
+		if stats != nil {
+			if err := stats.Upsert(ctx, flagID, environmentID, flagKey, now); err != nil {
+				slog.Error("evaluation stats upsert failed", "flag_key", flagKey, "err", err)
+			}
 		}
 	}()
 }

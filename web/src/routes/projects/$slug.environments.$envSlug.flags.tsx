@@ -15,6 +15,7 @@ import {
   StatusBadge,
 } from '../../components/ui'
 import type { ColumnDef } from '../../components/ui'
+import { formatRelativeDate } from '../../utils/date'
 
 interface Variant {
   key: string
@@ -29,6 +30,22 @@ interface FlagItem {
   variants: Variant[]
   default_variant_key: string
   enabled: boolean
+}
+
+interface FlagStats {
+  last_evaluated_at: string | null
+  evaluation_count: number
+}
+
+function useFlagStats(slug: string, envSlug: string, flagKey: string) {
+  return useQuery<FlagStats>({
+    queryKey: ['flag-stats', slug, envSlug, flagKey],
+    queryFn: () =>
+      fetchJSON<FlagStats>(
+        `/api/v1/projects/${slug}/environments/${envSlug}/flags/${flagKey}/stats`,
+      ),
+    refetchInterval: 30_000,
+  })
 }
 
 export const flagListRoute = createRoute({
@@ -108,6 +125,11 @@ function FlagListPage() {
             {f.default_variant_key}
           </span>
         ),
+      },
+      {
+        key: 'last_evaluated',
+        header: t('table.col_last_evaluated'),
+        cell: (f) => <LastEvaluatedCell slug={slug} envSlug={envSlug} flagKey={f.key} />,
       },
       {
         key: 'status',
@@ -209,6 +231,23 @@ function FlagListPage() {
         />
       )}
     </div>
+  )
+}
+
+function LastEvaluatedCell({ slug, envSlug, flagKey }: { slug: string; envSlug: string; flagKey: string }) {
+  const { t } = useTranslation('flags')
+  const { data } = useFlagStats(slug, envSlug, flagKey)
+
+  if (!data) {
+    return <span className="text-xs text-gray-400">—</span>
+  }
+
+  if (!data.last_evaluated_at || data.evaluation_count === 0) {
+    return <span className="text-xs text-gray-400">{t('stats.never_evaluated')}</span>
+  }
+
+  return (
+    <span className="text-xs text-gray-500">{formatRelativeDate(data.last_evaluated_at)}</span>
   )
 }
 
