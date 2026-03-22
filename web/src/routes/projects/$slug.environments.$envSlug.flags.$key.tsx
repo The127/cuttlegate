@@ -6,6 +6,7 @@ import { projectEnvRoute } from './$slug.environments.$envSlug'
 import { fetchJSON, patchJSON, postJSON, deleteRequest, APIError } from '../../api'
 import { useFlagSSE } from '../../hooks/useFlagSSE'
 import { Button, Input, Select, SelectItem } from '../../components/ui'
+import { PromoteDialog } from '../../components/PromoteDialog'
 
 interface Variant {
   key: string
@@ -81,6 +82,14 @@ function FlagDetailPage() {
   })
 
   const [pendingDelete, setPendingDelete] = useState(false)
+  const [pendingPromote, setPendingPromote] = useState(false)
+
+  const { data: environments } = useQuery({
+    queryKey: ['environments', slug],
+    queryFn: () =>
+      fetchJSON<{ environments: Environment[] }>(`/api/v1/projects/${slug}/environments`)
+        .then((d) => d.environments),
+  })
 
   if (isLoading) return <FlagDetailSkeleton />
 
@@ -112,6 +121,7 @@ function FlagDetailPage() {
         isToggling={toggleMutation.isPending}
         onToggle={(enabled) => toggleMutation.mutate(enabled)}
         onDeleteIntent={() => setPendingDelete(true)}
+        onPromoteIntent={() => setPendingPromote(true)}
         onSaved={() => void queryClient.invalidateQueries({ queryKey })}
       />
 
@@ -145,6 +155,18 @@ function FlagDetailPage() {
           onCancel={() => setPendingDelete(false)}
         />
       )}
+
+      {pendingPromote && environments && (
+        <PromoteDialog
+          mode="single"
+          projectSlug={slug}
+          sourceEnvSlug={envSlug}
+          flagKey={key}
+          environments={environments}
+          onClose={() => setPendingPromote(false)}
+          onSuccess={() => void queryClient.invalidateQueries({ queryKey })}
+        />
+      )}
     </div>
   )
 }
@@ -156,6 +178,7 @@ function FlagDetailCard({
   isToggling,
   onToggle,
   onDeleteIntent,
+  onPromoteIntent,
   onSaved,
 }: {
   flag: FlagDetail
@@ -164,6 +187,7 @@ function FlagDetailCard({
   isToggling: boolean
   onToggle: (enabled: boolean) => void
   onDeleteIntent: () => void
+  onPromoteIntent: () => void
   onSaved: () => void
 }) {
   const { t } = useTranslation('flags')
@@ -214,9 +238,14 @@ function FlagDetailCard({
         </div>
         <div className="flex items-center gap-2">
           {!editing && (
-            <Button variant="secondary" size="sm" onClick={() => setEditing(true)}>
-              {t('actions.edit', { ns: 'common' })}
-            </Button>
+            <>
+              <Button variant="secondary" size="sm" onClick={() => setEditing(true)}>
+                {t('actions.edit', { ns: 'common' })}
+              </Button>
+              <Button variant="secondary" size="sm" onClick={onPromoteIntent}>
+                {t('promote.button')}
+              </Button>
+            </>
           )}
           <Button variant="danger-outline" size="sm" aria-label={t('detail.delete_aria')} onClick={onDeleteIntent}>
             {t('actions.delete', { ns: 'common' })}
