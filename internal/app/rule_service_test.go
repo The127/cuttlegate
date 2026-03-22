@@ -49,6 +49,17 @@ func (f *fakeRuleRepository) Delete(_ context.Context, id string) error {
 	return nil
 }
 
+func (f *fakeRuleRepository) ListByEnvironment(_ context.Context, environmentID string) ([]*domain.Rule, error) {
+	result := make([]*domain.Rule, 0)
+	for _, r := range f.rules {
+		if r.EnvironmentID == environmentID {
+			cp := *r
+			result = append(result, &cp)
+		}
+	}
+	return result, nil
+}
+
 func (f *fakeRuleRepository) DeleteByFlagEnvironment(_ context.Context, flagID, environmentID string) error {
 	for id, r := range f.rules {
 		if r.FlagID == flagID && r.EnvironmentID == environmentID {
