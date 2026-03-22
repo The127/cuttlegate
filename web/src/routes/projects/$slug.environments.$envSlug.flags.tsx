@@ -182,7 +182,7 @@ function FlagListPage() {
         ),
       },
     ],
-    [t, slug, envSlug, toggleMutation, toggleErrorKey],
+    [t, slug, envSlug, toggleMutation.isPending, toggleMutation.variables, toggleMutation.mutate, toggleErrorKey],
   )
 
   if (isLoading) return <FlagListSkeleton />

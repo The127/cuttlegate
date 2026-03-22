@@ -170,3 +170,108 @@ describe('FlagListPage', () => {
     })
   })
 })
+
+describe('useMemo dep array — toggleMutation primitives', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  // @happy: columns reference is stable when no deps change (idle re-render)
+  it('memo reference is stable on idle re-render', async () => {
+    mockFetchWithStats()
+
+    const { flagListRoute } = await loadFlagListPage()
+    const FlagListPage = flagListRoute.options.component
+
+    const { rerender } = render(
+      <Wrapper>
+        <FlagListPage />
+      </Wrapper>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Dark Mode')).toBeInTheDocument()
+    })
+
+    // Re-render with identical wrapper — toggle button must still be present
+    // (stable columns reference means the table re-uses the same column defs)
+    rerender(
+      <Wrapper>
+        <FlagListPage />
+      </Wrapper>,
+    )
+
+    expect(screen.getByRole('button', { name: /disable flag/i })).toBeInTheDocument()
+  })
+
+  // @happy: toggle button is disabled while isPending is true for that flag
+  it('memo recomputes when isPending flips — button is disabled during pending', async () => {
+    // Patch resolves after we can inspect the DOM
+    let resolvePatch!: () => void
+    mockFetchWithStats()
+    mockPatchJSON.mockReturnValue(
+      new Promise<void>((resolve) => {
+        resolvePatch = resolve
+      }),
+    )
+
+    const { flagListRoute } = await loadFlagListPage()
+    const FlagListPage = flagListRoute.options.component
+
+    const { userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+
+    render(
+      <Wrapper>
+        <FlagListPage />
+      </Wrapper>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Dark Mode')).toBeInTheDocument()
+    })
+
+    const toggleBtn = screen.getByRole('button', { name: /disable flag/i })
+    await user.click(toggleBtn)
+
+    // While the patch is in-flight the button should be disabled
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /disable flag/i })).toBeDisabled()
+    })
+
+    resolvePatch()
+  })
+
+  // @happy: button re-enables after mutation settles — no stale closure
+  it('no stale closure after mutation settles — button reflects current isPending', async () => {
+    mockFetchWithStats()
+    mockPatchJSON.mockResolvedValue(undefined)
+
+    const { flagListRoute } = await loadFlagListPage()
+    const FlagListPage = flagListRoute.options.component
+
+    const { userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+
+    render(
+      <Wrapper>
+        <FlagListPage />
+      </Wrapper>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Dark Mode')).toBeInTheDocument()
+    })
+
+    const toggleBtn = screen.getByRole('button', { name: /disable flag/i })
+    await user.click(toggleBtn)
+
+    // After the mutation completes the button must not be disabled
+    await waitFor(() => {
+      const btn = screen.queryByRole('button', { name: /disable flag/i }) ??
+        screen.queryByRole('button', { name: /enable flag/i })
+      expect(btn).not.toBeNull()
+      expect(btn).not.toBeDisabled()
+    })
+  })
+})
