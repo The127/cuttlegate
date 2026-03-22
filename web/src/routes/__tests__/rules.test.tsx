@@ -54,6 +54,21 @@ const RULES_FIXTURE = {
   rules: [
     {
       id: 'rule-1',
+      name: 'Beta users',
+      priority: 1,
+      conditions: [{ attribute: 'plan', operator: 'eq', values: ['pro'] }],
+      variantKey: 'enabled',
+      enabled: true,
+      createdAt: '2026-03-20T10:00:00Z',
+    },
+  ],
+}
+
+const RULES_FIXTURE_BLANK_NAME = {
+  rules: [
+    {
+      id: 'rule-1',
+      name: '',
       priority: 1,
       conditions: [{ attribute: 'plan', operator: 'eq', values: ['pro'] }],
       variantKey: 'enabled',
@@ -134,5 +149,86 @@ describe('RulesPage', () => {
 
     // Verify the component didn't crash — the form is still visible
     expect(screen.getByText('New rule')).toBeInTheDocument()
+  })
+
+  // Scenario 1: rule with a name shows the name in the list
+  it('displays rule name in the rules list when name is set', async () => {
+    mockFetchJSON.mockImplementation((path: string) => {
+      if (path.includes('/rules')) return Promise.resolve(RULES_FIXTURE)
+      if (path.includes('/segments')) return Promise.resolve(SEGMENTS_FIXTURE)
+      if (path.includes('/flags/')) return Promise.resolve(VARIANTS_FIXTURE)
+      return Promise.resolve({})
+    })
+
+    const { flagRulesRoute } = await loadRulesPage()
+    const RulesPage = flagRulesRoute.options.component
+
+    render(<Wrapper><RulesPage /></Wrapper>)
+
+    await waitFor(() => {
+      expect(screen.getByText('Beta users')).toBeInTheDocument()
+    })
+  })
+
+  // Scenario 2 & 8: blank name (or empty string from API) shows fallback "Rule {priority}"
+  it('displays fallback name when rule name is blank', async () => {
+    mockFetchJSON.mockImplementation((path: string) => {
+      if (path.includes('/rules')) return Promise.resolve(RULES_FIXTURE_BLANK_NAME)
+      if (path.includes('/segments')) return Promise.resolve(SEGMENTS_FIXTURE)
+      if (path.includes('/flags/')) return Promise.resolve(VARIANTS_FIXTURE)
+      return Promise.resolve({})
+    })
+
+    const { flagRulesRoute } = await loadRulesPage()
+    const RulesPage = flagRulesRoute.options.component
+
+    render(<Wrapper><RulesPage /></Wrapper>)
+
+    await waitFor(() => {
+      expect(screen.getByText('Rule 1')).toBeInTheDocument()
+    })
+  })
+
+  // Scenario 3: name input is pre-populated in edit form
+  it('pre-populates name input when opening edit form', async () => {
+    setupHappyPath()
+
+    const { flagRulesRoute } = await loadRulesPage()
+    const RulesPage = flagRulesRoute.options.component
+
+    render(<Wrapper><RulesPage /></Wrapper>)
+
+    await waitFor(() => {
+      expect(screen.getByText('Beta users')).toBeInTheDocument()
+    })
+
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: /edit/i }))
+
+    await waitFor(() => {
+      const nameInput = screen.getByRole('textbox', { name: /rule name/i })
+      expect(nameInput).toHaveValue('Beta users')
+    })
+  })
+
+  // Scenario 9: name input present in create form
+  it('shows name input in the new rule form', async () => {
+    setupHappyPath()
+
+    const { flagRulesRoute } = await loadRulesPage()
+    const RulesPage = flagRulesRoute.options.component
+
+    render(<Wrapper><RulesPage /></Wrapper>)
+
+    await waitFor(() => {
+      expect(screen.getByText('Targeting Rules')).toBeInTheDocument()
+    })
+
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: /add rule/i }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('textbox', { name: /rule name/i })).toBeInTheDocument()
+    })
   })
 })

@@ -16,6 +16,7 @@ interface Condition {
 
 interface Rule {
   id: string
+  name: string
   priority: number
   conditions: Condition[]
   variantKey: string
@@ -245,6 +246,7 @@ function RuleRow({
   const [editing, setEditing] = useState(false)
   const [pendingDelete, setPendingDelete] = useState(false)
   const [draft, setDraft] = useState<Omit<Rule, 'id' | 'createdAt'>>({
+    name: rule.name,
     priority: rule.priority,
     conditions: rule.conditions,
     variantKey: rule.variantKey,
@@ -254,6 +256,7 @@ function RuleRow({
 
   function startEdit() {
     setDraft({
+      name: rule.name,
       priority: rule.priority,
       conditions: rule.conditions,
       variantKey: rule.variantKey,
@@ -292,6 +295,9 @@ function RuleRow({
           {rule.priority}
         </span>
         <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-gray-800 mb-1">
+            {rule.name ? rule.name : t('fallback_name', { priority: rule.priority })}
+          </p>
           {rule.conditions.length === 0 ? (
             <p className="text-sm text-gray-400 italic">{t('no_conditions_display')}</p>
           ) : (
@@ -387,6 +393,7 @@ function NewRuleRow({
 }) {
   const { t } = useTranslation('rules')
   const [draft, setDraft] = useState<Omit<Rule, 'id' | 'createdAt'>>({
+    name: '',
     priority: nextPriority,
     conditions: [],
     variantKey: variants[0]?.key ?? '',
@@ -460,6 +467,19 @@ function RuleEditor({
 
   return (
     <div className="space-y-3">
+      {/* Name */}
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-1">{t('name_label')}</label>
+        <Input
+          type="text"
+          value={draft.name}
+          onChange={(e) => onChange({ ...draft, name: e.target.value })}
+          placeholder={t('name_placeholder')}
+          aria-label={t('name_label')}
+          className="py-1.5 px-2"
+        />
+      </div>
+
       {/* Conditions */}
       <div>
         <p className="text-xs font-medium text-gray-500 mb-2">{t('conditions_label')}</p>
