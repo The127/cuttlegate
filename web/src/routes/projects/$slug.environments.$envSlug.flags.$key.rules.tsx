@@ -1,4 +1,4 @@
-import { createRoute, Link } from '@tanstack/react-router'
+import { createRoute } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { projectEnvRoute } from './$slug.environments.$envSlug'
@@ -165,15 +165,6 @@ function RulesPage() {
 
   return (
     <div className="p-6 max-w-2xl">
-      <div className="mb-4">
-        <Link
-          to="/projects/$slug/environments/$envSlug/flags/$key"
-          params={{ slug, envSlug, key }}
-          className="text-sm text-gray-500 hover:text-gray-700"
-        >
-          ← Flag detail
-        </Link>
-      </div>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-gray-700">Targeting Rules</h2>
         {!addingNew && (

@@ -3,6 +3,7 @@ import { rootRoute } from './__root'
 import { getUserManager } from '../auth'
 import { ProjectSwitcher } from '../components/ProjectSwitcher'
 import { CreateProjectDialogProvider } from '../components/CreateProjectDialog'
+import { Breadcrumbs } from '../components/Breadcrumbs'
 import { APIError } from '../api'
 
 export const authenticatedRoute = createRoute({
@@ -54,6 +55,7 @@ function AppShell() {
     <CreateProjectDialogProvider>
       <div className="min-h-screen bg-gray-50">
         <ProjectSwitcher />
+        <Breadcrumbs />
         <main>
           <Outlet />
         </main>
