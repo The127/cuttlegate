@@ -50,3 +50,5 @@ See `template.md`. Status values: `Proposed`, `Accepted`, `Deprecated`, `Superse
 | [0019](0019-arch-test-external-test-package-coverage.md) | arch_test.go does not cover external _test packages | Accepted |
 | [0020](0020-uuid-vs-text-pk-inconsistency.md) | UUID vs TEXT primary key inconsistency in rules and segments | Accepted |
 | [0021](0021-fire-and-forget-evaluation-event-publish.md) | Fire-and-forget goroutine for evaluation event publish | Accepted |
+| [0022](0022-evaluation-event-multi-subscriber-fanout.md) | Evaluation event fanout to multiple independent subscribers | Accepted |
+| [0023](0023-in-house-component-library.md) | In-house UI component library over third-party component frameworks | Accepted |

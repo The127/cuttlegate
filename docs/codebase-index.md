@@ -1,6 +1,6 @@
 # Codebase Index
 
-_Generated 2026-03-22 15:38 UTC. Read this at session start for orientation._
+_Generated 2026-03-22 22:34 UTC. Read this at session start for orientation._
 
 ## Packages
 ```
@@ -13,6 +13,7 @@ internal/adapters/http
 internal/app
 internal/domain
 internal/domain/ports
+sdk/js/node_modules/flatted/golang/pkg/flatted
 ```
 
 ## Domain ports — interfaces (internal/domain/ports/)
@@ -21,8 +22,11 @@ type APIKeyRepository interface {
 type AuditRepository interface {
 type DomainEvent interface {
 type EnvironmentRepository interface {
+type EvaluationEventPublisher interface {
+type EvaluationEventRepository interface {
 type EventPublisher interface {
 type FlagEnvironmentStateRepository interface {
+type FlagEvaluationStatsRepository interface {
 type FlagRepository interface {
 type ProjectMemberRepository interface {
 type ProjectRepository interface {
@@ -31,6 +35,7 @@ type SegmentRepository interface {
 type TokenVerifier interface {
 type UnitOfWorkFactory interface {
 type UnitOfWork interface {
+type UserRepository interface {
 ```
 
 ## Domain types — structs (internal/domain/)
@@ -43,7 +48,9 @@ type Condition struct {
 type Environment struct {
 type EvalContext struct {
 type EvalResult struct {
+type EvaluationEvent struct {
 type FlagEnvironmentState struct {
+type FlagEvaluationStats struct {
 type FlagStateChangedEvent struct {
 type Flag struct {
 type ProjectMember struct {
@@ -62,12 +69,17 @@ type APIKeyService struct {
 type APIKeyView struct {
 type AuditService struct {
 type EnvironmentService struct {
+type EvaluationAuditService struct {
+type EvaluationEventView struct {
 type EvaluationService struct {
+type EvaluationStatsService struct {
 type EvalView struct {
 type FlagEnvironmentView struct {
 type FlagPromotionDiff struct {
 type FlagService struct {
+type FlagStatsView struct {
 type ProjectMemberService struct {
+type ProjectMemberView struct {
 type ProjectService struct {
 type PromotionService struct {
 type RuleService struct {
@@ -82,7 +94,9 @@ type APIKeyScope struct {
 type AuditHandler struct {
 type Broker struct {
 type EnvironmentHandler struct {
+type EvaluationAuditHandler struct {
 type EvaluationHandler struct {
+type EvaluationStatsHandler struct {
 type FlagEnvironmentHandler struct {
 type FlagHandler struct {
 type FlagVariantHandler struct {
@@ -98,11 +112,12 @@ type SSEHandler struct {
 
 ## DB adapters (internal/adapters/db/)
 ```
-type FakeSegmentRepository struct {
 type PostgresAPIKeyRepository struct {
 type PostgresAuditRepository struct {
 type PostgresEnvironmentRepository struct {
+type PostgresEvaluationEventRepository struct {
 type PostgresFlagEnvironmentStateRepository struct {
+type PostgresFlagEvaluationStatsRepository struct {
 type PostgresFlagRepository struct {
 type PostgresProjectMemberRepository struct {
 type PostgresProjectRepository struct {
@@ -110,4 +125,5 @@ type PostgresRuleRepository struct {
 type PostgresSegmentRepository struct {
 type PostgresUnitOfWorkFactory struct {
 type PostgresUnitOfWork struct {
+type PostgresUserRepository struct {
 ```

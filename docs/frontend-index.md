@@ -1,6 +1,6 @@
 # Frontend Index
 
-_Generated 2026-03-22 15:41 UTC. Read this at session start for frontend orientation._
+_Generated 2026-03-22 22:34 UTC. Read this at session start for frontend orientation._
 
 ## Routes (`web/src/routes/`)
 
@@ -9,7 +9,9 @@ _Generated 2026-03-22 15:41 UTC. Read this at session start for frontend orienta
 | `auth/callback.tsx` | `/auth/callback` | — | — |
 | `index.tsx` | `/` | — | — |
 | `projects/$slug.api-keys.tsx` | `/projects/:slug/api-keys` | $slug | — |
+| `projects/$slug.audit.tsx` | `/projects/:slug/audit` | $slug | — |
 | `projects/$slug.compare.tsx` | `/projects/:slug/compare` | $slug | — |
+| `projects/$slug.environments.$envSlug.flags.$key.evaluations.tsx` | `/projects/:slug/environments/:envSlug/flags/:key/evaluations` | $slug, $envSlug, $key | — |
 | `projects/$slug.environments.$envSlug.flags.$key.rules.tsx` | `/projects/:slug/environments/:envSlug/flags/:key/rules` | $slug, $envSlug, $key | — |
 | `projects/$slug.environments.$envSlug.flags.$key.tsx` | `/projects/:slug/environments/:envSlug/flags/:key` | $slug, $envSlug, $key | — |
 | `projects/$slug.environments.$envSlug.flags.tsx` | `/projects/:slug/environments/:envSlug/flags` | $slug, $envSlug | — |
@@ -29,6 +31,18 @@ _Generated 2026-03-22 15:41 UTC. Read this at session start for frontend orienta
 | `useOpenCreateProjectDialog` | `CreateProjectDialog.tsx` | — |
 | `CreateProjectDialogProvider` | `CreateProjectDialog.tsx` | — |
 | `ProjectSwitcher` | `ProjectSwitcher.tsx` | — |
+| `PromoteDialog` | `PromoteDialog.tsx` | — |
+| `Button` | `ui/Button.tsx` | — |
+| `CopyableCode` | `ui/CopyableCode.tsx` | — |
+| `DataTable` | `ui/DataTable.tsx` | — |
+| `FormFieldContext` | `ui/FormField.tsx` | — |
+| `useFormFieldId` | `ui/FormField.tsx` | — |
+| `FormField` | `ui/FormField.tsx` | — |
+| `Input` | `ui/Input.tsx` | — |
+| `Label` | `ui/Label.tsx` | — |
+| `SelectItem` | `ui/Select.tsx` | — |
+| `Select` | `ui/Select.tsx` | — |
+| `StatusBadge` | `ui/StatusBadge.tsx` | — |
 
 ## Hooks (`web/src/hooks/`)
 
