@@ -5,7 +5,13 @@ sidebar_position: 1
 
 # Getting Started
 
-This guide takes you from zero to your first SDK-powered flag evaluation. You need Docker installed — nothing else.
+This guide takes you from zero to your first SDK-powered flag evaluation — with targeting rules, segments, and a real audit trail. You need Docker installed — nothing else.
+
+By the end you will have:
+
+- A flag evaluating via the JS or Go SDK
+- A targeting rule that enables the flag for a specific user segment
+- An audit trail showing exactly which rule matched
 
 ## 1. Start the stack
 
@@ -54,7 +60,7 @@ Navigate to **Flags** within your project and create a new flag:
 - **Key:** `dark-mode` (this is the identifier you use in code)
 - **Type:** Boolean
 
-The flag is created in the **disabled** state.
+The flag is created in the **disabled** state. Toggle it **on** for the `production` environment before continuing.
 
 ## 6. Create an API key
 
@@ -64,19 +70,53 @@ Copy the key immediately — it is shown only once. It looks like `cg_...`.
 
 API keys are scoped to a single project + environment pair and are used by the SDK to authenticate evaluation requests.
 
-## 7. Install the SDK
+## 7. Create a segment
 
-In your application, install the Cuttlegate JavaScript/TypeScript SDK:
+Segments are named groups of users defined by attribute conditions. They let you reuse audience definitions across multiple flags and rules.
+
+Navigate to **Segments** within your project and click **New Segment**:
+
+- **Name:** `Pro users`
+- **Key:** `pro-users`
+
+Add a condition to the segment:
+
+- **Attribute:** `plan`
+- **Operator:** `equals`
+- **Value:** `pro`
+
+Save the segment. Any user whose evaluation context includes `"plan": "pro"` is a member of this segment.
+
+## 8. Add a targeting rule
+
+Navigate back to the `dark-mode` flag and open the `production` environment settings. Click **Add Rule**:
+
+- **Name:** `Pro users get dark mode`
+- **Condition:** `in_segment: pro-users`
+- **Serve:** Enabled
+
+Save the rule. The flag now behaves as follows:
+
+- Users in the `pro-users` segment (`plan: pro`) → **enabled**, reason `targeting_rule`
+- All other users → **enabled**, reason `default` (the flag is on; no rule matched their context)
+
+:::tip Fallthrough behaviour
+When a flag is toggled on and no targeting rule matches a user, the flag falls through to its default state — enabled for everyone. Rules narrow the audience; they do not gate it unless the flag's default is off.
+:::
+
+## 9. Evaluate the flag with SDK
+
+Choose the SDK for your language. Both examples use the `cg_...` key from step 6 — the field name differs between SDKs (see callout below).
+
+### JavaScript / TypeScript
+
+Install the SDK:
 
 ```bash
 npm install @cuttlegate/sdk
 ```
 
-The SDK requires Node.js 20 or later. It also works in the browser via the `browser` export.
-
-## 8. Evaluate a flag
-
-Create a file called `demo.mjs` and paste:
+Create `demo.mjs`:
 
 ```javascript
 import { createClient } from '@cuttlegate/sdk';
@@ -84,17 +124,25 @@ import { createClient } from '@cuttlegate/sdk';
 const cg = createClient({
   baseUrl: 'http://localhost:8080',
   token: 'cg_YOUR_API_KEY_HERE',   // paste the key from step 6
-  project: 'my-app',               // your project slug
-  environment: 'production',       // your environment slug
+  project: 'my-app',
+  environment: 'production',
 });
 
-const result = await cg.evaluateFlag('dark-mode', {
+// Evaluate as a pro user — matches the targeting rule
+const proResult = await cg.evaluateFlag('dark-mode', {
   user_id: 'user-1',
-  attributes: {},
+  attributes: { plan: 'pro' },
 });
+console.log('pro user enabled:', proResult.enabled);  // true
+console.log('reason:', proResult.reason);             // targeting_rule
 
-console.log('dark-mode enabled:', result.enabled);
-console.log('reason:', result.reason);
+// Evaluate as a free user — no rule match, falls through to default
+const freeResult = await cg.evaluateFlag('dark-mode', {
+  user_id: 'user-2',
+  attributes: { plan: 'free' },
+});
+console.log('free user enabled:', freeResult.enabled); // true
+console.log('reason:', freeResult.reason);             // default
 ```
 
 Run it:
@@ -103,41 +151,93 @@ Run it:
 node demo.mjs
 ```
 
-You should see:
+### Go
 
-```
-dark-mode enabled: false
-reason: disabled
-```
-
-The flag is disabled, so the SDK returns `enabled: false` with reason `disabled`.
-
-## 9. Toggle the flag and verify
-
-Go back to the Cuttlegate UI, find the `dark-mode` flag in the `production` environment, and toggle it **on**.
-
-Run the script again:
+Install the SDK:
 
 ```bash
-node demo.mjs
+go get github.com/karo/cuttlegate/sdk/go
 ```
 
-```
-dark-mode enabled: true
-reason: default
+Create `main.go`:
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "log"
+
+    cuttlegate "github.com/karo/cuttlegate/sdk/go"
+)
+
+func main() {
+    client, err := cuttlegate.NewClient(cuttlegate.Config{
+        BaseURL:      "http://localhost:8080",
+        ServiceToken: "cg_YOUR_API_KEY_HERE", // paste the key from step 6
+        Project:      "my-app",
+        Environment:  "production",
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    ctx := context.Background()
+
+    // Bool is the simplest way to evaluate a boolean flag
+    enabled, err := client.Bool(ctx, "dark-mode", cuttlegate.EvalContext{
+        UserID:     "user-1",
+        Attributes: map[string]any{"plan": "pro"},
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Println("dark-mode enabled (pro user):", enabled) // true
+
+    // Evaluate returns the full result including the reason
+    result, err := client.Evaluate(ctx, "dark-mode", cuttlegate.EvalContext{
+        UserID:     "user-1",
+        Attributes: map[string]any{"plan": "pro"},
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Println("reason:", result.Reason) // targeting_rule
+}
 ```
 
-The SDK now returns `enabled: true`. The `reason` is `default` because no targeting rules are configured — the flag is simply on for everyone.
+Run it:
+
+```bash
+go run main.go
+```
+
+:::info Same API key, different field name
+The `cg_...` key from step 6 is the same credential in both SDKs. The JS SDK passes it as `token`; the Go SDK passes it as `ServiceToken`. If you copy a value from one SDK example into the other, the field name is what changes — not the key itself.
+:::
+
+## 10. View the audit trail
+
+Go back to the Cuttlegate UI. Navigate to the `dark-mode` flag and open **Audit Trail**.
+
+You will see the evaluation events from your SDK calls. Each entry shows:
+
+- The flag key and environment
+- Whether the flag was enabled
+- The **reason** — `targeting_rule` for the pro user, `default` for the free user
+- The **matched rule name** — `Pro users get dark mode` — visible for `targeting_rule` evaluations
+
+This makes it straightforward to verify that your rules are matching the right users in production.
 
 ## What's next
 
-- **Targeting rules** — serve different variants to different users based on attributes
-- **Real-time updates** — the SDK supports SSE streaming for instant flag changes without polling
-- **Testing** — use `@cuttlegate/sdk/testing` to mock flags in your test suite without a running server (see [Testing](/docs/js/testing))
-- **Multiple environments** — create `staging` and `development` environments with separate API keys
+- **Real-time updates** — the SDK supports SSE streaming for instant flag changes without polling. See [JS SDK](/docs/js) or [Go SDK](/docs/go).
+- **Testing** — use `@cuttlegate/sdk/testing` (JS) or the `cuttlegatetesting` package (Go) to mock flags in your test suite without a running server.
+- **Multiple environments** — create `staging` and `development` environments with separate API keys and independent flag states.
+- **Percentage rollouts** — gradually roll out a flag to a percentage of users without defining a segment.
 
 ## SDK reference
 
-See the full [JavaScript/TypeScript SDK documentation](/docs/js) for the complete API, including `evaluate()` for bulk evaluation and structured error handling.
-
-For non-obvious runtime behaviours (such as stream abort handling), see [Gotchas & Known Behaviours](/docs/js/gotchas).
+- [JavaScript / TypeScript SDK](/docs/js) — full API, bulk evaluation, SSE streaming, testing utilities
+- [Go SDK](/docs/go) — `Bool`, `Evaluate`, `EvaluateAll`, `Subscribe`, typed errors, testing mock
