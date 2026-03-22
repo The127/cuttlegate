@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { projectRoute } from './$slug'
 import { fetchJSON } from '../../api'
+import { formatRelativeDate } from '../../utils/date'
 
 interface Environment {
   id: string
@@ -79,6 +80,7 @@ function ProjectDashboard() {
           Quick Links
         </h2>
         <div className="flex gap-3">
+          <QuickLink label="Segments" to={`/projects/${project.slug}/segments`} />
           <QuickLink label="Settings" to={`/projects/${project.slug}/settings`} />
           <QuickLink label="Members" to={`/projects/${project.slug}/members`} />
           <QuickLink label="API Keys" to={`/projects/${project.slug}/api-keys`} />
@@ -211,18 +213,6 @@ function RecentFlagsList({ flags }: { flags: ProjectFlag[] }) {
   )
 }
 
-function formatRelativeDate(iso: string): string {
-  const date = new Date(iso)
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-
-  if (diffDays === 0) return 'today'
-  if (diffDays === 1) return 'yesterday'
-  if (diffDays < 7) return `${diffDays}d ago`
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`
-  return date.toLocaleDateString()
-}
 
 function EnvironmentCardsSkeleton() {
   return (

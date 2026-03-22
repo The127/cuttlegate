@@ -20,6 +20,12 @@ function useBreadcrumbs(): Crumb[] {
         label: loaderData?.name ?? params.slug,
         to: `/projects/${params.slug}`,
       })
+    } else if (routeId === '/_authenticated/projects/$slug/segments') {
+      const params = match.params as { slug: string }
+      crumbs.push({
+        label: 'Segments',
+        to: `/projects/${params.slug}/segments`,
+      })
     } else if (routeId === '/_authenticated/projects/$slug/environments/$envSlug') {
       const params = match.params as { slug: string; envSlug: string }
       crumbs.push({

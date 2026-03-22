@@ -58,6 +58,12 @@ export async function postJSON<T>(path: string, body: unknown): Promise<T> {
   return res.json() as Promise<T>
 }
 
+export async function putJSON<T>(path: string, body: unknown): Promise<T> {
+  const res = await authedFetch(path, { method: 'PUT', body: JSON.stringify(body) })
+  await throwIfNotOk(res)
+  return res.json() as Promise<T>
+}
+
 export async function deleteRequest(path: string): Promise<void> {
   const res = await authedFetch(path, { method: 'DELETE' })
   await throwIfNotOk(res)

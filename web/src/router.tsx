@@ -9,12 +9,14 @@ import { projectEnvRoute } from './routes/projects/$slug.environments.$envSlug'
 import { flagListRoute } from './routes/projects/$slug.environments.$envSlug.flags'
 import { flagDetailRoute } from './routes/projects/$slug.environments.$envSlug.flags.$key'
 import { flagRulesRoute } from './routes/projects/$slug.environments.$envSlug.flags.$key.rules'
+import { segmentListRoute } from './routes/projects/$slug.segments'
 
 const routeTree = rootRoute.addChildren([
   authenticatedRoute.addChildren([
     indexRoute,
     projectRoute.addChildren([
       projectIndexRoute,
+      segmentListRoute,
       projectEnvRoute.addChildren([flagListRoute, flagDetailRoute, flagRulesRoute]),
     ]),
   ]),
