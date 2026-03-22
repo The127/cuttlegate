@@ -1,4 +1,4 @@
-package dbadapter
+package app_test
 
 import (
 	"context"
@@ -8,26 +8,24 @@ import (
 	"github.com/karo/cuttlegate/internal/domain/ports"
 )
 
-// FakeSegmentRepository is an in-memory implementation of ports.SegmentRepository.
-// Exported from adapters/db so it can be shared between app-layer and handler-layer tests.
-// Safe for concurrent access — protected by an internal RWMutex.
-type FakeSegmentRepository struct {
+// fakeSegmentRepository is an in-memory implementation of ports.SegmentRepository
+// for use in app-layer unit tests. Safe for concurrent access.
+type fakeSegmentRepository struct {
 	mu      sync.RWMutex
-	byID    map[string]*domain.Segment     // segment ID → segment
-	members map[string]map[string]struct{} // segment ID → set of user keys
+	byID    map[string]*domain.Segment
+	members map[string]map[string]struct{}
 }
 
-var _ ports.SegmentRepository = (*FakeSegmentRepository)(nil)
+var _ ports.SegmentRepository = (*fakeSegmentRepository)(nil)
 
-// NewFakeSegmentRepository constructs an empty FakeSegmentRepository.
-func NewFakeSegmentRepository() *FakeSegmentRepository {
-	return &FakeSegmentRepository{
+func newFakeSegmentRepository() *fakeSegmentRepository {
+	return &fakeSegmentRepository{
 		byID:    make(map[string]*domain.Segment),
 		members: make(map[string]map[string]struct{}),
 	}
 }
 
-func (r *FakeSegmentRepository) Create(_ context.Context, segment *domain.Segment) error {
+func (r *fakeSegmentRepository) Create(_ context.Context, segment *domain.Segment) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	for _, s := range r.byID {
@@ -40,7 +38,7 @@ func (r *FakeSegmentRepository) Create(_ context.Context, segment *domain.Segmen
 	return nil
 }
 
-func (r *FakeSegmentRepository) GetBySlug(_ context.Context, projectID, slug string) (*domain.Segment, error) {
+func (r *fakeSegmentRepository) GetBySlug(_ context.Context, projectID, slug string) (*domain.Segment, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	for _, s := range r.byID {
@@ -52,7 +50,7 @@ func (r *FakeSegmentRepository) GetBySlug(_ context.Context, projectID, slug str
 	return nil, domain.ErrNotFound
 }
 
-func (r *FakeSegmentRepository) List(_ context.Context, projectID string) ([]*domain.Segment, error) {
+func (r *fakeSegmentRepository) List(_ context.Context, projectID string) ([]*domain.Segment, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	var out []*domain.Segment
@@ -65,7 +63,7 @@ func (r *FakeSegmentRepository) List(_ context.Context, projectID string) ([]*do
 	return out, nil
 }
 
-func (r *FakeSegmentRepository) UpdateName(_ context.Context, id, name string) error {
+func (r *fakeSegmentRepository) UpdateName(_ context.Context, id, name string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	s, ok := r.byID[id]
@@ -76,7 +74,7 @@ func (r *FakeSegmentRepository) UpdateName(_ context.Context, id, name string) e
 	return nil
 }
 
-func (r *FakeSegmentRepository) Delete(_ context.Context, id string) error {
+func (r *fakeSegmentRepository) Delete(_ context.Context, id string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if _, ok := r.byID[id]; !ok {
@@ -87,7 +85,7 @@ func (r *FakeSegmentRepository) Delete(_ context.Context, id string) error {
 	return nil
 }
 
-func (r *FakeSegmentRepository) SetMembers(_ context.Context, segmentID string, userKeys []string) error {
+func (r *fakeSegmentRepository) SetMembers(_ context.Context, segmentID string, userKeys []string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	set := make(map[string]struct{}, len(userKeys))
@@ -98,7 +96,7 @@ func (r *FakeSegmentRepository) SetMembers(_ context.Context, segmentID string, 
 	return nil
 }
 
-func (r *FakeSegmentRepository) ListMembers(_ context.Context, segmentID string) ([]string, error) {
+func (r *fakeSegmentRepository) ListMembers(_ context.Context, segmentID string) ([]string, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	set := r.members[segmentID]
@@ -109,7 +107,7 @@ func (r *FakeSegmentRepository) ListMembers(_ context.Context, segmentID string)
 	return out, nil
 }
 
-func (r *FakeSegmentRepository) IsMember(_ context.Context, segmentID string, userKey string) (bool, error) {
+func (r *fakeSegmentRepository) IsMember(_ context.Context, segmentID string, userKey string) (bool, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	_, ok := r.members[segmentID][userKey]

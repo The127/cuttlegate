@@ -5,13 +5,12 @@ import (
 	"errors"
 	"testing"
 
-	dbadapter "github.com/karo/cuttlegate/internal/adapters/db"
 	"github.com/karo/cuttlegate/internal/app"
 	"github.com/karo/cuttlegate/internal/domain"
 )
 
 func newSegmentSvc() *app.SegmentService {
-	return app.NewSegmentService(dbadapter.NewFakeSegmentRepository())
+	return app.NewSegmentService(newFakeSegmentRepository())
 }
 
 // ── Create scenarios ──────────────────────────────────────────────────────────
