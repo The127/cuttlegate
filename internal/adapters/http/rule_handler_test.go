@@ -23,7 +23,7 @@ func newFakeRuleService() *fakeRuleService {
 	return &fakeRuleService{rules: make(map[string]*domain.Rule)}
 }
 
-func (f *fakeRuleService) Create(_ context.Context, flagID, environmentID string, priority int, conditions []domain.Condition, variantKey string) (*domain.Rule, error) {
+func (f *fakeRuleService) Create(_ context.Context, flagID, environmentID string, priority int, conditions []domain.Condition, variantKey, name string) (*domain.Rule, error) {
 	if f.err != nil {
 		return nil, f.err
 	}
@@ -31,6 +31,7 @@ func (f *fakeRuleService) Create(_ context.Context, flagID, environmentID string
 		ID:            "rule-uuid-1",
 		FlagID:        flagID,
 		EnvironmentID: environmentID,
+		Name:          name,
 		Priority:      priority,
 		Conditions:    conditions,
 		VariantKey:    variantKey,

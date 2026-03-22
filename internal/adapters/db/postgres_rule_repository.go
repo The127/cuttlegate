@@ -59,7 +59,7 @@ func unmarshalConditions(data []byte) ([]domain.Condition, error) {
 // ListByFlagEnvironment returns all rules for a flag+environment, ordered by priority ascending.
 func (r *PostgresRuleRepository) ListByFlagEnvironment(ctx context.Context, flagID, environmentID string) ([]*domain.Rule, error) {
 	rows, err := r.db.QueryContext(ctx,
-		`SELECT id, flag_id, environment_id, priority, conditions, variant_key, enabled, created_at
+		`SELECT id, flag_id, environment_id, name, priority, conditions, variant_key, enabled, created_at
 		 FROM rules
 		 WHERE flag_id = $1 AND environment_id = $2
 		 ORDER BY priority ASC`,
@@ -85,7 +85,7 @@ func (r *PostgresRuleRepository) ListByFlagEnvironment(ctx context.Context, flag
 // Intended for batch loading in EvaluateAll to avoid N+1 queries.
 func (r *PostgresRuleRepository) ListByEnvironment(ctx context.Context, environmentID string) ([]*domain.Rule, error) {
 	rows, err := r.db.QueryContext(ctx,
-		`SELECT id, flag_id, environment_id, priority, conditions, variant_key, enabled, created_at
+		`SELECT id, flag_id, environment_id, name, priority, conditions, variant_key, enabled, created_at
 		 FROM rules
 		 WHERE environment_id = $1
 		 ORDER BY flag_id, priority ASC`,
@@ -116,15 +116,16 @@ func (r *PostgresRuleRepository) Upsert(ctx context.Context, rule *domain.Rule) 
 		return err
 	}
 	row := r.db.QueryRowContext(ctx,
-		`INSERT INTO rules (id, flag_id, environment_id, priority, conditions, variant_key, enabled, created_at)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		`INSERT INTO rules (id, flag_id, environment_id, name, priority, conditions, variant_key, enabled, created_at)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		 ON CONFLICT (id) DO UPDATE
-		   SET priority    = EXCLUDED.priority,
+		   SET name        = EXCLUDED.name,
+		       priority    = EXCLUDED.priority,
 		       conditions  = EXCLUDED.conditions,
 		       variant_key = EXCLUDED.variant_key,
 		       enabled     = EXCLUDED.enabled
 		 RETURNING created_at`,
-		rule.ID, rule.FlagID, rule.EnvironmentID, rule.Priority,
+		rule.ID, rule.FlagID, rule.EnvironmentID, rule.Name, rule.Priority,
 		conditions, rule.VariantKey, rule.Enabled, rule.CreatedAt,
 	)
 	return row.Scan(&rule.CreatedAt)
@@ -160,7 +161,7 @@ func scanRuleRow(rows *sql.Rows) (*domain.Rule, error) {
 	var conditionsJSON []byte
 	if err := rows.Scan(
 		&rule.ID, &rule.FlagID, &rule.EnvironmentID,
-		&rule.Priority, &conditionsJSON,
+		&rule.Name, &rule.Priority, &conditionsJSON,
 		&rule.VariantKey, &rule.Enabled, &rule.CreatedAt,
 	); err != nil {
 		return nil, err

@@ -53,10 +53,10 @@ func Evaluate(flag *Flag, state *FlagEnvironmentState, rules []*Rule, ctx EvalCo
 		}
 		if matchesAll(rule.Conditions, ctx, segmentSlugs) {
 			return EvalResult{
-				VariantKey:    rule.VariantKey,
-				Reason:        ReasonRuleMatch,
-				MatchedRuleID: rule.ID,
-				// MatchedRuleName: rules do not have a name field yet; left empty.
+				VariantKey:      rule.VariantKey,
+				Reason:          ReasonRuleMatch,
+				MatchedRuleID:   rule.ID,
+				MatchedRuleName: rule.Name,
 			}
 		}
 	}

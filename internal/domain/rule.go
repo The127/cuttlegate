@@ -70,7 +70,8 @@ type Rule struct {
 	ID            string
 	FlagID        string
 	EnvironmentID string
-	Priority      int // lower = evaluated first; 0 is valid
+	Name          string // human-readable label; may be empty; max 255 characters
+	Priority      int    // lower = evaluated first; 0 is valid
 	Conditions    []Condition
 	VariantKey    string // variant to return when all conditions match
 	Enabled       bool
@@ -79,6 +80,9 @@ type Rule struct {
 
 // Validate returns an error if the rule is not well-formed.
 func (r Rule) Validate() error {
+	if len(r.Name) > 255 {
+		return &ValidationError{Field: "name", Message: "must not exceed 255 characters"}
+	}
 	if len(r.Conditions) == 0 {
 		return &ValidationError{Field: "conditions", Message: "rule must have at least one condition"}
 	}

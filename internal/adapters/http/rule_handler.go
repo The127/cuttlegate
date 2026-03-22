@@ -11,7 +11,7 @@ import (
 
 // ruleService is the use-case interface required by RuleHandler.
 type ruleService interface {
-	Create(ctx context.Context, flagID, environmentID string, priority int, conditions []domain.Condition, variantKey string) (*domain.Rule, error)
+	Create(ctx context.Context, flagID, environmentID string, priority int, conditions []domain.Condition, variantKey, name string) (*domain.Rule, error)
 	List(ctx context.Context, flagID, environmentID string) ([]*domain.Rule, error)
 	Update(ctx context.Context, rule *domain.Rule) (*domain.Rule, error)
 	Delete(ctx context.Context, id string) error
@@ -53,6 +53,7 @@ type conditionJSON struct {
 // ruleResponse is the JSON representation of a domain.Rule.
 type ruleResponse struct {
 	ID         string          `json:"id"`
+	Name       string          `json:"name"`
 	Priority   int             `json:"priority"`
 	Conditions []conditionJSON `json:"conditions"`
 	VariantKey string          `json:"variantKey"`
@@ -71,6 +72,7 @@ func toRuleResponse(r *domain.Rule) ruleResponse {
 	}
 	return ruleResponse{
 		ID:         r.ID,
+		Name:       r.Name,
 		Priority:   r.Priority,
 		Conditions: conditions,
 		VariantKey: r.VariantKey,
@@ -116,13 +118,14 @@ func (h *RuleHandler) create(w http.ResponseWriter, r *http.Request) {
 		Conditions []conditionJSON `json:"conditions"`
 		VariantKey string          `json:"variantKey"`
 		Priority   int             `json:"priority"`
+		Name       string          `json:"name"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		WriteError(w, newBadRequest("invalid request body"))
 		return
 	}
 
-	rule, err := h.svc.Create(r.Context(), flag.ID, env.ID, body.Priority, conditionsFromJSON(body.Conditions), body.VariantKey)
+	rule, err := h.svc.Create(r.Context(), flag.ID, env.ID, body.Priority, conditionsFromJSON(body.Conditions), body.VariantKey, body.Name)
 	if err != nil {
 		WriteError(w, err)
 		return
@@ -158,6 +161,7 @@ func (h *RuleHandler) update(w http.ResponseWriter, r *http.Request) {
 		VariantKey string          `json:"variantKey"`
 		Priority   int             `json:"priority"`
 		Enabled    bool            `json:"enabled"`
+		Name       string          `json:"name"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		WriteError(w, newBadRequest("invalid request body"))
@@ -168,6 +172,7 @@ func (h *RuleHandler) update(w http.ResponseWriter, r *http.Request) {
 		ID:            r.PathValue("ruleID"),
 		FlagID:        flag.ID,
 		EnvironmentID: env.ID,
+		Name:          body.Name,
 		Conditions:    conditionsFromJSON(body.Conditions),
 		VariantKey:    body.VariantKey,
 		Priority:      body.Priority,

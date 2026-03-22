@@ -146,6 +146,7 @@ func promoteFlag(ctx context.Context, uow ports.UnitOfWork, flag *domain.Flag, p
 			ID:            newID,
 			FlagID:        flag.ID,
 			EnvironmentID: targetEnvID,
+			Name:          r.Name,
 			Priority:      r.Priority,
 			Conditions:    r.Conditions,
 			VariantKey:    r.VariantKey,

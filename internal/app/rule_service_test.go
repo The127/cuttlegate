@@ -82,7 +82,7 @@ var validConditions = []domain.Condition{
 func TestRuleService_Create_Succeeds(t *testing.T) {
 	svc := newRuleSvc()
 	ctx := authCtx("editor-1", domain.RoleEditor)
-	rule, err := svc.Create(ctx, "flag-1", "env-1", 0, validConditions, "on")
+	rule, err := svc.Create(ctx, "flag-1", "env-1", 0, validConditions, "on", "")
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
@@ -96,7 +96,7 @@ func TestRuleService_Create_Succeeds(t *testing.T) {
 
 func TestRuleService_Create_EmptyConditions_ReturnsError(t *testing.T) {
 	svc := newRuleSvc()
-	_, err := svc.Create(authCtx("editor-1", domain.RoleEditor), "flag-1", "env-1", 0, nil, "on")
+	_, err := svc.Create(authCtx("editor-1", domain.RoleEditor), "flag-1", "env-1", 0, nil, "on", "")
 	if err == nil {
 		t.Error("expected validation error for empty conditions, got nil")
 	}
@@ -107,7 +107,7 @@ func TestRuleService_Create_InvalidConditionOperator_ReturnsError(t *testing.T) 
 	conditions := []domain.Condition{
 		{Attribute: "plan", Operator: "fuzzy", Values: []string{"pro"}},
 	}
-	_, err := svc.Create(authCtx("editor-1", domain.RoleEditor), "flag-1", "env-1", 0, conditions, "on")
+	_, err := svc.Create(authCtx("editor-1", domain.RoleEditor), "flag-1", "env-1", 0, conditions, "on", "")
 	if err == nil {
 		t.Error("expected validation error for unknown operator, got nil")
 	}
@@ -115,7 +115,7 @@ func TestRuleService_Create_InvalidConditionOperator_ReturnsError(t *testing.T) 
 
 func TestRuleService_Create_MissingVariantKey_ReturnsError(t *testing.T) {
 	svc := newRuleSvc()
-	_, err := svc.Create(authCtx("editor-1", domain.RoleEditor), "flag-1", "env-1", 0, validConditions, "")
+	_, err := svc.Create(authCtx("editor-1", domain.RoleEditor), "flag-1", "env-1", 0, validConditions, "", "")
 	if err == nil {
 		t.Error("expected validation error for empty variant key, got nil")
 	}
@@ -124,11 +124,11 @@ func TestRuleService_Create_MissingVariantKey_ReturnsError(t *testing.T) {
 func TestRuleService_Create_DuplicatePriority_ReturnsPriorityConflict(t *testing.T) {
 	svc := newRuleSvc()
 	ctx := authCtx("editor-1", domain.RoleEditor)
-	_, err := svc.Create(ctx, "flag-1", "env-1", 5, validConditions, "on")
+	_, err := svc.Create(ctx, "flag-1", "env-1", 5, validConditions, "on", "")
 	if err != nil {
 		t.Fatalf("first Create: %v", err)
 	}
-	_, err = svc.Create(ctx, "flag-1", "env-1", 5, validConditions, "off")
+	_, err = svc.Create(ctx, "flag-1", "env-1", 5, validConditions, "off", "")
 	if !errors.Is(err, domain.ErrPriorityConflict) {
 		t.Errorf("expected ErrPriorityConflict, got %v", err)
 	}
@@ -137,11 +137,11 @@ func TestRuleService_Create_DuplicatePriority_ReturnsPriorityConflict(t *testing
 func TestRuleService_Create_DuplicatePriority_DifferentEnvironment_Succeeds(t *testing.T) {
 	svc := newRuleSvc()
 	ctx := authCtx("editor-1", domain.RoleEditor)
-	_, err := svc.Create(ctx, "flag-1", "env-1", 5, validConditions, "on")
+	_, err := svc.Create(ctx, "flag-1", "env-1", 5, validConditions, "on", "")
 	if err != nil {
 		t.Fatalf("first Create: %v", err)
 	}
-	_, err = svc.Create(ctx, "flag-1", "env-2", 5, validConditions, "off")
+	_, err = svc.Create(ctx, "flag-1", "env-2", 5, validConditions, "off", "")
 	if err != nil {
 		t.Errorf("expected success for same priority in different environment, got %v", err)
 	}
@@ -166,11 +166,11 @@ func TestRuleService_List_Empty_ReturnsEmptySlice(t *testing.T) {
 func TestRuleService_List_OrderedByPriorityAscending(t *testing.T) {
 	svc := newRuleSvc()
 	ctx := authCtx("editor-1", domain.RoleEditor)
-	_, err := svc.Create(ctx, "flag-1", "env-1", 2, validConditions, "on")
+	_, err := svc.Create(ctx, "flag-1", "env-1", 2, validConditions, "on", "")
 	if err != nil {
 		t.Fatalf("Create priority 2: %v", err)
 	}
-	_, err = svc.Create(ctx, "flag-1", "env-1", 1, validConditions, "off")
+	_, err = svc.Create(ctx, "flag-1", "env-1", 1, validConditions, "off", "")
 	if err != nil {
 		t.Fatalf("Create priority 1: %v", err)
 	}
@@ -191,7 +191,7 @@ func TestRuleService_List_OrderedByPriorityAscending(t *testing.T) {
 func TestRuleService_Update_Succeeds(t *testing.T) {
 	svc := newRuleSvc()
 	ctx := authCtx("editor-1", domain.RoleEditor)
-	rule, err := svc.Create(ctx, "flag-1", "env-1", 0, validConditions, "on")
+	rule, err := svc.Create(ctx, "flag-1", "env-1", 0, validConditions, "on", "")
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
@@ -208,7 +208,7 @@ func TestRuleService_Update_Succeeds(t *testing.T) {
 func TestRuleService_Update_InvalidRule_ReturnsError(t *testing.T) {
 	svc := newRuleSvc()
 	ctx := authCtx("editor-1", domain.RoleEditor)
-	rule, err := svc.Create(ctx, "flag-1", "env-1", 0, validConditions, "on")
+	rule, err := svc.Create(ctx, "flag-1", "env-1", 0, validConditions, "on", "")
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
@@ -222,11 +222,11 @@ func TestRuleService_Update_InvalidRule_ReturnsError(t *testing.T) {
 func TestRuleService_Update_DuplicatePriority_ReturnsPriorityConflict(t *testing.T) {
 	svc := newRuleSvc()
 	ctx := authCtx("editor-1", domain.RoleEditor)
-	_, err := svc.Create(ctx, "flag-1", "env-1", 1, validConditions, "on")
+	_, err := svc.Create(ctx, "flag-1", "env-1", 1, validConditions, "on", "")
 	if err != nil {
 		t.Fatalf("Create rule at priority 1: %v", err)
 	}
-	rule2, err := svc.Create(ctx, "flag-1", "env-1", 2, validConditions, "off")
+	rule2, err := svc.Create(ctx, "flag-1", "env-1", 2, validConditions, "off", "")
 	if err != nil {
 		t.Fatalf("Create rule at priority 2: %v", err)
 	}
@@ -240,7 +240,7 @@ func TestRuleService_Update_DuplicatePriority_ReturnsPriorityConflict(t *testing
 func TestRuleService_Update_SamePriority_SameRule_Succeeds(t *testing.T) {
 	svc := newRuleSvc()
 	ctx := authCtx("editor-1", domain.RoleEditor)
-	rule, err := svc.Create(ctx, "flag-1", "env-1", 5, validConditions, "on")
+	rule, err := svc.Create(ctx, "flag-1", "env-1", 5, validConditions, "on", "")
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
@@ -256,7 +256,7 @@ func TestRuleService_Update_SamePriority_SameRule_Succeeds(t *testing.T) {
 func TestRuleService_Delete_Succeeds(t *testing.T) {
 	svc := newRuleSvc()
 	ctx := authCtx("editor-1", domain.RoleEditor)
-	rule, err := svc.Create(ctx, "flag-1", "env-1", 0, validConditions, "on")
+	rule, err := svc.Create(ctx, "flag-1", "env-1", 0, validConditions, "on", "")
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
@@ -281,7 +281,7 @@ func TestRuleService_Delete_NotFound_ReturnsErrNotFound(t *testing.T) {
 
 func TestRuleService_Create_ViewerReturnsForbidden(t *testing.T) {
 	svc := newRuleSvc()
-	_, err := svc.Create(authCtx("viewer-1", domain.RoleViewer), "flag-1", "env-1", 0, validConditions, "on")
+	_, err := svc.Create(authCtx("viewer-1", domain.RoleViewer), "flag-1", "env-1", 0, validConditions, "on", "")
 	if !errors.Is(err, domain.ErrForbidden) {
 		t.Errorf("expected ErrForbidden, got %v", err)
 	}
@@ -297,7 +297,7 @@ func TestRuleService_Delete_ViewerReturnsForbidden(t *testing.T) {
 
 func TestRuleService_Create_NoAuthContextReturnsForbidden(t *testing.T) {
 	svc := newRuleSvc()
-	_, err := svc.Create(context.Background(), "flag-1", "env-1", 0, validConditions, "on")
+	_, err := svc.Create(context.Background(), "flag-1", "env-1", 0, validConditions, "on", "")
 	if !errors.Is(err, domain.ErrForbidden) {
 		t.Errorf("expected ErrForbidden for missing auth, got %v", err)
 	}
