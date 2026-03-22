@@ -79,7 +79,8 @@ function ProjectDashboard() {
         <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
           Quick Links
         </h2>
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-wrap">
+          <QuickLink label="Compare Environments" to={`/projects/${project.slug}/compare`} />
           <QuickLink label="Segments" to={`/projects/${project.slug}/segments`} />
           <QuickLink label="Settings" to={`/projects/${project.slug}/settings`} />
           <QuickLink label="Members" to={`/projects/${project.slug}/members`} />
