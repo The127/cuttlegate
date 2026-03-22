@@ -96,15 +96,6 @@ function FlagDetailPage() {
 
   return (
     <div className="p-6 max-w-2xl">
-      <div className="mb-4">
-        <a
-          href={`/projects/${slug}/environments/${envSlug}/flags`}
-          className="text-sm text-gray-500 hover:text-gray-700"
-        >
-          ← Flags
-        </a>
-      </div>
-
       <FlagDetailCard
         flag={flag}
         slug={slug}

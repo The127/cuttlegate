@@ -2,6 +2,7 @@ import { Outlet, createRoute } from '@tanstack/react-router'
 import { rootRoute } from './__root'
 import { getUserManager } from '../auth'
 import { ProjectSwitcher } from '../components/ProjectSwitcher'
+import { Breadcrumbs } from '../components/Breadcrumbs'
 import { APIError } from '../api'
 
 export const authenticatedRoute = createRoute({
@@ -52,6 +53,7 @@ function AppShell() {
   return (
     <div className="min-h-screen bg-gray-50">
       <ProjectSwitcher />
+      <Breadcrumbs />
       <main>
         <Outlet />
       </main>
