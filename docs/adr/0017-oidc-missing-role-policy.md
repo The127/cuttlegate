@@ -1,4 +1,4 @@
-# ADR 0016: OIDC missing role claim — reject by default, viewer opt-in
+# ADR 0017: OIDC missing role claim — reject by default, viewer opt-in
 
 **Date:** 2026-03-22
 **Status:** Accepted
