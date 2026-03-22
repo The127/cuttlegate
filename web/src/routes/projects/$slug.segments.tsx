@@ -65,7 +65,7 @@ function SegmentListPage() {
         <h1 className="text-lg font-semibold text-gray-900">Segments</h1>
         <button
           onClick={() => setShowCreate(true)}
-          className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
         >
           New segment
         </button>
@@ -166,14 +166,14 @@ function SegmentRow({
         </time>
         <button
           onClick={onManageMembers}
-          className="px-2 py-1 text-xs font-medium text-gray-600 border border-gray-200 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-2 py-1 text-xs font-medium text-gray-600 border border-gray-200 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
         >
           Members
         </button>
         <button
           onClick={onEdit}
           aria-label={`Edit segment ${segment.slug}`}
-          className="text-gray-400 hover:text-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-0.5"
+          className="text-gray-400 hover:text-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded p-0.5"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -217,7 +217,7 @@ function SegmentEmptyState({ onCreateClick }: { onCreateClick: () => void }) {
       </p>
       <button
         onClick={onCreateClick}
-        className="mt-4 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="mt-4 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
       >
         New segment
       </button>
@@ -358,7 +358,7 @@ function CreateSegmentModal({
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
               placeholder="Beta users"
-              className="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
             />
           </div>
           <div>
@@ -375,7 +375,7 @@ function CreateSegmentModal({
               aria-invalid={!!slugError}
               aria-describedby={slugError ? 'seg-slug-error' : undefined}
               className={`w-full font-mono text-sm border rounded px-2 py-1.5 focus:outline-none focus:ring-2 ${
-                slugError ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                slugError ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-[var(--color-accent)]'
               }`}
             />
             {slugError && (
@@ -397,7 +397,7 @@ function CreateSegmentModal({
             <button
               type="submit"
               disabled={createMutation.isPending || !!slugError || !name.trim() || !segSlug}
-              className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
             >
               {createMutation.isPending ? 'Creating\u2026' : 'Create'}
             </button>
@@ -455,7 +455,7 @@ function EditSegmentModal({
               autoFocus
               value={name}
               onChange={(e) => { setName(e.target.value); setServerError(null) }}
-              className="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
             />
           </div>
           <div>
@@ -478,7 +478,7 @@ function EditSegmentModal({
             <button
               type="submit"
               disabled={updateMutation.isPending || !name.trim()}
-              className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
             >
               {updateMutation.isPending ? 'Saving\u2026' : 'Save'}
             </button>
@@ -606,13 +606,13 @@ function ManageMembersModal({
                 aria-label="User key to add"
                 aria-invalid={!!addError}
                 className={`flex-1 font-mono text-sm border rounded px-2 py-1.5 focus:outline-none focus:ring-2 ${
-                  addError ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                  addError ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-[var(--color-accent)]'
                 }`}
               />
               <button
                 onClick={handleAddMember}
                 disabled={!addKey.trim() || saveMutation.isPending}
-                className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
               >
                 Add
               </button>
@@ -661,12 +661,12 @@ function ManageMembersModal({
                     rows={5}
                     placeholder="One user key per line"
                     aria-label="Bulk member import"
-                    className="w-full font-mono text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    className="w-full font-mono text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] resize-none"
                   />
                   <button
                     onClick={handleBulkApply}
                     disabled={saveMutation.isPending}
-                    className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
                   >
                     {saveMutation.isPending ? 'Saving\u2026' : 'Replace all'}
                   </button>

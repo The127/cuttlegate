@@ -1,14 +1,23 @@
 import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { getUserManager } from '../auth'
+import { useLiveAnnouncer } from './useLiveAnnouncer'
 
 /**
  * Subscribes to the SSE flag state stream for a given project/environment.
  * When a `flag.state_changed` event arrives, invalidates the relevant
- * TanStack Query caches so the UI reflects the change without a page refresh.
+ * TanStack Query caches so the UI reflects the change without a page refresh,
+ * and announces the change to screen readers via the live region.
  */
+interface FlagStateChangedEvent {
+  type: 'flag.state_changed'
+  flag_key: string
+  enabled: boolean
+}
+
 export function useFlagSSE(projectSlug: string, envSlug: string) {
   const queryClient = useQueryClient()
+  const announce = useLiveAnnouncer()
 
   useEffect(() => {
     const controller = new AbortController()
@@ -65,7 +74,7 @@ export function useFlagSSE(projectSlug: string, envSlug: string) {
               if (!json) continue
 
               try {
-                const event = JSON.parse(json)
+                const event = JSON.parse(json) as FlagStateChangedEvent
                 if (event.type === 'flag.state_changed') {
                   void queryClient.invalidateQueries({
                     queryKey: ['flag', projectSlug, envSlug, event.flag_key],
@@ -76,6 +85,8 @@ export function useFlagSSE(projectSlug: string, envSlug: string) {
                   void queryClient.invalidateQueries({
                     queryKey: ['flags', projectSlug, envSlug],
                   })
+                  const stateLabel = event.enabled ? 'enabled' : 'disabled'
+                  announce(`Flag ${event.flag_key} ${stateLabel} in ${envSlug}`)
                 }
               } catch {
                 // Ignore malformed SSE data.
@@ -92,5 +103,6 @@ export function useFlagSSE(projectSlug: string, envSlug: string) {
     void connect()
 
     return () => controller.abort()
-  }, [projectSlug, envSlug, queryClient])
+  // `announce` is stable: LiveAnnouncerProvider uses useCallback(fn, []).
+  }, [projectSlug, envSlug, queryClient, announce])
 }

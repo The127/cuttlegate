@@ -52,5 +52,14 @@ export default defineConfig({
         storageState: STORAGE_STATE_PATH,
       },
     },
+    // Accessibility tests — keyboard nav, focus management, ARIA structure.
+    {
+      name: 'accessibility',
+      testMatch: 'accessibility.spec.ts',
+      dependencies: ['auth-setup'],
+      use: {
+        storageState: STORAGE_STATE_PATH,
+      },
+    },
   ],
 });
