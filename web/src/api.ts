@@ -64,6 +64,11 @@ export async function putJSON<T>(path: string, body: unknown): Promise<T> {
   return res.json() as Promise<T>
 }
 
+export async function patchEmpty(path: string, body: unknown): Promise<void> {
+  const res = await authedFetch(path, { method: 'PATCH', body: JSON.stringify(body) })
+  await throwIfNotOk(res)
+}
+
 export async function deleteRequest(path: string): Promise<void> {
   const res = await authedFetch(path, { method: 'DELETE' })
   await throwIfNotOk(res)
