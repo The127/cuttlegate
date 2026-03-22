@@ -17,6 +17,7 @@ describe('MockCuttlegateClient', () => {
     expect(result).toEqual({
       enabled: false,
       value: null,
+      valueKey: '',
       reason: 'mock_default',
     });
   });
@@ -30,6 +31,7 @@ describe('MockCuttlegateClient', () => {
     expect(result).toEqual({
       enabled: true,
       value: null,
+      valueKey: 'true',
       reason: 'mock',
     });
   });
@@ -43,6 +45,7 @@ describe('MockCuttlegateClient', () => {
     expect(result).toEqual({
       enabled: true,
       value: 'blue',
+      valueKey: 'blue',
       reason: 'mock',
     });
   });

@@ -14,8 +14,8 @@ import (
 // bulkResponse is a valid evaluate API response for use in tests.
 var bulkResponse = map[string]any{
 	"flags": []map[string]any{
-		{"key": "dark-mode", "enabled": true, "value": nil, "reason": "rule_match", "type": "bool"},
-		{"key": "banner-text", "enabled": true, "value": "holiday", "reason": "default", "type": "string"},
+		{"key": "dark-mode", "enabled": true, "value": nil, "value_key": "true", "reason": "rule_match", "type": "bool"},
+		{"key": "banner-text", "enabled": true, "value": "holiday", "value_key": "holiday", "reason": "default", "type": "string"},
 	},
 	"evaluated_at": "2026-03-21T10:00:00Z",
 }
@@ -140,8 +140,16 @@ func TestEvaluate_ReturnsBulkResults(t *testing.T) {
 	if results[0].Key != "dark-mode" || !results[0].Enabled || results[0].Reason != "rule_match" {
 		t.Errorf("unexpected result[0]: %+v", results[0])
 	}
+	// @happy: value_key is "true" for bool flag, Value is "" (nil in wire format)
+	if results[0].ValueKey != "true" {
+		t.Errorf("expected ValueKey=true for bool flag, got %q", results[0].ValueKey)
+	}
 	if results[1].Key != "banner-text" || results[1].Value != "holiday" {
 		t.Errorf("unexpected result[1]: %+v", results[1])
+	}
+	// @happy: value_key equals value for string flag
+	if results[1].ValueKey != "holiday" {
+		t.Errorf("expected ValueKey=holiday for string flag, got %q", results[1].ValueKey)
 	}
 }
 
@@ -251,6 +259,10 @@ func TestEvaluateFlag_ReturnsSingleFlag(t *testing.T) {
 	}
 	if !result.Enabled || result.Reason != "rule_match" {
 		t.Errorf("unexpected result: %+v", result)
+	}
+	// @happy: value_key is present on FlagResult
+	if result.ValueKey != "true" {
+		t.Errorf("expected ValueKey=true for bool flag, got %q", result.ValueKey)
 	}
 }
 
