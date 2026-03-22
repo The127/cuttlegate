@@ -25,8 +25,6 @@ site/node_modules/
 site/build/
 site/.docusaurus/
 
-# Process intelligence — accumulates locally, never committed
-meta/
 
 # Editor / OS noise
 .DS_Store
