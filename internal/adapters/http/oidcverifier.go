@@ -27,6 +27,14 @@ const (
 
 // errMissingRoleClaim is returned by Verify when the token has no role claim
 // and the policy is MissingRolePolicyReject.
+//
+// Constraint: this sentinel lives in the adapter package rather than
+// domain/ports. It works today because all consumers (RequireBearer,
+// RequireBearerOrAPIKey, writeVerifyError) are in the same package as
+// OIDCVerifier. A second TokenVerifier implementation that needs to signal the
+// same condition could not import this sentinel without a layer violation
+// (adapter → adapter). If a second verifier is ever added, move this sentinel
+// to domain/ports and update all consumers. See #185 retro.
 var errMissingRoleClaim = errors.New("oidc: missing role claim")
 
 // OIDCVerifier implements ports.TokenVerifier by validating Bearer tokens

@@ -67,7 +67,7 @@ migrate-down:
     go run ./cmd/migrate down
 
 # Start everything for local dev: Postgres (5433), Keyline OIDC (5002), Go server with hot reload, and Vite (5173)
-# Requires: docker or podman-compose, pg_isready (postgresql-client)
+# Requires: docker or podman-compose
 # Port 5433 is used instead of 5432 to avoid conflicts with other local Postgres instances.
 # Override the server port via env: ADDR=:9090 just dev
 dev:
@@ -75,13 +75,13 @@ dev:
     set -euo pipefail
     docker compose up -d db keyline-db keyline keyline-ui
     echo "Waiting for Postgres..."
-    until pg_isready -h localhost -p 5433 -U cuttlegate -d cuttlegate -q; do sleep 1; done
+    until docker compose exec -T db pg_isready -U cuttlegate -d cuttlegate -q; do sleep 1; done
     echo "Waiting for Keyline OIDC..."
     until curl -sf http://localhost:5002/oidc/cuttlegate/.well-known/openid-configuration > /dev/null 2>&1; do sleep 1; done
     echo "Keyline ready."
     trap 'kill 0' EXIT
-    api_port="${ADDR#:}"
-    api_port="${api_port:-8080}"
+    api_port="${ADDR:-:8080}"
+    api_port="${api_port#:}"
     OIDC_ISSUER=http://localhost:5002/oidc/cuttlegate \
     OIDC_CLIENT_ID=cuttlegate \
     OIDC_REDIRECT_URI=http://localhost:5173/auth/callback \
@@ -159,6 +159,30 @@ index:
     } > "$OUT"
     echo "Index written to $OUT"
     just index-web
+
+# Remove worktrees for branches already merged to main, then prune stale metadata.
+# Run after every merge to keep the worktree list clean.
+clean-worktrees:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    git fetch --prune
+    git worktree list --porcelain \
+      | awk '/^worktree / { wt=$2 } /^branch / { branch=$2 } branch != "" && wt != "$(git rev-parse --show-toplevel)" { print wt, branch }' \
+      | while read -r wt branch; do
+          short="${branch#refs/heads/}"
+          if git branch -r | grep -q "origin/${short}$"; then
+              merged=$(git branch -r --merged origin/main | grep -c "origin/${short}$" || true)
+          else
+              merged=1
+          fi
+          if [[ "$merged" -gt 0 ]]; then
+              echo "Removing worktree $wt (branch $short merged or gone)"
+              git worktree remove --force "$wt" 2>/dev/null || true
+              git branch -d "$short" 2>/dev/null || true
+          fi
+      done
+    git worktree prune
+    echo "Worktrees cleaned."
 
 # Generate a frontend orientation index for AI sessions (writes to docs/frontend-index.md)
 # Covers routes, components, hooks, and API surface of the web/ SPA.
