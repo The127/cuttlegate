@@ -20,6 +20,14 @@ func (s *stubVerifier) Verify(_ context.Context, _ string) (domain.User, error) 
 	return s.user, s.err
 }
 
+// stubUserRepository is a no-op test double for ports.UserRepository.
+type stubUserRepository struct{}
+
+func (s *stubUserRepository) Upsert(_ context.Context, _ *domain.User) error { return nil }
+func (s *stubUserRepository) GetByID(_ context.Context, _ string) (*domain.User, error) {
+	return nil, nil
+}
+
 func assert401JSON(t *testing.T, rec *httptest.ResponseRecorder) {
 	t.Helper()
 	if rec.Code != http.StatusUnauthorized {
@@ -32,7 +40,7 @@ func assert401JSON(t *testing.T, rec *httptest.ResponseRecorder) {
 }
 
 func TestRequireBearer_MissingHeader_Returns401(t *testing.T) {
-	mw := RequireBearer(&stubVerifier{err: errors.New("should not be called")})
+	mw := RequireBearer(&stubVerifier{err: errors.New("should not be called")}, &stubUserRepository{})
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -45,7 +53,7 @@ func TestRequireBearer_MissingHeader_Returns401(t *testing.T) {
 }
 
 func TestRequireBearer_NotBearerScheme_Returns401(t *testing.T) {
-	mw := RequireBearer(&stubVerifier{err: errors.New("should not be called")})
+	mw := RequireBearer(&stubVerifier{err: errors.New("should not be called")}, &stubUserRepository{})
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -59,7 +67,7 @@ func TestRequireBearer_NotBearerScheme_Returns401(t *testing.T) {
 }
 
 func TestRequireBearer_InvalidToken_Returns401(t *testing.T) {
-	mw := RequireBearer(&stubVerifier{err: errors.New("invalid token")})
+	mw := RequireBearer(&stubVerifier{err: errors.New("invalid token")}, &stubUserRepository{})
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -74,7 +82,7 @@ func TestRequireBearer_InvalidToken_Returns401(t *testing.T) {
 
 func TestRequireBearer_ValidToken_InjectsUserAndAuthContext(t *testing.T) {
 	want := domain.User{Sub: "sub42", Email: "alice@example.com", Name: "Alice", Role: domain.RoleAdmin}
-	mw := RequireBearer(&stubVerifier{user: want})
+	mw := RequireBearer(&stubVerifier{user: want}, &stubUserRepository{})
 
 	var gotUser domain.User
 	var gotAC domain.AuthContext

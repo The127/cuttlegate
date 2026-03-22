@@ -6,13 +6,14 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/karo/cuttlegate/internal/app"
 	"github.com/karo/cuttlegate/internal/domain"
 )
 
 // projectMemberService is the use-case interface required by ProjectMemberHandler.
 type projectMemberService interface {
-	ListMembers(ctx context.Context, projectSlug string) ([]*domain.ProjectMember, error)
-	AddMember(ctx context.Context, projectSlug, userID string, role domain.Role) (*domain.ProjectMember, error)
+	ListMembers(ctx context.Context, projectSlug string) ([]app.ProjectMemberView, error)
+	AddMember(ctx context.Context, projectSlug, userID string, role domain.Role) (app.ProjectMemberView, error)
 	UpdateRole(ctx context.Context, projectSlug, userID string, role domain.Role) error
 	RemoveMember(ctx context.Context, projectSlug, userID string) error
 }
@@ -40,15 +41,19 @@ type memberResponse struct {
 	ProjectID string    `json:"project_id"`
 	UserID    string    `json:"user_id"`
 	Role      string    `json:"role"`
+	Name      string    `json:"name"`
+	Email     string    `json:"email"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
-func toMemberResponse(m *domain.ProjectMember) memberResponse {
+func toMemberResponse(v app.ProjectMemberView) memberResponse {
 	return memberResponse{
-		ProjectID: m.ProjectID,
-		UserID:    m.UserID,
-		Role:      string(m.Role),
-		CreatedAt: m.CreatedAt.UTC(),
+		ProjectID: v.ProjectID,
+		UserID:    v.UserID,
+		Role:      string(v.Role),
+		Name:      v.Name,
+		Email:     v.Email,
+		CreatedAt: v.CreatedAt.UTC(),
 	}
 }
 
@@ -83,12 +88,12 @@ func (h *ProjectMemberHandler) add(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, newBadRequest("invalid role"))
 		return
 	}
-	m, err := h.svc.AddMember(r.Context(), r.PathValue("slug"), body.UserID, role)
+	v, err := h.svc.AddMember(r.Context(), r.PathValue("slug"), body.UserID, role)
 	if err != nil {
 		WriteError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, toMemberResponse(m))
+	writeJSON(w, http.StatusCreated, toMemberResponse(v))
 }
 
 func (h *ProjectMemberHandler) updateRole(w http.ResponseWriter, r *http.Request) {

@@ -19,6 +19,8 @@ interface Member {
   project_id: string
   user_id: string
   role: Role
+  name: string
+  email: string
   created_at: string
 }
 
@@ -117,7 +119,7 @@ function MemberListPage() {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide w-full">
-                  User ID
+                  Member
                 </th>
                 <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide whitespace-nowrap">
                   Role
@@ -173,6 +175,10 @@ function MemberListPage() {
   )
 }
 
+function memberDisplayName(member: Member): string {
+  return member.name || member.user_id
+}
+
 function MemberRow({
   member,
   isAdmin,
@@ -190,15 +196,24 @@ function MemberRow({
   onRoleChange: (role: Role) => void
   onRemoveIntent: () => void
 }) {
+  const displayName = memberDisplayName(member)
   return (
     <tr className="hover:bg-gray-50">
       <td className="px-4 py-3">
-        <span className="font-mono text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5 select-all">
-          {member.user_id}
-        </span>
-        {isSelf && (
-          <span className="ml-2 text-xs text-gray-400 font-normal">(you)</span>
-        )}
+        <div className="flex flex-col gap-0.5">
+          <span className="text-sm text-gray-900 font-medium">
+            {displayName}
+            {isSelf && (
+              <span className="ml-2 text-xs text-gray-400 font-normal">(you)</span>
+            )}
+          </span>
+          {member.email && (
+            <span className="text-xs text-gray-400">{member.email}</span>
+          )}
+          {!member.name && (
+            <span className="font-mono text-xs text-gray-500">{member.user_id}</span>
+          )}
+        </div>
       </td>
       <td className="px-4 py-3 whitespace-nowrap">
         {isAdmin ? (
@@ -207,7 +222,7 @@ function MemberRow({
               value={member.role}
               disabled={rolePending}
               onChange={(e) => onRoleChange(e.target.value as Role)}
-              aria-label={`Role for ${member.user_id}`}
+              aria-label={`Role for ${displayName}`}
               className="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 bg-white"
             >
               {ROLES.map((r) => (
@@ -237,7 +252,7 @@ function MemberRow({
         <td className="px-4 py-3 whitespace-nowrap">
           <button
             onClick={onRemoveIntent}
-            aria-label={`Remove member ${member.user_id}`}
+            aria-label={`Remove ${displayName}`}
             className="text-gray-400 hover:text-red-600 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 rounded p-0.5"
           >
             <svg
@@ -376,6 +391,7 @@ function RemoveMemberDialog({
   onCancel: () => void
 }) {
   useEscapeKey(onCancel)
+  const displayName = memberDisplayName(member)
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
@@ -390,9 +406,10 @@ function RemoveMemberDialog({
         </h2>
         <p className="mt-2 text-sm text-gray-600">
           This will remove{' '}
-          <span className="font-mono text-xs text-gray-800 bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5">
-            {member.user_id}
-          </span>{' '}
+          <span className="font-medium text-gray-800">{displayName}</span>
+          {member.email && (
+            <span className="text-gray-500"> ({member.email})</span>
+          )}{' '}
           from the project.
         </p>
         {error && (

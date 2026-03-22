@@ -8,19 +8,31 @@ import (
 	"github.com/karo/cuttlegate/internal/domain/ports"
 )
 
+// ProjectMemberView is a project member record enriched with cached user profile data.
+type ProjectMemberView struct {
+	ProjectID string
+	UserID    string
+	Role      domain.Role
+	CreatedAt time.Time
+	Name      string
+	Email     string
+}
+
 // ProjectMemberService orchestrates project membership use cases.
 type ProjectMemberService struct {
-	repo    ports.ProjectMemberRepository
-	project ports.ProjectRepository
+	repo     ports.ProjectMemberRepository
+	project  ports.ProjectRepository
+	userRepo ports.UserRepository
 }
 
 // NewProjectMemberService constructs a ProjectMemberService.
-func NewProjectMemberService(repo ports.ProjectMemberRepository, project ports.ProjectRepository) *ProjectMemberService {
-	return &ProjectMemberService{repo: repo, project: project}
+func NewProjectMemberService(repo ports.ProjectMemberRepository, project ports.ProjectRepository, userRepo ports.UserRepository) *ProjectMemberService {
+	return &ProjectMemberService{repo: repo, project: project, userRepo: userRepo}
 }
 
-// ListMembers returns all members of a project. Requires at least viewer role.
-func (s *ProjectMemberService) ListMembers(ctx context.Context, projectSlug string) ([]*domain.ProjectMember, error) {
+// ListMembers returns all members of a project enriched with cached user profiles.
+// Requires at least viewer role.
+func (s *ProjectMemberService) ListMembers(ctx context.Context, projectSlug string) ([]ProjectMemberView, error) {
 	if _, err := requireRole(ctx, domain.RoleViewer); err != nil {
 		return nil, err
 	}
@@ -28,22 +40,40 @@ func (s *ProjectMemberService) ListMembers(ctx context.Context, projectSlug stri
 	if err != nil {
 		return nil, err
 	}
-	return s.repo.ListMembers(ctx, proj.ID)
+	members, err := s.repo.ListMembers(ctx, proj.ID)
+	if err != nil {
+		return nil, err
+	}
+	views := make([]ProjectMemberView, 0, len(members))
+	for _, m := range members {
+		v := ProjectMemberView{
+			ProjectID: m.ProjectID,
+			UserID:    m.UserID,
+			Role:      m.Role,
+			CreatedAt: m.CreatedAt,
+		}
+		if u, err := s.userRepo.GetByID(ctx, m.UserID); err == nil && u != nil {
+			v.Name = u.Name
+			v.Email = u.Email
+		}
+		views = append(views, v)
+	}
+	return views, nil
 }
 
 // AddMember adds a new member to a project. Requires admin role.
 // The caller cannot assign a role higher than their own.
-func (s *ProjectMemberService) AddMember(ctx context.Context, projectSlug, userID string, role domain.Role) (*domain.ProjectMember, error) {
+func (s *ProjectMemberService) AddMember(ctx context.Context, projectSlug, userID string, role domain.Role) (ProjectMemberView, error) {
 	ac, err := requireRole(ctx, domain.RoleAdmin)
 	if err != nil {
-		return nil, err
+		return ProjectMemberView{}, err
 	}
 	if roleLevel[role] > roleLevel[ac.Role] {
-		return nil, domain.ErrForbidden
+		return ProjectMemberView{}, domain.ErrForbidden
 	}
 	proj, err := s.project.GetBySlug(ctx, projectSlug)
 	if err != nil {
-		return nil, err
+		return ProjectMemberView{}, err
 	}
 	m := &domain.ProjectMember{
 		ProjectID: proj.ID,
@@ -52,9 +82,19 @@ func (s *ProjectMemberService) AddMember(ctx context.Context, projectSlug, userI
 		CreatedAt: time.Now().UTC(),
 	}
 	if err := s.repo.AddMember(ctx, m); err != nil {
-		return nil, err
+		return ProjectMemberView{}, err
 	}
-	return m, nil
+	v := ProjectMemberView{
+		ProjectID: m.ProjectID,
+		UserID:    m.UserID,
+		Role:      m.Role,
+		CreatedAt: m.CreatedAt,
+	}
+	if u, err := s.userRepo.GetByID(ctx, userID); err == nil && u != nil {
+		v.Name = u.Name
+		v.Email = u.Email
+	}
+	return v, nil
 }
 
 // UpdateRole changes the role of an existing project member. Requires admin role.
