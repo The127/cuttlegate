@@ -1,5 +1,6 @@
 import { createRoute, Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { authenticatedRoute } from './_authenticated'
 import { fetchJSON } from '../api'
 import { useOpenCreateProjectDialog } from '../components/CreateProjectDialog'
@@ -31,6 +32,7 @@ function useProjectCount<T>(slug: string, resource: string, key: string) {
 }
 
 function HomePage() {
+  const { t } = useTranslation('projects')
   const openCreateDialog = useOpenCreateProjectDialog()
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['projects'],
@@ -43,12 +45,12 @@ function HomePage() {
   if (isError) {
     return (
       <div className="p-8 text-center">
-        <p className="text-sm text-red-600">Failed to load projects.</p>
+        <p className="text-sm text-red-600">{t('list.error')}</p>
         <button
           onClick={() => void refetch()}
           className="mt-2 text-sm text-red-600 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
         >
-          Retry
+          {t('actions.retry', { ns: 'common' })}
         </button>
       </div>
     )
@@ -59,15 +61,15 @@ function HomePage() {
   if (projects.length === 0) {
     return (
       <div className="p-8 text-center">
-        <h1 className="text-lg font-semibold text-gray-900">No projects yet</h1>
+        <h1 className="text-lg font-semibold text-gray-900">{t('list.empty_title')}</h1>
         <p className="mt-2 text-sm text-gray-600">
-          Create your first project to get started with feature flags.
+          {t('list.empty_body')}
         </p>
         <button
           onClick={openCreateDialog}
           className="mt-4 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
         >
-          Create your first project
+          {t('list.first_project_button')}
         </button>
       </div>
     )
@@ -76,12 +78,12 @@ function HomePage() {
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-lg font-semibold text-gray-900">Projects</h1>
+        <h1 className="text-lg font-semibold text-gray-900">{t('list.title')}</h1>
         <button
           onClick={openCreateDialog}
           className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
         >
-          New Project
+          {t('list.new_project')}
         </button>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -94,6 +96,7 @@ function HomePage() {
 }
 
 function ProjectCard({ project }: { project: Project }) {
+  const { t } = useTranslation('projects')
   const envsCount = useProjectCount(project.slug, 'environments', 'environments')
   const flagsCount = useProjectCount(project.slug, 'flags', 'flags')
   const membersCount = useProjectCount(project.slug, 'members', 'members')
@@ -107,9 +110,9 @@ function ProjectCard({ project }: { project: Project }) {
       <h2 className="text-sm font-semibold text-gray-900">{project.name}</h2>
       <p className="mt-0.5 font-mono text-xs text-gray-500">{project.slug}</p>
       <div className="mt-3 flex items-center gap-4 text-xs text-gray-600">
-        <CountBadge label="Environments" count={envsCount.data} isLoading={envsCount.isLoading} isError={envsCount.isError} />
-        <CountBadge label="Flags" count={flagsCount.data} isLoading={flagsCount.isLoading} isError={flagsCount.isError} />
-        <CountBadge label="Members" count={membersCount.data} isLoading={membersCount.isLoading} isError={membersCount.isError} />
+        <CountBadge label={t('list.count_environments')} count={envsCount.data} isLoading={envsCount.isLoading} isError={envsCount.isError} />
+        <CountBadge label={t('list.count_flags')} count={flagsCount.data} isLoading={flagsCount.isLoading} isError={flagsCount.isError} />
+        <CountBadge label={t('list.count_members')} count={membersCount.data} isLoading={membersCount.isLoading} isError={membersCount.isError} />
       </div>
     </Link>
   )

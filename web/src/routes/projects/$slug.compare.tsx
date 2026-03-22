@@ -1,6 +1,7 @@
 import { createRoute } from '@tanstack/react-router'
 import { useQuery, useQueries } from '@tanstack/react-query'
 import { useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { projectRoute } from './$slug'
 import { fetchJSON } from '../../api'
 
@@ -38,6 +39,7 @@ export const compareRoute = createRoute({
 })
 
 function CompareEnvironmentsPage() {
+  const { t } = useTranslation('projects')
   const project = projectRoute.useLoaderData()
   const [page, setPage] = useState(0)
 
@@ -107,7 +109,7 @@ function CompareEnvironmentsPage() {
 
   return (
     <div className="p-6">
-      <h1 className="text-lg font-semibold text-gray-900 mb-6">Compare Environments</h1>
+      <h1 className="text-lg font-semibold text-gray-900 mb-6">{t('compare.title')}</h1>
 
       {isLoading ? (
         <MatrixSkeleton />
@@ -118,14 +120,14 @@ function CompareEnvironmentsPage() {
       ) : (
         <>
           <div className="overflow-x-auto border border-gray-200 rounded-lg bg-white">
-            <table className="min-w-full text-sm" aria-label="Flag environment comparison matrix">
+            <table className="min-w-full text-sm" aria-label={t('compare.matrix_aria')}>
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50">
                   <th
                     scope="col"
                     className="sticky left-0 z-10 bg-gray-50 px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide w-64"
                   >
-                    Flag
+                    {t('compare.flag_header')}
                   </th>
                   {envs.map((env) => (
                     <th
@@ -174,6 +176,7 @@ function CompareEnvironmentsPage() {
 }
 
 function MatrixCell({ cell }: { cell: CellState }) {
+  const { t } = useTranslation('projects')
   return (
     <div className="flex flex-col gap-1">
       <span
@@ -187,7 +190,7 @@ function MatrixCell({ cell }: { cell: CellState }) {
           className={`w-1.5 h-1.5 rounded-full ${cell.enabled ? 'bg-green-500' : 'bg-gray-400'}`}
           aria-hidden="true"
         />
-        {cell.enabled ? 'Enabled' : 'Disabled'}
+        {cell.enabled ? t('compare.enabled') : t('compare.disabled')}
       </span>
       <span className="font-mono text-xs text-gray-500">{cell.default_variant_key}</span>
     </div>
@@ -203,10 +206,11 @@ function Pagination({
   totalPages: number
   onPageChange: (p: number) => void
 }) {
+  const { t } = useTranslation('projects')
   return (
     <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
       <span>
-        Page {page + 1} of {totalPages}
+        {t('compare.page_info', { current: page + 1, total: totalPages })}
       </span>
       <div className="flex gap-2">
         <button
@@ -214,14 +218,14 @@ function Pagination({
           disabled={page === 0}
           className="px-3 py-1.5 border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          Previous
+          {t('compare.previous')}
         </button>
         <button
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages - 1}
           className="px-3 py-1.5 border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          Next
+          {t('compare.next')}
         </button>
       </div>
     </div>
@@ -229,10 +233,11 @@ function Pagination({
 }
 
 function EmptyState() {
+  const { t } = useTranslation('projects')
   return (
     <div className="text-center py-16 px-6 border border-gray-200 rounded-lg bg-white">
       <p className="text-sm text-gray-500">
-        No flags in this project yet. Create a flag to see the comparison matrix.
+        {t('compare.empty')}
       </p>
     </div>
   )
@@ -266,14 +271,15 @@ function MatrixSkeleton() {
 }
 
 function MatrixError({ onRetry }: { onRetry: () => void }) {
+  const { t } = useTranslation('projects')
   return (
     <div>
-      <span className="text-sm text-red-600">Failed to load comparison matrix. </span>
+      <span className="text-sm text-red-600">{t('compare.error')} </span>
       <button
         onClick={onRetry}
         className="text-sm text-red-600 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
       >
-        Retry
+        {t('actions.retry', { ns: 'common' })}
       </button>
     </div>
   )

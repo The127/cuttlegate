@@ -1,0 +1,52 @@
+{
+  "title": "Segments",
+  "new_segment": "New segment",
+  "empty_state": "No segments yet — segments let you target feature flags to specific user groups.",
+  "error": "Failed to load segments.",
+  "edit_aria": "Edit segment {{slug}}",
+  "delete_aria": "Delete segment {{slug}}",
+  "create": {
+    "title": "Create segment",
+    "name_label": "Name",
+    "name_placeholder": "Beta users",
+    "slug_label": "Slug",
+    "slug_placeholder": "beta-users",
+    "slug_conflict": "A segment with this slug already exists in this project",
+    "slug_required": "Slug is required",
+    "slug_too_long": "Slug must be {{max}} characters or fewer",
+    "slug_invalid": "Slug must start with a letter or digit and contain only lowercase letters, digits, and hyphens",
+    "server_error": "Something went wrong. Please try again."
+  },
+  "edit": {
+    "title": "Edit segment",
+    "name_label": "Name",
+    "slug_label": "Slug",
+    "slug_immutable": "Slug is immutable after creation.",
+    "server_error": "Something went wrong. Please try again."
+  },
+  "delete": {
+    "title": "Delete segment?",
+    "body": "This will permanently delete <mono>{{slug}}</mono>.",
+    "warning": "Deleting this segment may break targeting rules that reference it.",
+    "failed": "Failed to delete. Please try again."
+  },
+  "members": {
+    "title": "Members — {{slug}}",
+    "close_aria": "Close",
+    "add_placeholder": "user-key",
+    "add_aria": "User key to add",
+    "add_button": "Add",
+    "duplicate_key": "This key is already a member",
+    "no_members": "No members yet.",
+    "bulk_show": "Bulk import (replaces all)",
+    "bulk_hide": "Hide bulk import",
+    "bulk_placeholder": "One user key per line",
+    "bulk_aria": "Bulk member import",
+    "bulk_apply": "Replace all",
+    "save_failed": "Failed to save members. Please try again.",
+    "remove_aria": "Remove {{key}}",
+    "failed_to_load": "Failed to load members.",
+    "members_button": "Members",
+    "saving": "Saving…"
+  }
+}

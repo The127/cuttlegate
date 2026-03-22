@@ -1,6 +1,7 @@
 import { createRoute } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
+import { useTranslation, Trans } from 'react-i18next'
 import { projectRoute } from './$slug'
 import { fetchJSON, postJSON, patchJSON, putJSON, deleteRequest, APIError } from '../../api'
 import { formatRelativeDate } from '../../utils/date'
@@ -20,6 +21,7 @@ export const segmentListRoute = createRoute({
 })
 
 function SegmentListPage() {
+  const { t } = useTranslation('segments')
   const { slug } = segmentListRoute.useParams()
   const queryClient = useQueryClient()
   const queryKey = ['segments', slug]
@@ -47,12 +49,12 @@ function SegmentListPage() {
   if (isError)
     return (
       <div className="p-6">
-        <span className="text-sm text-red-600">Failed to load segments. </span>
+        <span className="text-sm text-red-600">{t('error')} </span>
         <button
           onClick={() => void refetch()}
           className="text-sm text-red-600 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
         >
-          Retry
+          {t('actions.retry', { ns: 'common' })}
         </button>
       </div>
     )
@@ -62,12 +64,12 @@ function SegmentListPage() {
   return (
     <div className="p-6 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-lg font-semibold text-gray-900">Segments</h1>
+        <h1 className="text-lg font-semibold text-gray-900">{t('title')}</h1>
         <button
           onClick={() => setShowCreate(true)}
           className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          New segment
+          {t('new_segment')}
         </button>
       </div>
 
@@ -148,6 +150,7 @@ function SegmentRow({
   onManageMembers: () => void
   onDeleteIntent: () => void
 }) {
+  const { t } = useTranslation('segments')
   return (
     <li className="flex items-center justify-between px-4 py-3 gap-4">
       <div className="flex items-center gap-3 min-w-0">
@@ -168,11 +171,11 @@ function SegmentRow({
           onClick={onManageMembers}
           className="px-2 py-1 text-xs font-medium text-gray-600 border border-gray-200 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          Members
+          {t('members.members_button')}
         </button>
         <button
           onClick={onEdit}
-          aria-label={`Edit segment ${segment.slug}`}
+          aria-label={t('edit_aria', { slug: segment.slug })}
           className="text-gray-400 hover:text-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-0.5"
         >
           <svg
@@ -187,7 +190,7 @@ function SegmentRow({
         </button>
         <button
           onClick={onDeleteIntent}
-          aria-label={`Delete segment ${segment.slug}`}
+          aria-label={t('delete_aria', { slug: segment.slug })}
           className="text-gray-400 hover:text-red-600 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 rounded p-0.5"
         >
           <svg
@@ -210,16 +213,17 @@ function SegmentRow({
 }
 
 function SegmentEmptyState({ onCreateClick }: { onCreateClick: () => void }) {
+  const { t } = useTranslation('segments')
   return (
     <div className="text-center py-16 px-6">
       <p className="text-sm text-gray-500">
-        No segments yet — segments let you target feature flags to specific user groups.
+        {t('empty_state')}
       </p>
       <button
         onClick={onCreateClick}
         className="mt-4 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
-        New segment
+        {t('new_segment')}
       </button>
     </div>
   )
@@ -236,11 +240,10 @@ function slugify(name: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
-function validateSlug(slug: string): string | null {
+function validateSlug(slug: string, t: (k: string, opts?: Record<string, unknown>) => string): string | null {
   if (slug.length === 0) return null
-  if (slug.length > MAX_SLUG_LENGTH) return `Slug must be ${MAX_SLUG_LENGTH} characters or fewer`
-  if (!SLUG_RE.test(slug))
-    return 'Slug must start with a letter or digit and contain only lowercase letters, digits, and hyphens'
+  if (slug.length > MAX_SLUG_LENGTH) return t('create.slug_too_long', { max: MAX_SLUG_LENGTH })
+  if (!SLUG_RE.test(slug)) return t('create.slug_invalid')
   return null
 }
 
@@ -286,6 +289,7 @@ function CreateSegmentModal({
   onCreated: () => void
   onCancel: () => void
 }) {
+  const { t } = useTranslation('segments')
   const [name, setName] = useState('')
   const [segSlug, setSegSlug] = useState('')
   const [slugTouched, setSlugTouched] = useState(false)
@@ -298,7 +302,7 @@ function CreateSegmentModal({
     onError: (err) => {
       if (err instanceof APIError) {
         if (err.status === 409 || err.code === 'conflict') {
-          setSlugError('A segment with this slug already exists in this project')
+          setSlugError(t('create.slug_conflict'))
           return
         }
         if (err.status === 400 && err.code === 'validation_error') {
@@ -306,7 +310,7 @@ function CreateSegmentModal({
           return
         }
       }
-      setServerError(err instanceof APIError ? err.message : 'Something went wrong. Please try again.')
+      setServerError(err instanceof APIError ? err.message : t('create.server_error'))
     },
   })
 
@@ -315,7 +319,7 @@ function CreateSegmentModal({
     if (!slugTouched) {
       const generated = slugify(value)
       setSegSlug(generated)
-      setSlugError(validateSlug(generated))
+      setSlugError(validateSlug(generated, t))
     }
   }
 
@@ -327,15 +331,15 @@ function CreateSegmentModal({
   }
 
   function handleSlugBlur() {
-    setSlugError(validateSlug(segSlug))
+    setSlugError(validateSlug(segSlug, t))
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim()) return
-    const err = validateSlug(segSlug)
+    const err = validateSlug(segSlug, t)
     if (err) { setSlugError(err); return }
-    if (!segSlug) { setSlugError('Slug is required'); return }
+    if (!segSlug) { setSlugError(t('create.slug_required')); return }
     setServerError(null)
     createMutation.mutate()
   }
@@ -344,12 +348,12 @@ function CreateSegmentModal({
     <Modal labelledBy="create-segment-title" onClose={onCancel}>
       <div className="relative bg-white rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
         <h2 id="create-segment-title" className="text-base font-semibold text-gray-900 mb-4">
-          Create segment
+          {t('create.title')}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="seg-name" className="block text-xs font-medium text-gray-500 mb-1">
-              Name
+              {t('create.name_label')}
             </label>
             <input
               id="seg-name"
@@ -357,13 +361,13 @@ function CreateSegmentModal({
               autoFocus
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
-              placeholder="Beta users"
+              placeholder={t('create.name_placeholder')}
               className="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
             <label htmlFor="seg-slug" className="block text-xs font-medium text-gray-500 mb-1">
-              Slug
+              {t('create.slug_label')}
             </label>
             <input
               id="seg-slug"
@@ -371,7 +375,7 @@ function CreateSegmentModal({
               value={segSlug}
               onChange={(e) => handleSlugChange(e.target.value)}
               onBlur={handleSlugBlur}
-              placeholder="beta-users"
+              placeholder={t('create.slug_placeholder')}
               aria-invalid={!!slugError}
               aria-describedby={slugError ? 'seg-slug-error' : undefined}
               className={`w-full font-mono text-sm border rounded px-2 py-1.5 focus:outline-none focus:ring-2 ${
@@ -392,14 +396,14 @@ function CreateSegmentModal({
               disabled={createMutation.isPending}
               className="px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
             >
-              Cancel
+              {t('actions.cancel', { ns: 'common' })}
             </button>
             <button
               type="submit"
               disabled={createMutation.isPending || !!slugError || !name.trim() || !segSlug}
               className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              {createMutation.isPending ? 'Creating\u2026' : 'Create'}
+              {createMutation.isPending ? t('states.creating', { ns: 'common' }) : t('actions.create', { ns: 'common' })}
             </button>
           </div>
         </form>
@@ -419,6 +423,7 @@ function EditSegmentModal({
   onSaved: (updated: Segment) => void
   onCancel: () => void
 }) {
+  const { t } = useTranslation('segments')
   const [name, setName] = useState(segment.name)
   const [serverError, setServerError] = useState<string | null>(null)
 
@@ -427,7 +432,7 @@ function EditSegmentModal({
       patchJSON<Segment>(`/api/v1/projects/${projectSlug}/segments/${segment.slug}`, { name }),
     onSuccess: (updated) => onSaved(updated),
     onError: (err) => {
-      setServerError(err instanceof APIError ? err.message : 'Something went wrong. Please try again.')
+      setServerError(err instanceof APIError ? err.message : t('edit.server_error'))
     },
   })
 
@@ -442,12 +447,12 @@ function EditSegmentModal({
     <Modal labelledBy="edit-segment-title" onClose={onCancel}>
       <div className="relative bg-white rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
         <h2 id="edit-segment-title" className="text-base font-semibold text-gray-900 mb-4">
-          Edit segment
+          {t('edit.title')}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="edit-seg-name" className="block text-xs font-medium text-gray-500 mb-1">
-              Name
+              {t('edit.name_label')}
             </label>
             <input
               id="edit-seg-name"
@@ -459,11 +464,11 @@ function EditSegmentModal({
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Slug</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{t('edit.slug_label')}</label>
             <div className="font-mono text-sm text-gray-400 bg-gray-50 border border-gray-200 rounded px-2 py-1.5 select-none">
               {segment.slug}
             </div>
-            <p className="mt-1 text-xs text-gray-400">Slug is immutable after creation.</p>
+            <p className="mt-1 text-xs text-gray-400">{t('edit.slug_immutable')}</p>
           </div>
           {serverError && <p className="text-xs text-red-600">{serverError}</p>}
           <div className="flex justify-end gap-3 pt-2">
@@ -473,14 +478,14 @@ function EditSegmentModal({
               disabled={updateMutation.isPending}
               className="px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
             >
-              Cancel
+              {t('actions.cancel', { ns: 'common' })}
             </button>
             <button
               type="submit"
               disabled={updateMutation.isPending || !name.trim()}
               className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              {updateMutation.isPending ? 'Saving\u2026' : 'Save'}
+              {updateMutation.isPending ? t('states.saving', { ns: 'common' }) : t('actions.save', { ns: 'common' })}
             </button>
           </div>
         </form>
@@ -498,6 +503,7 @@ function ManageMembersModal({
   segment: Segment
   onCancel: () => void
 }) {
+  const { t } = useTranslation('segments')
   const queryClient = useQueryClient()
   const membersKey = ['segments', projectSlug, segment.slug, 'members']
 
@@ -532,7 +538,7 @@ function ManageMembersModal({
       setSaveError(null)
     },
     onError: (err) => {
-      setSaveError(err instanceof APIError ? err.message : 'Failed to save members. Please try again.')
+      setSaveError(err instanceof APIError ? err.message : t('members.save_failed'))
     },
   })
 
@@ -540,7 +546,7 @@ function ManageMembersModal({
     const key = addKey.trim()
     if (!key) return
     if (members.includes(key)) {
-      setAddError('This key is already a member')
+      setAddError(t('members.duplicate_key'))
       return
     }
     const next = [...members, key]
@@ -572,12 +578,11 @@ function ManageMembersModal({
       <div className="relative bg-white rounded-lg shadow-lg max-w-lg w-full mx-4 p-6 max-h-[80vh] flex flex-col">
         <div className="flex items-center justify-between mb-4">
           <h2 id="members-modal-title" className="text-base font-semibold text-gray-900">
-            Members —{' '}
-            <span className="font-mono font-normal text-gray-600">{segment.slug}</span>
+            {t('members.title', { slug: segment.slug })}
           </h2>
           <button
             onClick={onCancel}
-            aria-label="Close"
+            aria-label={t('members.close_aria')}
             className="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 rounded p-0.5"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -593,7 +598,7 @@ function ManageMembersModal({
             ))}
           </div>
         ) : isError ? (
-          <p className="text-sm text-red-600">Failed to load members.</p>
+          <p className="text-sm text-red-600">{t('members.failed_to_load')}</p>
         ) : (
           <>
             <div className="flex gap-2 mb-3">
@@ -602,8 +607,8 @@ function ManageMembersModal({
                 value={addKey}
                 onChange={(e) => { setAddKey(e.target.value); setAddError(null) }}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddMember() } }}
-                placeholder="user-key"
-                aria-label="User key to add"
+                placeholder={t('members.add_placeholder')}
+                aria-label={t('members.add_aria')}
                 aria-invalid={!!addError}
                 className={`flex-1 font-mono text-sm border rounded px-2 py-1.5 focus:outline-none focus:ring-2 ${
                   addError ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
@@ -614,14 +619,14 @@ function ManageMembersModal({
                 disabled={!addKey.trim() || saveMutation.isPending}
                 className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                Add
+                {t('members.add_button')}
               </button>
             </div>
             {addError && <p className="mb-2 text-xs text-red-600">{addError}</p>}
 
             <div className="flex-1 overflow-y-auto min-h-0 border border-gray-200 rounded-lg">
               {members.length === 0 ? (
-                <p className="text-sm text-gray-400 text-center py-8">No members yet.</p>
+                <p className="text-sm text-gray-400 text-center py-8">{t('members.no_members')}</p>
               ) : (
                 <ul className="divide-y divide-gray-100">
                   {members.map((key) => (
@@ -630,7 +635,7 @@ function ManageMembersModal({
                       <button
                         onClick={() => handleRemoveMember(key)}
                         disabled={saveMutation.isPending}
-                        aria-label={`Remove ${key}`}
+                        aria-label={t('members.remove_aria', { key })}
                         className="text-gray-400 hover:text-red-600 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 rounded p-0.5 disabled:opacity-50"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -651,7 +656,7 @@ function ManageMembersModal({
                 }}
                 className="text-xs text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400 rounded"
               >
-                {showBulk ? 'Hide bulk import' : 'Bulk import (replaces all)'}
+                {showBulk ? t('members.bulk_hide') : t('members.bulk_show')}
               </button>
               {showBulk && (
                 <div className="mt-2 space-y-2">
@@ -659,8 +664,8 @@ function ManageMembersModal({
                     value={bulkText}
                     onChange={(e) => setBulkText(e.target.value)}
                     rows={5}
-                    placeholder="One user key per line"
-                    aria-label="Bulk member import"
+                    placeholder={t('members.bulk_placeholder')}
+                    aria-label={t('members.bulk_aria')}
                     className="w-full font-mono text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   />
                   <button
@@ -668,7 +673,7 @@ function ManageMembersModal({
                     disabled={saveMutation.isPending}
                     className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    {saveMutation.isPending ? 'Saving\u2026' : 'Replace all'}
+                    {saveMutation.isPending ? t('members.saving') : t('members.bulk_apply')}
                   </button>
                 </div>
               )}
@@ -676,7 +681,7 @@ function ManageMembersModal({
 
             {saveError && <p className="mt-2 text-xs text-red-600">{saveError}</p>}
             {saveMutation.isPending && (
-              <p className="mt-1 text-xs text-gray-400">Saving\u2026</p>
+              <p className="mt-1 text-xs text-gray-400">{t('members.saving')}</p>
             )}
           </>
         )}
@@ -698,21 +703,26 @@ function DeleteSegmentModal({
   onConfirm: () => void
   onCancel: () => void
 }) {
+  const { t } = useTranslation('segments')
   return (
     <Modal labelledBy="delete-segment-title" onClose={onCancel}>
       <div className="relative bg-white rounded-lg shadow-lg max-w-sm w-full mx-4 p-6">
         <h2 id="delete-segment-title" className="text-base font-semibold text-gray-900">
-          Delete segment?
+          {t('delete.title')}
         </h2>
         <p className="mt-2 text-sm text-gray-600">
-          This will permanently delete{' '}
-          <span className="font-mono text-gray-800">{segment.slug}</span>.
+          <Trans
+            i18nKey="delete.body"
+            ns="segments"
+            values={{ slug: segment.slug }}
+            components={{ mono: <span className="font-mono text-gray-800" /> }}
+          />
         </p>
         <p className="mt-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
-          Deleting this segment may break targeting rules that reference it.
+          {t('delete.warning')}
         </p>
         {deleteFailed && (
-          <p className="mt-3 text-xs text-red-600">Failed to delete. Please try again.</p>
+          <p className="mt-3 text-xs text-red-600">{t('delete.failed')}</p>
         )}
         <div className="mt-5 flex justify-end gap-3">
           <button
@@ -721,14 +731,14 @@ function DeleteSegmentModal({
             disabled={isDeleting}
             className="px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
           >
-            Cancel
+            {t('actions.cancel', { ns: 'common' })}
           </button>
           <button
             onClick={onConfirm}
             disabled={isDeleting}
             className="px-3 py-1.5 text-sm font-medium bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500"
           >
-            {isDeleting ? 'Deleting\u2026' : 'Delete'}
+            {isDeleting ? t('states.deleting', { ns: 'common' }) : t('actions.delete', { ns: 'common' })}
           </button>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { createRoute, useNavigate, Link } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, type ChangeEvent } from 'react'
+import { useTranslation, Trans } from 'react-i18next'
 import { projectEnvRoute } from './$slug.environments.$envSlug'
 import { fetchJSON, patchJSON, postJSON, deleteRequest, APIError } from '../../api'
 import { useFlagSSE } from '../../hooks/useFlagSSE'
@@ -31,6 +32,12 @@ interface FlagEnvState {
   enabled: boolean
 }
 
+const REASON_KEY_MAP: Record<string, string> = {
+  disabled: 'eval.reason_disabled',
+  default: 'eval.reason_default',
+  rule_match: 'eval.reason_rule_match',
+}
+
 export const flagDetailRoute = createRoute({
   getParentRoute: () => projectEnvRoute,
   path: '/flags/$key',
@@ -38,6 +45,7 @@ export const flagDetailRoute = createRoute({
 })
 
 function FlagDetailPage() {
+  const { t } = useTranslation('flags')
   const { slug, envSlug, key } = flagDetailRoute.useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -81,13 +89,13 @@ function FlagDetailPage() {
     return (
       <div className="p-6">
         <p className="text-sm text-red-600">
-          {is404 ? 'Flag not found.' : 'Failed to load flag.'}
+          {is404 ? t('list.not_found') : t('list.failed_to_load')}
         </p>
         <a
           href={`/projects/${slug}/environments/${envSlug}/flags`}
           className="mt-2 inline-block text-sm text-blue-600 underline hover:no-underline"
         >
-          Back to flags
+          {t('list.back_to_flags')}
         </a>
       </div>
     )
@@ -115,7 +123,7 @@ function FlagDetailPage() {
           params={{ slug, envSlug, key }}
           className="text-sm text-blue-600 hover:underline"
         >
-          Targeting rules →
+          {t('detail.targeting_rules')}
         </Link>
       </div>
 
@@ -151,6 +159,7 @@ function FlagDetailCard({
   onDeleteIntent: () => void
   onSaved: () => void
 }) {
+  const { t } = useTranslation('flags')
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState(false)
   const [editName, setEditName] = useState(flag.name)
@@ -172,7 +181,7 @@ function FlagDetailCard({
       onSaved()
     },
     onError: (err) => {
-      setSaveError(err instanceof APIError ? err.message : 'Save failed. Please try again.')
+      setSaveError(err instanceof APIError ? err.message : t('detail.save_failed'))
     },
   })
 
@@ -199,11 +208,11 @@ function FlagDetailCard({
         <div className="flex items-center gap-2">
           {!editing && (
             <Button variant="secondary" size="sm" onClick={() => setEditing(true)}>
-              Edit
+              {t('actions.edit', { ns: 'common' })}
             </Button>
           )}
-          <Button variant="danger-outline" size="sm" aria-label="Delete flag" onClick={onDeleteIntent}>
-            Delete
+          <Button variant="danger-outline" size="sm" aria-label={t('detail.delete_aria')} onClick={onDeleteIntent}>
+            {t('actions.delete', { ns: 'common' })}
           </Button>
         </div>
       </div>
@@ -212,7 +221,7 @@ function FlagDetailCard({
       <div className="px-5 py-4 space-y-5">
         {/* Name */}
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">Name</label>
+          <label className="block text-xs font-medium text-gray-500 mb-1">{t('detail.name_label')}</label>
           {editing ? (
             <Input
               type="text"
@@ -227,7 +236,7 @@ function FlagDetailCard({
 
         {/* Variants */}
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">Variants</label>
+          <label className="block text-xs font-medium text-gray-500 mb-1">{t('detail.variants_label')}</label>
           <ul className="space-y-1">
             {(editing ? editVariants : flag.variants).map((v: Variant, i: number) => (
               <li key={v.key} className="flex items-center gap-2">
@@ -244,7 +253,7 @@ function FlagDetailCard({
                       )
                       setEditVariants(updated)
                     }}
-                    aria-label={`Variant name for ${v.key}`}
+                    aria-label={t('detail.variant_name_aria', { key: v.key })}
                     className="py-1 px-2"
                   />
                 ) : (
@@ -257,12 +266,12 @@ function FlagDetailCard({
 
         {/* Default variant */}
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">Default variant</label>
+          <label className="block text-xs font-medium text-gray-500 mb-1">{t('detail.default_variant_label')}</label>
           {editing ? (
             <Select
               value={editDefaultVariantKey}
               onValueChange={setEditDefaultVariantKey}
-              aria-label="Default variant"
+              aria-label={t('detail.default_variant_aria')}
             >
               {editVariants.map((v: Variant) => (
                 <SelectItem key={v.key} value={v.key}>
@@ -280,13 +289,13 @@ function FlagDetailCard({
         {/* Enabled toggle */}
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-1">
-            Status in <span className="font-mono">{envSlug}</span>
+            {t('detail.status_label', { env: envSlug })}
           </label>
           <button
             onClick={() => onToggle(!flag.enabled)}
             disabled={isToggling}
             aria-pressed={flag.enabled}
-            aria-label={flag.enabled ? 'Disable flag' : 'Enable flag'}
+            aria-label={flag.enabled ? t('toggle.disable') : t('toggle.enable')}
             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-60 ${
               flag.enabled
                 ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 focus:ring-green-500'
@@ -297,7 +306,7 @@ function FlagDetailCard({
               className={`w-1.5 h-1.5 rounded-full ${flag.enabled ? 'bg-green-500' : 'bg-gray-400'}`}
               aria-hidden="true"
             />
-            {flag.enabled ? 'Enabled' : 'Disabled'}
+            {flag.enabled ? t('toggle.enabled') : t('toggle.disabled')}
           </button>
         </div>
       </div>
@@ -309,14 +318,14 @@ function FlagDetailCard({
             onClick={() => updateMutation.mutate()}
             disabled={updateMutation.isPending}
           >
-            {updateMutation.isPending ? 'Saving…' : 'Save'}
+            {updateMutation.isPending ? t('states.saving', { ns: 'common' }) : t('actions.save', { ns: 'common' })}
           </Button>
           <Button
             variant="secondary"
             onClick={cancelEdit}
             disabled={updateMutation.isPending}
           >
-            Cancel
+            {t('actions.cancel', { ns: 'common' })}
           </Button>
           {saveError && (
             <p className="text-xs text-red-600">{saveError}</p>
@@ -340,6 +349,7 @@ function DeleteConfirmModal({
   onConfirm: () => void
   onCancel: () => void
 }) {
+  const { t } = useTranslation('flags')
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
@@ -350,22 +360,25 @@ function DeleteConfirmModal({
       <div className="absolute inset-0 bg-black/30" onClick={onCancel} aria-hidden="true" />
       <div className="relative bg-white rounded-lg shadow-lg max-w-sm w-full mx-4 p-6">
         <h2 id="delete-dialog-title" className="text-base font-semibold text-gray-900">
-          Delete flag?
+          {t('delete.title')}
         </h2>
         <p className="mt-2 text-sm text-gray-600">
-          This will permanently delete{' '}
-          <span className="font-mono text-gray-800">{flagKey}</span> from all environments.
-          This action cannot be undone.
+          <Trans
+            i18nKey="delete.body"
+            ns="flags"
+            values={{ key: flagKey }}
+            components={{ mono: <span className="font-mono text-gray-800" /> }}
+          />
         </p>
         {deleteFailed && (
-          <p className="mt-3 text-xs text-red-600">Failed to delete. Please try again.</p>
+          <p className="mt-3 text-xs text-red-600">{t('delete.failed')}</p>
         )}
         <div className="mt-5 flex justify-end gap-3">
           <Button autoFocus variant="secondary" onClick={onCancel} disabled={isDeleting}>
-            Cancel
+            {t('actions.cancel', { ns: 'common' })}
           </Button>
           <Button variant="danger" onClick={onConfirm} disabled={isDeleting}>
-            {isDeleting ? 'Deleting…' : 'Delete'}
+            {isDeleting ? t('states.deleting', { ns: 'common' }) : t('actions.delete', { ns: 'common' })}
           </Button>
         </div>
       </div>
@@ -374,6 +387,7 @@ function DeleteConfirmModal({
 }
 
 function EnvironmentTogglePanel({ slug, flagKey }: { slug: string; flagKey: string }) {
+  const { t } = useTranslation('flags')
   const { data, isLoading, error } = useQuery({
     queryKey: ['environments', slug],
     queryFn: () =>
@@ -384,13 +398,13 @@ function EnvironmentTogglePanel({ slug, flagKey }: { slug: string; flagKey: stri
   return (
     <div className="bg-white border border-gray-200 rounded-lg mt-4">
       <div className="px-5 py-3 border-b border-gray-100">
-        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Environments</h2>
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('detail.environments_section')}</h2>
       </div>
       {isLoading ? (
         <EnvToggleSkeleton />
       ) : error ? (
         <div className="px-5 py-4">
-          <p className="text-sm text-red-600">Failed to load environments.</p>
+          <p className="text-sm text-red-600">{t('detail.env_error')}</p>
         </div>
       ) : (
         <ul>
@@ -412,6 +426,7 @@ function EnvironmentToggleRow({
   env: Environment
   flagKey: string
 }) {
+  const { t } = useTranslation('flags')
   const queryKey = ['flag-env-state', slug, env.slug, flagKey]
   const queryClient = useQueryClient()
 
@@ -437,15 +452,15 @@ function EnvironmentToggleRow({
         <span className="font-mono text-xs text-gray-500">{env.slug}</span>
       </div>
       {isLoading ? (
-        <div className="h-6 w-16 bg-gray-100 rounded animate-pulse" aria-label="Loading" />
+        <div className="h-6 w-16 bg-gray-100 rounded animate-pulse" aria-label={t('detail.loading_aria')} />
       ) : error ? (
         <div className="flex items-center gap-2">
-          <span className="text-xs text-red-600">Failed to load</span>
+          <span className="text-xs text-red-600">{t('detail.env_row_error')}</span>
           <button
             onClick={() => void refetch()}
             className="text-xs text-blue-600 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
           >
-            Retry
+            {t('actions.retry', { ns: 'common' })}
           </button>
         </div>
       ) : (
@@ -453,7 +468,7 @@ function EnvironmentToggleRow({
           onClick={() => toggleMutation.mutate(!data!.enabled)}
           disabled={toggleMutation.isPending}
           aria-pressed={data!.enabled}
-          aria-label={`${data!.enabled ? 'Disable' : 'Enable'} flag in ${env.name}`}
+          aria-label={data!.enabled ? t('toggle.disable_in_env', { env: env.name }) : t('toggle.enable_in_env', { env: env.name })}
           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-60 ${
             data!.enabled
               ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 focus:ring-green-500'
@@ -464,7 +479,7 @@ function EnvironmentToggleRow({
             className={`w-1.5 h-1.5 rounded-full ${data!.enabled ? 'bg-green-500' : 'bg-gray-400'}`}
             aria-hidden="true"
           />
-          {data!.enabled ? 'Enabled' : 'Disabled'}
+          {data!.enabled ? t('toggle.enabled') : t('toggle.disabled')}
         </button>
       )}
     </li>
@@ -498,12 +513,6 @@ interface EvalResponse {
   type: string
 }
 
-const REASON_LABELS: Record<string, string> = {
-  disabled: 'Flag is disabled',
-  default: 'No rules matched — default',
-  rule_match: 'Matched a targeting rule',
-}
-
 function EvaluationPanel({
   slug,
   envSlug,
@@ -513,6 +522,7 @@ function EvaluationPanel({
   envSlug: string
   flagKey: string
 }) {
+  const { t } = useTranslation('flags')
   const [open, setOpen] = useState(false)
   const [contextInput, setContextInput] = useState('{}')
   const [jsonError, setJsonError] = useState<string | null>(null)
@@ -532,7 +542,7 @@ function EvaluationPanel({
       JSON.parse(val)
       setJsonError(null)
     } catch {
-      setJsonError('Invalid JSON')
+      setJsonError(t('eval.invalid_json'))
     }
   }
 
@@ -541,7 +551,7 @@ function EvaluationPanel({
     try {
       parsed = JSON.parse(contextInput)
     } catch {
-      setJsonError('Invalid JSON')
+      setJsonError(t('eval.invalid_json'))
       return
     }
     setJsonError(null)
@@ -556,7 +566,7 @@ function EvaluationPanel({
         className="w-full flex items-center justify-between px-5 py-3 text-left focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--color-accent)]"
       >
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-          Evaluation playground
+          {t('eval.title')}
         </span>
         <span className="text-gray-400 text-sm" aria-hidden="true">
           {open ? '▲' : '▼'}
@@ -570,7 +580,7 @@ function EvaluationPanel({
               htmlFor="eval-context"
               className="block text-xs font-medium text-gray-500 mb-1"
             >
-              Evaluation context (JSON)
+              {t('eval.context_label')}
             </label>
             <textarea
               id="eval-context"
@@ -591,14 +601,14 @@ function EvaluationPanel({
             onClick={handleEvaluate}
             disabled={mutation.isPending || jsonError !== null}
           >
-            {mutation.isPending ? 'Evaluating…' : 'Evaluate'}
+            {mutation.isPending ? t('eval.evaluating') : t('eval.evaluate')}
           </Button>
 
           {mutation.isError && (
             <p className="text-xs text-red-600" role="alert">
               {mutation.error instanceof APIError
                 ? mutation.error.message
-                : 'Evaluation failed. Please try again.'}
+                : t('eval.eval_failed')}
             </p>
           )}
 
@@ -612,12 +622,13 @@ function EvaluationPanel({
 }
 
 function EvalResultDisplay({ result }: { result: EvalResponse }) {
-  const reasonLabel = REASON_LABELS[result.reason] ?? result.reason
+  const { t } = useTranslation('flags')
+  const reasonLabel = REASON_KEY_MAP[result.reason] ? t(REASON_KEY_MAP[result.reason]) : result.reason
 
   return (
     <div className="rounded border border-gray-200 bg-gray-50 px-4 py-3 space-y-2">
       <div className="flex items-center gap-2">
-        <span className="text-xs font-medium text-gray-500">Result</span>
+        <span className="text-xs font-medium text-gray-500">{t('eval.result_label')}</span>
         {result.value !== null ? (
           <span className="font-mono text-sm bg-blue-50 text-blue-800 border border-blue-200 rounded px-2 py-0.5">
             {result.value}
@@ -634,12 +645,12 @@ function EvalResultDisplay({ result }: { result: EvalResponse }) {
               className={`w-1.5 h-1.5 rounded-full ${result.enabled ? 'bg-green-500' : 'bg-gray-400'}`}
               aria-hidden="true"
             />
-            {result.enabled ? 'Enabled' : 'Disabled'}
+            {result.enabled ? t('toggle.enabled') : t('toggle.disabled')}
           </span>
         )}
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-xs font-medium text-gray-500">Reason</span>
+        <span className="text-xs font-medium text-gray-500">{t('eval.reason_label')}</span>
         <span className="text-xs text-gray-700">{reasonLabel}</span>
       </div>
     </div>

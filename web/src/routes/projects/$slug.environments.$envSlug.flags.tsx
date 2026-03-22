@@ -1,6 +1,7 @@
 import { createRoute, Link } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
+import { useTranslation, Trans } from 'react-i18next'
 import { projectEnvRoute } from './$slug.environments.$envSlug'
 import { fetchJSON, patchJSON, postJSON, deleteRequest, APIError } from '../../api'
 import { Button, Input, Label, Select, SelectItem } from '../../components/ui'
@@ -27,6 +28,7 @@ export const flagListRoute = createRoute({
 })
 
 function FlagListPage() {
+  const { t } = useTranslation('flags')
   const { slug, envSlug } = flagListRoute.useParams()
   const queryClient = useQueryClient()
   const queryKey = ['flags', slug, envSlug]
@@ -67,8 +69,8 @@ function FlagListPage() {
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-lg font-semibold text-gray-900">Feature Flags</h1>
-        <Button onClick={() => setShowCreate(true)}>New flag</Button>
+        <h1 className="text-lg font-semibold text-gray-900">{t('list.title')}</h1>
+        <Button onClick={() => setShowCreate(true)}>{t('list.new_flag')}</Button>
       </div>
 
       {flags.length === 0 ? (
@@ -137,6 +139,7 @@ function FlagRow({
   isToggling: boolean
   isToggleError: boolean
 }) {
+  const { t } = useTranslation('flags')
   const [copied, setCopied] = useState(false)
 
   function copyKey() {
@@ -159,13 +162,13 @@ function FlagRow({
           <button
             onClick={copyKey}
             className="font-mono text-sm text-gray-800 hover:text-blue-600 bg-gray-50 border border-gray-200 rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
-            aria-label={`Copy flag key ${flag.key}`}
+            aria-label={t('list.copy_key_aria', { key: flag.key })}
           >
             {flag.key}
           </button>
           {copied && (
             <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-xs bg-gray-800 text-white rounded px-2 py-0.5 whitespace-nowrap pointer-events-none">
-              Copied!
+              {t('states.copied', { ns: 'common' })}
             </span>
           )}
         </div>
@@ -191,7 +194,7 @@ function FlagRow({
           onClick={() => onToggle(!flag.enabled)}
           disabled={isToggling}
           aria-pressed={flag.enabled}
-          aria-label={flag.enabled ? 'Disable flag' : 'Enable flag'}
+          aria-label={flag.enabled ? t('toggle.disable') : t('toggle.enable')}
           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-60 ${
             isToggleError
               ? 'bg-red-50 text-red-700 border-red-200 focus:ring-red-500'
@@ -204,13 +207,13 @@ function FlagRow({
             className={`w-1.5 h-1.5 rounded-full ${isToggleError ? 'bg-red-500' : flag.enabled ? 'bg-green-500' : 'bg-gray-400'}`}
             aria-hidden="true"
           />
-          {isToggleError ? 'Failed' : flag.enabled ? 'Enabled' : 'Disabled'}
+          {isToggleError ? t('toggle.failed') : flag.enabled ? t('toggle.enabled') : t('toggle.disabled')}
         </button>
 
         {/* Delete */}
         <button
           onClick={onDeleteIntent}
-          aria-label={`Delete flag ${flag.key}`}
+          aria-label={t('list.delete_flag_aria', { key: flag.key })}
           className="text-gray-400 hover:text-red-600 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 rounded p-0.5"
         >
           <svg
@@ -233,13 +236,14 @@ function FlagRow({
 }
 
 function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
+  const { t } = useTranslation('flags')
   return (
     <div className="text-center py-16 px-6">
       <p className="text-sm text-gray-500">
-        No flags yet. Create your first flag to start targeting users.
+        {t('list.empty_state')}
       </p>
       <Button onClick={onCreateClick} size="lg" className="mt-4">
-        New flag
+        {t('list.new_flag')}
       </Button>
     </div>
   )
@@ -248,11 +252,10 @@ function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
 const FLAG_KEY_RE = /^[a-z0-9][a-z0-9-]*$/
 const MAX_KEY_LENGTH = 128
 
-function validateKeyLocally(key: string): string | null {
+function validateKeyLocally(key: string, t: (k: string, opts?: Record<string, unknown>) => string): string | null {
   if (key.length === 0) return null
-  if (key.length > MAX_KEY_LENGTH) return `Flag key must be ${MAX_KEY_LENGTH} characters or fewer`
-  if (!FLAG_KEY_RE.test(key))
-    return 'Flag key must start with a letter or digit and contain only lowercase letters, digits, and hyphens'
+  if (key.length > MAX_KEY_LENGTH) return t('create.key_too_long', { max: MAX_KEY_LENGTH })
+  if (!FLAG_KEY_RE.test(key)) return t('create.key_invalid')
   return null
 }
 
@@ -265,6 +268,7 @@ function CreateFlagModal({
   onCreated: () => void
   onCancel: () => void
 }) {
+  const { t } = useTranslation('flags')
   const [key, setKey] = useState('')
   const [name, setName] = useState('')
   const [type, setType] = useState('bool')
@@ -291,7 +295,7 @@ function CreateFlagModal({
     onError: (err) => {
       if (err instanceof APIError) {
         if (err.status === 409 || err.code === 'conflict') {
-          setKeyError('A flag with this key already exists in this project')
+          setKeyError(t('create.key_conflict'))
           return
         }
         if (err.status === 400 && err.code === 'validation_error') {
@@ -300,7 +304,7 @@ function CreateFlagModal({
         }
       }
       setServerError(
-        err instanceof APIError ? err.message : 'Something went wrong. Please try again.',
+        err instanceof APIError ? err.message : t('create.server_error'),
       )
     },
   })
@@ -310,24 +314,24 @@ function CreateFlagModal({
     setKeyError(null)
     setServerError(null)
     if (keyTouched) {
-      setKeyError(validateKeyLocally(value))
+      setKeyError(validateKeyLocally(value, t))
     }
   }
 
   function handleKeyBlur() {
     setKeyTouched(true)
-    setKeyError(validateKeyLocally(key))
+    setKeyError(validateKeyLocally(key, t))
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const localError = validateKeyLocally(key)
+    const localError = validateKeyLocally(key, t)
     if (localError) {
       setKeyError(localError)
       return
     }
     if (key.length === 0) {
-      setKeyError('Flag key is required')
+      setKeyError(t('create.key_required'))
       return
     }
     setServerError(null)
@@ -352,11 +356,11 @@ function CreateFlagModal({
       <div className="absolute inset-0 bg-black/30" onClick={onCancel} aria-hidden="true" />
       <div className="relative bg-white rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
         <h2 id="create-dialog-title" className="text-base font-semibold text-gray-900 mb-4">
-          Create flag
+          {t('create.title')}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="flag-key" className="text-xs text-gray-500 mb-1">Key</Label>
+            <Label htmlFor="flag-key" className="text-xs text-gray-500 mb-1">{t('create.key_label')}</Label>
             <Input
               id="flag-key"
               type="text"
@@ -364,7 +368,7 @@ function CreateFlagModal({
               value={key}
               onChange={(e) => handleKeyChange(e.target.value)}
               onBlur={handleKeyBlur}
-              placeholder="my-feature-flag"
+              placeholder={t('create.key_placeholder')}
               aria-invalid={!!keyError}
               aria-describedby={keyError ? 'flag-key-error' : undefined}
               hasError={!!keyError}
@@ -378,29 +382,29 @@ function CreateFlagModal({
           </div>
 
           <div>
-            <Label htmlFor="flag-name" className="text-xs text-gray-500 mb-1">Name</Label>
+            <Label htmlFor="flag-name" className="text-xs text-gray-500 mb-1">{t('create.name_label')}</Label>
             <Input
               id="flag-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="My Feature Flag"
+              placeholder={t('create.name_placeholder')}
               className="py-1.5 px-2"
             />
           </div>
 
           <div>
-            <Label htmlFor="flag-type" className="text-xs text-gray-500 mb-1">Type</Label>
+            <Label htmlFor="flag-type" className="text-xs text-gray-500 mb-1">{t('create.type_label')}</Label>
             <Select
               value={type}
               onValueChange={setType}
-              aria-label="Flag type"
+              aria-label={t('create.type_aria')}
               className="w-full"
             >
-              <SelectItem value="bool">Boolean</SelectItem>
-              <SelectItem value="string">String</SelectItem>
-              <SelectItem value="number">Number</SelectItem>
-              <SelectItem value="json">JSON</SelectItem>
+              <SelectItem value="bool">{t('create.type_bool')}</SelectItem>
+              <SelectItem value="string">{t('create.type_string')}</SelectItem>
+              <SelectItem value="number">{t('create.type_number')}</SelectItem>
+              <SelectItem value="json">{t('create.type_json')}</SelectItem>
             </Select>
           </div>
 
@@ -415,14 +419,14 @@ function CreateFlagModal({
               onClick={onCancel}
               disabled={createMutation.isPending}
             >
-              Cancel
+              {t('actions.cancel', { ns: 'common' })}
             </Button>
             <Button
               type="submit"
               variant="primary"
               disabled={createMutation.isPending || !!keyError}
             >
-              {createMutation.isPending ? 'Creating…' : 'Create'}
+              {createMutation.isPending ? t('states.creating', { ns: 'common' }) : t('actions.create', { ns: 'common' })}
             </Button>
           </div>
         </form>
@@ -444,6 +448,8 @@ function DeleteConfirmModal({
   onConfirm: () => void
   onCancel: () => void
 }) {
+  const { t } = useTranslation('flags')
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onCancel()
@@ -462,22 +468,25 @@ function DeleteConfirmModal({
       <div className="absolute inset-0 bg-black/30" onClick={onCancel} aria-hidden="true" />
       <div className="relative bg-white rounded-lg shadow-lg max-w-sm w-full mx-4 p-6">
         <h2 id="delete-dialog-title" className="text-base font-semibold text-gray-900">
-          Delete flag?
+          {t('delete.title')}
         </h2>
         <p className="mt-2 text-sm text-gray-600">
-          This will permanently delete{' '}
-          <span className="font-mono text-gray-800">{flagKey}</span> from all environments.
-          This action cannot be undone.
+          <Trans
+            i18nKey="delete.body"
+            ns="flags"
+            values={{ key: flagKey }}
+            components={{ mono: <span className="font-mono text-gray-800" /> }}
+          />
         </p>
         {deleteFailed && (
-          <p className="mt-3 text-xs text-red-600">Failed to delete. Please try again.</p>
+          <p className="mt-3 text-xs text-red-600">{t('delete.failed')}</p>
         )}
         <div className="mt-5 flex justify-end gap-3">
           <Button autoFocus variant="secondary" onClick={onCancel} disabled={isDeleting}>
-            Cancel
+            {t('actions.cancel', { ns: 'common' })}
           </Button>
           <Button variant="danger" onClick={onConfirm} disabled={isDeleting}>
-            {isDeleting ? 'Deleting…' : 'Delete'}
+            {isDeleting ? t('states.deleting', { ns: 'common' }) : t('actions.delete', { ns: 'common' })}
           </Button>
         </div>
       </div>
@@ -512,14 +521,15 @@ function FlagListSkeleton() {
 }
 
 function FlagListError({ onRetry }: { onRetry: () => void }) {
+  const { t } = useTranslation('flags')
   return (
     <div className="p-6">
-      <span className="text-sm text-red-600">Failed to load flags. </span>
+      <span className="text-sm text-red-600">{t('list.error')} </span>
       <button
         onClick={onRetry}
         className="text-sm text-red-600 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
       >
-        Retry
+        {t('actions.retry', { ns: 'common' })}
       </button>
     </div>
   )
