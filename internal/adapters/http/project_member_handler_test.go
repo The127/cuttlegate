@@ -261,6 +261,29 @@ func TestProjectMemberHandler_UpdateRole_ForbiddenReturns403(t *testing.T) {
 	}
 }
 
+func TestProjectMemberHandler_UpdateRole_LastAdminReturns409(t *testing.T) {
+	svc := newFakeProjectMemberService()
+	svc.err = domain.ErrLastAdmin
+	mux := newMemberMux(svc, noopAuth)
+
+	body := `{"role":"viewer"}`
+	req := httptest.NewRequest(http.MethodPatch, "/api/v1/projects/acme/members/admin-1", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status: got %d, want 409", rec.Code)
+	}
+	var body2 map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&body2); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if body2["error"] != "last_admin" {
+		t.Errorf("error code: got %v, want last_admin", body2["error"])
+	}
+}
+
 // ── Remove ────────────────────────────────────────────────────────────────────
 
 func TestProjectMemberHandler_Remove_Succeeds(t *testing.T) {
