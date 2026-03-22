@@ -98,9 +98,7 @@ func editorCtx() context.Context {
 func newPromotionSvc(db *sql.DB) *app.PromotionService {
 	return app.NewPromotionService(
 		dbadapter.NewPostgresUnitOfWorkFactory(db),
-		dbadapter.NewPostgresEnvironmentRepository(db),
 		dbadapter.NewPostgresFlagRepository(db),
-		dbadapter.NewPostgresAuditRepository(db),
 	)
 }
 

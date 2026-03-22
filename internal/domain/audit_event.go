@@ -5,16 +5,18 @@ import "time"
 // AuditEvent records a mutation performed by an actor on a project resource.
 // Instances are append-only — once persisted, they are never modified.
 type AuditEvent struct {
-	ID          string
-	ProjectID   string
-	ActorID     string
-	Action      string
-	EntityType  string
-	EntityID    string
-	EntityKey   string // human-readable key (e.g. flag key) — stored for queryability after deletion
-	BeforeState string
-	AfterState  string
-	OccurredAt  time.Time
+	ID              string
+	ProjectID       string
+	ActorID         string
+	ActorEmail      string // read-concern: populated by JOIN on users; not stored on the event row
+	Action          string
+	EntityType      string
+	EntityID        string
+	EntityKey       string // human-readable key (e.g. flag key) — stored for queryability after deletion
+	EnvironmentSlug string // slug of the environment affected; empty for project-scoped actions
+	BeforeState     string
+	AfterState      string
+	OccurredAt      time.Time
 }
 
 // AuditFilter constrains audit log queries.

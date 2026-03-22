@@ -30,12 +30,13 @@ func NewFlagService(repo ports.FlagRepository, envRepo ports.EnvironmentReposito
 }
 
 type auditEntry struct {
-	Action    string
-	EntityID  string
-	EntityKey string
-	ProjectID string
-	Before    string
-	After     string
+	Action          string
+	EntityID        string
+	EntityKey       string
+	ProjectID       string
+	EnvironmentSlug string
+	Before          string
+	After           string
 }
 
 // recordAudit persists an audit event on a best-effort basis.
@@ -48,16 +49,17 @@ func (s *FlagService) recordAudit(ctx context.Context, entry auditEntry) {
 		return
 	}
 	event := &domain.AuditEvent{
-		ID:          id,
-		ProjectID:   entry.ProjectID,
-		ActorID:     ac.UserID,
-		Action:      entry.Action,
-		EntityType:  "flag",
-		EntityID:    entry.EntityID,
-		EntityKey:   entry.EntityKey,
-		BeforeState: entry.Before,
-		AfterState:  entry.After,
-		OccurredAt:  time.Now().UTC(),
+		ID:              id,
+		ProjectID:       entry.ProjectID,
+		ActorID:         ac.UserID,
+		Action:          entry.Action,
+		EntityType:      "flag",
+		EntityID:        entry.EntityID,
+		EntityKey:       entry.EntityKey,
+		EnvironmentSlug: entry.EnvironmentSlug,
+		BeforeState:     entry.Before,
+		AfterState:      entry.After,
+		OccurredAt:      time.Now().UTC(),
 	}
 	if err := s.auditRepo.Record(ctx, event); err != nil {
 		log.Printf("audit: failed to record %s for %s/%s: %v", entry.Action, entry.ProjectID, entry.EntityKey, err)
@@ -321,7 +323,7 @@ func (s *FlagService) SetEnabled(ctx context.Context, params SetEnabledParams) e
 		before = "enabled"
 		after = "disabled"
 	}
-	s.recordAudit(ctx, auditEntry{Action: "flag.state_changed", EntityID: f.ID, EntityKey: params.FlagKey, ProjectID: params.ProjectID, Before: before, After: after})
+	s.recordAudit(ctx, auditEntry{Action: "flag.state_changed", EntityID: f.ID, EntityKey: params.FlagKey, ProjectID: params.ProjectID, EnvironmentSlug: params.EnvSlug, Before: before, After: after})
 	return nil
 }
 
