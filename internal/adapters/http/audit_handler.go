@@ -2,6 +2,7 @@ package httpadapter
 
 import (
 	"context"
+	"encoding/base64"
 	"net/http"
 	"strconv"
 	"time"
@@ -30,32 +31,47 @@ func (h *AuditHandler) RegisterRoutes(mux *http.ServeMux, auth func(http.Handler
 	mux.Handle("GET /api/v1/projects/{slug}/audit", auth(http.HandlerFunc(h.list)))
 }
 
-type auditEventResponse struct {
-	ID          string    `json:"id"`
-	ProjectID   string    `json:"project_id"`
-	ActorID     string    `json:"actor_id"`
-	Action      string    `json:"action"`
-	EntityType  string    `json:"entity_type"`
-	EntityID    string    `json:"entity_id"`
-	EntityKey   string    `json:"entity_key,omitempty"`
-	BeforeState string    `json:"before_state,omitempty"`
-	AfterState  string    `json:"after_state,omitempty"`
-	OccurredAt  time.Time `json:"occurred_at"`
+type auditEntryResponse struct {
+	ID              string    `json:"id"`
+	OccurredAt      time.Time `json:"occurred_at"`
+	ActorID         string    `json:"actor_id"`
+	ActorEmail      string    `json:"actor_email"`
+	Action          string    `json:"action"`
+	FlagKey         string    `json:"flag_key,omitempty"`
+	EnvironmentSlug string    `json:"environment_slug,omitempty"`
+	ProjectSlug     string    `json:"project_slug"`
 }
 
-func toAuditEventResponse(e *domain.AuditEvent) auditEventResponse {
-	return auditEventResponse{
-		ID:          e.ID,
-		ProjectID:   e.ProjectID,
-		ActorID:     e.ActorID,
-		Action:      e.Action,
-		EntityType:  e.EntityType,
-		EntityID:    e.EntityID,
-		EntityKey:   e.EntityKey,
-		BeforeState: e.BeforeState,
-		AfterState:  e.AfterState,
-		OccurredAt:  e.OccurredAt.UTC(),
+type auditListResponse struct {
+	Entries    []auditEntryResponse `json:"entries"`
+	NextCursor *string              `json:"next_cursor"`
+}
+
+func toAuditEntryResponse(e *domain.AuditEvent, projectSlug string) auditEntryResponse {
+	return auditEntryResponse{
+		ID:              e.ID,
+		OccurredAt:      e.OccurredAt.UTC(),
+		ActorID:         e.ActorID,
+		ActorEmail:      e.ActorEmail,
+		Action:          e.Action,
+		FlagKey:         e.EntityKey,
+		EnvironmentSlug: e.EnvironmentSlug,
+		ProjectSlug:     projectSlug,
 	}
+}
+
+// encodeCursor encodes a timestamp as an opaque base64 cursor string.
+func encodeCursor(t time.Time) string {
+	return base64.RawURLEncoding.EncodeToString([]byte(t.UTC().Format(time.RFC3339Nano)))
+}
+
+// decodeCursor decodes an opaque base64 cursor string back to a time.Time.
+func decodeCursor(s string) (time.Time, error) {
+	b, err := base64.RawURLEncoding.DecodeString(s)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return time.Parse(time.RFC3339Nano, string(b))
 }
 
 func (h *AuditHandler) list(w http.ResponseWriter, r *http.Request) {
@@ -69,14 +85,16 @@ func (h *AuditHandler) list(w http.ResponseWriter, r *http.Request) {
 	filter := domain.AuditFilter{
 		FlagKey: r.URL.Query().Get("flag_key"),
 	}
-	if before := r.URL.Query().Get("before"); before != "" {
-		t, err := time.Parse(time.RFC3339, before)
+
+	if cursor := r.URL.Query().Get("cursor"); cursor != "" {
+		t, err := decodeCursor(cursor)
 		if err != nil {
-			WriteError(w, newBadRequest("invalid before parameter: must be RFC3339"))
+			WriteError(w, newBadRequest("invalid cursor"))
 			return
 		}
 		filter.Before = t
 	}
+
 	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
 		limit, err := strconv.Atoi(limitStr)
 		if err != nil || limit < 1 {
@@ -92,9 +110,22 @@ func (h *AuditHandler) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	items := make([]auditEventResponse, 0, len(events))
+	// Normalise the filter so we know the effective limit for cursor logic.
+	effective := domain.NormalizeAuditFilter(filter)
+
+	entries := make([]auditEntryResponse, 0, len(events))
 	for _, e := range events {
-		items = append(items, toAuditEventResponse(e))
+		entries = append(entries, toAuditEntryResponse(e, proj.Slug))
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"audit_events": items})
+
+	var nextCursor *string
+	if len(events) == effective.Limit {
+		c := encodeCursor(events[len(events)-1].OccurredAt)
+		nextCursor = &c
+	}
+
+	writeJSON(w, http.StatusOK, auditListResponse{
+		Entries:    entries,
+		NextCursor: nextCursor,
+	})
 }
