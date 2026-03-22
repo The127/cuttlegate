@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
-:root {
-  --color-accent: #2563eb;
+@theme {
+  /* Accent colour — indigo-500 */
+  --color-accent: #6366f1;
+
+  /* Status colours */
+  --color-status-enabled: #10b981;  /* emerald-500 — flag enabled / healthy */
+  --color-status-warning: #fbbf24;  /* amber-400  — partial rollout / caution */
+  --color-status-error:   #ef4444;  /* red-500    — flag disabled / error */
+
+  /* Monospace font for keys, slugs, IDs, code */
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
