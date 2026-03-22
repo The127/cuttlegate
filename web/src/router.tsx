@@ -16,6 +16,7 @@ import { compareRoute } from './routes/projects/$slug.compare'
 import { projectSettingsRoute } from './routes/projects/$slug.settings'
 import { apiKeyListRoute } from './routes/projects/$slug.api-keys'
 import { memberListRoute } from './routes/projects/$slug.members'
+import { auditRoute } from './routes/projects/$slug.audit'
 
 const routeTree = rootRoute.addChildren([
   authenticatedRoute.addChildren([
@@ -28,6 +29,7 @@ const routeTree = rootRoute.addChildren([
       compareRoute,
       apiKeyListRoute,
       memberListRoute,
+      auditRoute,
       projectEnvRoute.addChildren([flagListRoute, flagDetailRoute, flagRulesRoute, flagEvaluationsRoute]),
     ]),
   ]),
