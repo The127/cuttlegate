@@ -122,7 +122,7 @@ func TestProjectService_List_EmptyReturnsEmptySlice(t *testing.T) {
 
 func TestProjectService_Delete_NotFound_ReturnsErrNotFound(t *testing.T) {
 	svc := app.NewProjectService(newFakeProjectRepository())
-	err := svc.Delete(authCtx("editor-1", domain.RoleEditor), "00000000-0000-0000-0000-000000000000")
+	err := svc.Delete(authCtx("admin-1", domain.RoleAdmin), "00000000-0000-0000-0000-000000000000")
 	if !errors.Is(err, domain.ErrNotFound) {
 		t.Errorf("expected ErrNotFound, got %v", err)
 	}
@@ -130,7 +130,7 @@ func TestProjectService_Delete_NotFound_ReturnsErrNotFound(t *testing.T) {
 
 func TestProjectService_UpdateName_Succeeds(t *testing.T) {
 	svc := app.NewProjectService(newFakeProjectRepository())
-	ctx := authCtx("editor-1", domain.RoleEditor)
+	ctx := authCtx("admin-1", domain.RoleAdmin)
 	p, err := svc.Create(ctx, "Acme", "acme")
 	if err != nil {
 		t.Fatalf("create: %v", err)
@@ -152,7 +152,7 @@ func TestProjectService_UpdateName_Succeeds(t *testing.T) {
 
 func TestProjectService_UpdateName_NotFound_ReturnsErrNotFound(t *testing.T) {
 	svc := app.NewProjectService(newFakeProjectRepository())
-	_, err := svc.UpdateName(authCtx("editor-1", domain.RoleEditor), "ghost", "Whatever")
+	_, err := svc.UpdateName(authCtx("admin-1", domain.RoleAdmin), "ghost", "Whatever")
 	if !errors.Is(err, domain.ErrNotFound) {
 		t.Errorf("expected ErrNotFound, got %v", err)
 	}
@@ -160,14 +160,15 @@ func TestProjectService_UpdateName_NotFound_ReturnsErrNotFound(t *testing.T) {
 
 func TestProjectService_DeleteBySlug_Succeeds(t *testing.T) {
 	svc := app.NewProjectService(newFakeProjectRepository())
-	ctx := authCtx("editor-1", domain.RoleEditor)
-	if _, err := svc.Create(ctx, "Acme", "acme"); err != nil {
+	editorCtx := authCtx("editor-1", domain.RoleEditor)
+	adminCtx := authCtx("admin-1", domain.RoleAdmin)
+	if _, err := svc.Create(editorCtx, "Acme", "acme"); err != nil {
 		t.Fatalf("create: %v", err)
 	}
-	if err := svc.DeleteBySlug(ctx, "acme"); err != nil {
+	if err := svc.DeleteBySlug(adminCtx, "acme"); err != nil {
 		t.Fatalf("DeleteBySlug: %v", err)
 	}
-	_, err := svc.GetBySlug(ctx, "acme")
+	_, err := svc.GetBySlug(context.Background(), "acme")
 	if !errors.Is(err, domain.ErrNotFound) {
 		t.Errorf("expected ErrNotFound after delete, got %v", err)
 	}
@@ -175,7 +176,7 @@ func TestProjectService_DeleteBySlug_Succeeds(t *testing.T) {
 
 func TestProjectService_DeleteBySlug_NotFound_ReturnsErrNotFound(t *testing.T) {
 	svc := app.NewProjectService(newFakeProjectRepository())
-	err := svc.DeleteBySlug(authCtx("editor-1", domain.RoleEditor), "ghost")
+	err := svc.DeleteBySlug(authCtx("admin-1", domain.RoleAdmin), "ghost")
 	if !errors.Is(err, domain.ErrNotFound) {
 		t.Errorf("expected ErrNotFound, got %v", err)
 	}
@@ -212,5 +213,57 @@ func TestProjectService_Create_NoAuthContextForbidden(t *testing.T) {
 	_, err := svc.Create(context.Background(), "Acme", "acme")
 	if !errors.Is(err, domain.ErrForbidden) {
 		t.Errorf("expected ErrForbidden, got %v", err)
+	}
+}
+
+// @auth-bypass — editor is blocked on rename
+func TestProjectService_UpdateName_EditorForbidden(t *testing.T) {
+	svc := app.NewProjectService(newFakeProjectRepository())
+	_, err := svc.UpdateName(authCtx("editor-1", domain.RoleEditor), "acme", "New Name")
+	if !errors.Is(err, domain.ErrForbidden) {
+		t.Errorf("expected ErrForbidden, got %v", err)
+	}
+}
+
+// @auth-bypass — editor is blocked on delete
+func TestProjectService_DeleteBySlug_EditorForbidden(t *testing.T) {
+	svc := app.NewProjectService(newFakeProjectRepository())
+	err := svc.DeleteBySlug(authCtx("editor-1", domain.RoleEditor), "acme")
+	if !errors.Is(err, domain.ErrForbidden) {
+		t.Errorf("expected ErrForbidden, got %v", err)
+	}
+}
+
+// @happy — admin can rename
+func TestProjectService_UpdateName_AdminSucceeds(t *testing.T) {
+	svc := app.NewProjectService(newFakeProjectRepository())
+	editorCtx := authCtx("editor-1", domain.RoleEditor)
+	adminCtx := authCtx("admin-1", domain.RoleAdmin)
+	if _, err := svc.Create(editorCtx, "Acme", "acme"); err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	updated, err := svc.UpdateName(adminCtx, "acme", "Acme Corp")
+	if err != nil {
+		t.Fatalf("UpdateName: %v", err)
+	}
+	if updated.Name != "Acme Corp" {
+		t.Errorf("name: got %q, want %q", updated.Name, "Acme Corp")
+	}
+}
+
+// @happy — admin can delete
+func TestProjectService_DeleteBySlug_AdminSucceeds(t *testing.T) {
+	svc := app.NewProjectService(newFakeProjectRepository())
+	editorCtx := authCtx("editor-1", domain.RoleEditor)
+	adminCtx := authCtx("admin-1", domain.RoleAdmin)
+	if _, err := svc.Create(editorCtx, "Acme", "acme"); err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	if err := svc.DeleteBySlug(adminCtx, "acme"); err != nil {
+		t.Fatalf("DeleteBySlug: %v", err)
+	}
+	_, err := svc.GetBySlug(context.Background(), "acme")
+	if !errors.Is(err, domain.ErrNotFound) {
+		t.Errorf("expected ErrNotFound after delete, got %v", err)
 	}
 }

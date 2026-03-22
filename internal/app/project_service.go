@@ -53,9 +53,9 @@ func (s *ProjectService) List(ctx context.Context) ([]*domain.Project, error) {
 }
 
 // UpdateName changes the name of a project identified by slug. Slug is immutable.
-// Requires at least editor role.
+// Requires admin role.
 func (s *ProjectService) UpdateName(ctx context.Context, slug, name string) (*domain.Project, error) {
-	if _, err := requireRole(ctx, domain.RoleEditor); err != nil {
+	if _, err := requireRole(ctx, domain.RoleAdmin); err != nil {
 		return nil, err
 	}
 	p, err := s.repo.GetBySlug(ctx, slug)
@@ -70,9 +70,9 @@ func (s *ProjectService) UpdateName(ctx context.Context, slug, name string) (*do
 }
 
 // DeleteBySlug removes a project by slug.
-// Requires at least editor role.
+// Requires admin role.
 func (s *ProjectService) DeleteBySlug(ctx context.Context, slug string) error {
-	if _, err := requireRole(ctx, domain.RoleEditor); err != nil {
+	if _, err := requireRole(ctx, domain.RoleAdmin); err != nil {
 		return err
 	}
 	p, err := s.repo.GetBySlug(ctx, slug)
@@ -83,9 +83,9 @@ func (s *ProjectService) DeleteBySlug(ctx context.Context, slug string) error {
 }
 
 // Delete removes a project by ID.
-// Requires at least editor role.
+// Requires admin role.
 func (s *ProjectService) Delete(ctx context.Context, id string) error {
-	if _, err := requireRole(ctx, domain.RoleEditor); err != nil {
+	if _, err := requireRole(ctx, domain.RoleAdmin); err != nil {
 		return err
 	}
 	return s.repo.Delete(ctx, id)
