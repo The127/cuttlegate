@@ -15,7 +15,7 @@ type testEvent struct {
 	occurredAt time.Time
 }
 
-func (e testEvent) EventType() string    { return e.typ }
+func (e testEvent) EventType() string     { return e.typ }
 func (e testEvent) OccurredAt() time.Time { return e.occurredAt }
 
 func newTestEvent(typ string) testEvent {

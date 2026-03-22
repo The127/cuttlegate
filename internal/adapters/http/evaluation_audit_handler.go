@@ -36,14 +36,14 @@ func (h *EvaluationAuditHandler) RegisterRoutes(mux *http.ServeMux, auth func(ht
 }
 
 type evalAuditItem struct {
-	ID              string      `json:"id"`
-	OccurredAt      string      `json:"occurred_at"`
-	FlagKey         string      `json:"flag_key"`
-	UserID          string      `json:"user_id"`
-	InputContext    interface{} `json:"input_context"`
-	MatchedRule     interface{} `json:"matched_rule"` // null or {"id":"...","name":"..."}
-	VariantKey      string      `json:"variant_key"`
-	Reason          string      `json:"reason"`
+	ID           string      `json:"id"`
+	OccurredAt   string      `json:"occurred_at"`
+	FlagKey      string      `json:"flag_key"`
+	UserID       string      `json:"user_id"`
+	InputContext interface{} `json:"input_context"`
+	MatchedRule  interface{} `json:"matched_rule"` // null or {"id":"...","name":"..."}
+	VariantKey   string      `json:"variant_key"`
+	Reason       string      `json:"reason"`
 }
 
 type matchedRuleJSON struct {

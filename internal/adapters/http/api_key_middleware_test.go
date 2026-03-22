@@ -134,11 +134,11 @@ func TestRequireBearerOrAPIKey_NoHeader(t *testing.T) {
 
 func TestAPIKeyScopeAllows(t *testing.T) {
 	tests := []struct {
-		name    string
-		ctx     context.Context
-		projID  string
-		envID   string
-		want    bool
+		name   string
+		ctx    context.Context
+		projID string
+		envID  string
+		want   bool
 	}{
 		{
 			name:   "no scope (OIDC) always allowed",
