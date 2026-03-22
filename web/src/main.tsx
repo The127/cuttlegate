@@ -3,16 +3,23 @@ import ReactDOM from 'react-dom/client'
 import { RouterProvider } from '@tanstack/react-router'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { initUserManager, type OIDCConfig } from './auth'
+import { BrandProvider, type BrandConfig } from './brand'
 import { createAppRouter } from './router'
 import { queryClient } from './queryClient'
 import './styles.css'
 
+interface AppConfig extends OIDCConfig, BrandConfig {}
+
 async function bootstrap() {
   const res = await fetch('/api/v1/config')
   if (!res.ok) {
-    throw new Error(`Failed to load OIDC config: ${res.status}`)
+    throw new Error(`Failed to load config: ${res.status}`)
   }
-  const config: OIDCConfig = (await res.json()) as OIDCConfig
+  const config = (await res.json()) as AppConfig
+
+  // Apply branding before first render to avoid flash of default styles.
+  document.documentElement.style.setProperty('--color-accent', config.accent_colour)
+  document.title = config.app_name
 
   initUserManager(config)
 
@@ -23,9 +30,11 @@ async function bootstrap() {
 
   ReactDOM.createRoot(rootEl).render(
     <React.StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-      </QueryClientProvider>
+      <BrandProvider config={config}>
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
+      </BrandProvider>
     </React.StrictMode>,
   )
 }
