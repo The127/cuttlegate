@@ -1,0 +1,86 @@
+{
+  "list": {
+    "title": "Feature Flags",
+    "new_flag": "New flag",
+    "empty_state": "No flags yet. Create your first flag to start targeting users.",
+    "error": "Failed to load flags.",
+    "not_found": "Flag not found.",
+    "failed_to_load": "Failed to load flag.",
+    "back_to_flags": "Back to flags",
+    "copy_key_aria": "Copy flag key {{key}}",
+    "delete_flag_aria": "Delete flag {{key}}"
+  },
+  "toggle": {
+    "enable": "Enable flag",
+    "disable": "Disable flag",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "failed": "Failed",
+    "enable_in_env": "Enable flag in {{env}}",
+    "disable_in_env": "Disable flag in {{env}}"
+  },
+  "delete": {
+    "title": "Delete flag?",
+    "body": "This will permanently delete <mono>{{key}}</mono> from all environments. This action cannot be undone.",
+    "failed": "Failed to delete. Please try again."
+  },
+  "create": {
+    "title": "Create flag",
+    "key_label": "Key",
+    "name_label": "Name",
+    "type_label": "Type",
+    "key_placeholder": "my-feature-flag",
+    "name_placeholder": "My Feature Flag",
+    "key_required": "Flag key is required",
+    "key_too_long": "Flag key must be {{max}} characters or fewer",
+    "key_invalid": "Flag key must start with a letter or digit and contain only lowercase letters, digits, and hyphens",
+    "key_conflict": "A flag with this key already exists in this project",
+    "server_error": "Something went wrong. Please try again.",
+    "type_bool": "Boolean",
+    "type_string": "String",
+    "type_number": "Number",
+    "type_json": "JSON",
+    "type_aria": "Flag type"
+  },
+  "detail": {
+    "name_label": "Name",
+    "variants_label": "Variants",
+    "default_variant_label": "Default variant",
+    "status_label": "Status in {{env}}",
+    "save_failed": "Save failed. Please try again.",
+    "delete_aria": "Delete flag",
+    "variant_name_aria": "Variant name for {{key}}",
+    "default_variant_aria": "Default variant",
+    "targeting_rules": "Targeting rules →",
+    "environments_section": "Environments",
+    "env_error": "Failed to load environments.",
+    "env_row_error": "Failed to load",
+    "loading_aria": "Loading"
+  },
+  "eval": {
+    "title": "Evaluation playground",
+    "context_label": "Evaluation context (JSON)",
+    "evaluate": "Evaluate",
+    "evaluating": "Evaluating…",
+    "invalid_json": "Invalid JSON",
+    "eval_failed": "Evaluation failed. Please try again.",
+    "result_label": "Result",
+    "reason_label": "Reason",
+    "reason_disabled": "Flag is disabled",
+    "reason_default": "No rules matched — default",
+    "reason_rule_match": "Matched a targeting rule"
+  },
+  "compare": {
+    "title": "Compare Environments",
+    "flag_column": "Flag",
+    "empty_state": "No flags in this project yet. Create a flag to see the comparison matrix.",
+    "error": "Failed to load comparison matrix.",
+    "page_info": "Page {{page}} of {{total}}",
+    "previous": "Previous",
+    "next": "Next",
+    "matrix_aria": "Flag environment comparison matrix"
+  },
+  "api_key": {
+    "show_once_warning": "Copy this key now. It will not be shown again."
+  }
+}

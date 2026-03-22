@@ -1,6 +1,7 @@
 import { createRoute } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { projectEnvRoute } from './$slug.environments.$envSlug'
 import { fetchJSON, postJSON, patchJSON, deleteRequest, APIError } from '../../api'
 import { Button, Input, Select, SelectItem } from '../../components/ui'
@@ -38,19 +39,19 @@ export const flagRulesRoute = createRoute({
 
 // ── Operator helpers ───────────────────────────────────────────────────────
 
-const OPERATOR_LABELS: Record<string, string> = {
-  eq: 'equals',
-  neq: 'not equals',
-  lt: 'less than',
-  lte: 'less than or equal',
-  gt: 'greater than',
-  gte: 'greater than or equal',
-  in: 'in',
-  not_in: 'not in',
-  contains: 'contains',
-  not_contains: 'does not contain',
-  in_segment: 'in segment',
-  not_in_segment: 'not in segment',
+const OPERATOR_KEYS: Record<string, string> = {
+  eq: 'operators.eq',
+  neq: 'operators.neq',
+  lt: 'operators.lt',
+  lte: 'operators.lte',
+  gt: 'operators.gt',
+  gte: 'operators.gte',
+  in: 'operators.in',
+  not_in: 'operators.not_in',
+  contains: 'operators.contains',
+  not_contains: 'operators.not_contains',
+  in_segment: 'operators.in_segment',
+  not_in_segment: 'operators.not_in_segment',
 }
 
 const SEGMENT_OPERATORS = new Set(['in_segment', 'not_in_segment'])
@@ -62,6 +63,7 @@ function isSegmentOperator(op: string): boolean {
 // ── Page ───────────────────────────────────────────────────────────────────
 
 function RulesPage() {
+  const { t } = useTranslation('rules')
   const { slug, envSlug, key } = flagRulesRoute.useParams()
   const queryClient = useQueryClient()
   const rulesKey = ['rules', slug, envSlug, key]
@@ -131,13 +133,13 @@ function RulesPage() {
     return (
       <div className="p-6">
         <p className="text-sm text-red-600">
-          {is404 ? 'Rules not found.' : 'Failed to load targeting rules.'}
+          {is404 ? t('not_found') : t('error')}
         </p>
         <button
           onClick={() => void rulesQuery.refetch()}
           className="mt-2 text-sm text-blue-600 underline hover:no-underline"
         >
-          Retry
+          {t('actions.retry', { ns: 'common' })}
         </button>
       </div>
     )
@@ -167,9 +169,9 @@ function RulesPage() {
   return (
     <div className="p-6 max-w-2xl">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">Targeting Rules</h2>
+        <h2 className="text-sm font-semibold text-gray-700">{t('title')}</h2>
         {!addingNew && (
-          <Button onClick={() => setAddingNew(true)}>Add rule</Button>
+          <Button onClick={() => setAddingNew(true)}>{t('add_rule')}</Button>
         )}
       </div>
 
@@ -209,12 +211,13 @@ function RulesPage() {
 // ── Empty state ────────────────────────────────────────────────────────────
 
 function EmptyState({ onAdd }: { onAdd: () => void }) {
+  const { t } = useTranslation('rules')
   return (
     <div className="border border-dashed border-gray-200 rounded-lg px-6 py-10 text-center">
       <p className="text-sm text-gray-500">
-        No targeting rules. Add a rule to start targeting specific users.
+        {t('empty_state')}
       </p>
-      <Button onClick={onAdd} className="mt-3">Add rule</Button>
+      <Button onClick={onAdd} className="mt-3">{t('add_rule')}</Button>
     </div>
   )
 }
@@ -238,6 +241,7 @@ function RuleRow({
   isSaving: boolean
   isDeleting: boolean
 }) {
+  const { t } = useTranslation('rules')
   const [editing, setEditing] = useState(false)
   const [pendingDelete, setPendingDelete] = useState(false)
   const [draft, setDraft] = useState<Omit<Rule, 'id' | 'createdAt'>>({
@@ -268,7 +272,7 @@ function RuleRow({
     setSaveError(null)
     onSave({ id: rule.id, ...draft }, {
       onSuccess: () => setEditing(false),
-      onError: (err) => setSaveError(err instanceof APIError ? err.message : 'Save failed. Please try again.'),
+      onError: (err) => setSaveError(err instanceof APIError ? err.message : t('save_failed')),
     })
   }
 
@@ -289,13 +293,13 @@ function RuleRow({
         </span>
         <div className="flex-1 min-w-0">
           {rule.conditions.length === 0 ? (
-            <p className="text-sm text-gray-400 italic">No conditions — matches all users</p>
+            <p className="text-sm text-gray-400 italic">{t('no_conditions_display')}</p>
           ) : (
             <ul className="space-y-0.5">
               {rule.conditions.map((c, i) => (
                 <li key={i} className="text-sm text-gray-700">
                   <span className="font-mono text-gray-800">{c.attribute}</span>{' '}
-                  <span className="text-gray-500">{OPERATOR_LABELS[c.operator] ?? c.operator}</span>{' '}
+                  <span className="text-gray-500">{OPERATOR_KEYS[c.operator] ? t(OPERATOR_KEYS[c.operator]) : c.operator}</span>{' '}
                   {isSegmentOperator(c.operator) ? (
                     <span className="font-mono text-gray-800">{c.values[0]}</span>
                   ) : (
@@ -312,15 +316,15 @@ function RuleRow({
         <div className="flex items-center gap-1 shrink-0">
           {!editing && !pendingDelete && (
             <>
-              <Button variant="secondary" size="sm" onClick={startEdit} aria-label="Edit rule">
-                Edit
+              <Button variant="secondary" size="sm" onClick={startEdit} aria-label={t('actions.edit', { ns: 'common' })}>
+                {t('actions.edit', { ns: 'common' })}
               </Button>
               <Button
                 variant="danger-outline"
                 size="sm"
                 onClick={() => setPendingDelete(true)}
                 disabled={isDeleting}
-                aria-label="Delete rule"
+                aria-label={t('actions.delete', { ns: 'common' })}
               >
                 {isDeleting ? '…' : '✕'}
               </Button>
@@ -328,12 +332,12 @@ function RuleRow({
           )}
           {pendingDelete && (
             <span className="flex items-center gap-2 text-sm">
-              <span className="text-gray-600">Delete?</span>
+              <span className="text-gray-600">{t('delete_confirm')}</span>
               <Button variant="danger-outline" size="sm" onClick={confirmDelete}>
-                Yes
+                {t('delete_yes')}
               </Button>
               <Button variant="secondary" size="sm" onClick={() => setPendingDelete(false)}>
-                No
+                {t('delete_no')}
               </Button>
             </span>
           )}
@@ -351,10 +355,10 @@ function RuleRow({
           />
           <div className="flex items-center gap-3">
             <Button onClick={save} disabled={isSaving}>
-              {isSaving ? 'Saving…' : 'Save'}
+              {isSaving ? t('states.saving', { ns: 'common' }) : t('actions.save', { ns: 'common' })}
             </Button>
             <Button variant="secondary" onClick={cancelEdit} disabled={isSaving}>
-              Cancel
+              {t('actions.cancel', { ns: 'common' })}
             </Button>
             {saveError && <p className="text-xs text-red-600">{saveError}</p>}
           </div>
@@ -381,6 +385,7 @@ function NewRuleRow({
   onCancel: () => void
   isSaving: boolean
 }) {
+  const { t } = useTranslation('rules')
   const [draft, setDraft] = useState<Omit<Rule, 'id' | 'createdAt'>>({
     priority: nextPriority,
     conditions: [],
@@ -391,22 +396,22 @@ function NewRuleRow({
 
   return (
     <div className="bg-white border border-blue-200 rounded-lg px-4 py-4 space-y-4">
-      <p className="text-xs font-medium text-gray-500">New rule</p>
+      <p className="text-xs font-medium text-gray-500">{t('new_rule')}</p>
       <RuleEditor draft={draft} segments={segments} variants={variants} onChange={setDraft} />
       <div className="flex items-center gap-3">
         <Button
           onClick={() => {
             setSaveError(null)
             onSave(draft, {
-              onError: (err) => setSaveError(err instanceof APIError ? err.message : 'Save failed. Please try again.'),
+              onError: (err) => setSaveError(err instanceof APIError ? err.message : t('save_failed')),
             })
           }}
           disabled={isSaving}
         >
-          {isSaving ? 'Saving…' : 'Save'}
+          {isSaving ? t('states.saving', { ns: 'common' }) : t('actions.save', { ns: 'common' })}
         </Button>
         <Button variant="secondary" onClick={onCancel} disabled={isSaving}>
-          Cancel
+          {t('actions.cancel', { ns: 'common' })}
         </Button>
         {saveError && <p className="text-xs text-red-600">{saveError}</p>}
       </div>
@@ -427,6 +432,8 @@ function RuleEditor({
   variants: { key: string; name: string }[]
   onChange: (draft: Omit<Rule, 'id' | 'createdAt'>) => void
 }) {
+  const { t } = useTranslation('rules')
+
   function updateCondition(i: number, patch: Partial<Condition>) {
     const updated = draft.conditions.map((c, idx) => {
       if (idx !== i) return c
@@ -455,9 +462,9 @@ function RuleEditor({
     <div className="space-y-3">
       {/* Conditions */}
       <div>
-        <p className="text-xs font-medium text-gray-500 mb-2">Conditions</p>
+        <p className="text-xs font-medium text-gray-500 mb-2">{t('conditions_label')}</p>
         {draft.conditions.length === 0 && (
-          <p className="text-xs text-gray-400 italic mb-2">No conditions — rule matches all users.</p>
+          <p className="text-xs text-gray-400 italic mb-2">{t('no_conditions_editor')}</p>
         )}
         <div className="space-y-2">
           {draft.conditions.map((c, i) => (
@@ -467,19 +474,19 @@ function RuleEditor({
                 type="text"
                 value={c.attribute}
                 onChange={(e) => updateCondition(i, { attribute: e.target.value })}
-                placeholder="attribute"
-                aria-label={`Condition ${i + 1} attribute`}
+                placeholder={t('attribute_placeholder')}
+                aria-label={t('condition_attribute_aria', { n: i + 1 })}
                 className="w-32 font-mono py-1.5 px-2"
               />
               {/* Operator */}
               <Select
                 value={c.operator}
                 onValueChange={(val) => updateCondition(i, { operator: val })}
-                aria-label={`Condition ${i + 1} operator`}
+                aria-label={t('condition_operator_aria', { n: i + 1 })}
               >
-                {Object.entries(OPERATOR_LABELS).map(([val, label]) => (
+                {Object.entries(OPERATOR_KEYS).map(([val, key]) => (
                   <SelectItem key={val} value={val}>
-                    {label}
+                    {t(key)}
                   </SelectItem>
                 ))}
               </Select>
@@ -488,8 +495,8 @@ function RuleEditor({
                 <Select
                   value={c.values[0] ?? ''}
                   onValueChange={(val) => updateCondition(i, { values: [val] })}
-                  aria-label={`Condition ${i + 1} segment`}
-                  placeholder="Select segment…"
+                  aria-label={t('condition_segment_aria', { n: i + 1 })}
+                  placeholder={t('select_segment')}
                   className="flex-1"
                 >
                   {segments.map((s) => (
@@ -507,14 +514,14 @@ function RuleEditor({
                       values: e.target.value.split(',').map((v) => v.trim()).filter(Boolean),
                     })
                   }
-                  placeholder="value(s), comma-separated"
-                  aria-label={`Condition ${i + 1} value`}
+                  placeholder={t('value_placeholder')}
+                  aria-label={t('condition_value_aria', { n: i + 1 })}
                   className="flex-1 font-mono py-1.5 px-2"
                 />
               )}
               <button
                 onClick={() => removeCondition(i)}
-                aria-label={`Remove condition ${i + 1}`}
+                aria-label={t('condition_remove_aria', { n: i + 1 })}
                 className="mt-1 text-gray-400 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
               >
                 ✕
@@ -526,17 +533,17 @@ function RuleEditor({
           onClick={addCondition}
           className="mt-2 text-xs text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
         >
-          + Add condition
+          {t('add_condition')}
         </button>
       </div>
 
       {/* Variant */}
       <div>
-        <label className="block text-xs font-medium text-gray-500 mb-1">Serve variant</label>
+        <label className="block text-xs font-medium text-gray-500 mb-1">{t('serve_variant_label')}</label>
         <Select
           value={draft.variantKey}
           onValueChange={(val) => onChange({ ...draft, variantKey: val })}
-          aria-label="Serve variant"
+          aria-label={t('serve_variant_aria')}
         >
           {variants.map((v) => (
             <SelectItem key={v.key} value={v.key}>
@@ -549,7 +556,7 @@ function RuleEditor({
       {/* Priority */}
       <div>
         <label className="block text-xs font-medium text-gray-500 mb-1">
-          Priority <span className="text-gray-400 font-normal">(lower = evaluated first)</span>
+          {t('priority_label')} <span className="text-gray-400 font-normal">{t('priority_hint')}</span>
         </label>
         <Input
           type="number"

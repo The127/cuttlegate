@@ -1,0 +1,38 @@
+{
+  "app_name": "Cuttlegate",
+  "actions": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "create": "Create",
+    "delete": "Delete",
+    "edit": "Edit",
+    "retry": "Retry",
+    "done": "Done",
+    "add": "Add",
+    "copy": "Copy",
+    "close": "Close"
+  },
+  "states": {
+    "saving": "Saving…",
+    "creating": "Creating…",
+    "deleting": "Deleting…",
+    "adding": "Adding…",
+    "removing": "Removing…",
+    "revoking": "Revoking…",
+    "copied": "Copied!",
+    "saved": "Saved"
+  },
+  "errors": {
+    "unexpected": "An unexpected error occurred.",
+    "failed_to_load": "Failed to load",
+    "access_denied_title": "Access Denied",
+    "access_denied_body": "You do not have permission to access this resource.",
+    "something_went_wrong": "Something went wrong",
+    "return_to_home": "Return to home"
+  },
+  "not_found": {
+    "title": "404",
+    "body": "Page not found.",
+    "return_to_home": "Return to home"
+  }
+}

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useRef, useState, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { postJSON, APIError } from '../api'
 import { Button, Input, Label } from './ui'
 import { useLiveAnnouncer } from '../hooks/useLiveAnnouncer'
@@ -63,6 +64,7 @@ interface CreateProjectDialogProps {
 }
 
 function CreateProjectDialog({ open, onClose }: CreateProjectDialogProps) {
+  const { t } = useTranslation('projects')
   const dialogRef = useRef<HTMLDialogElement>(null)
   const nameRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
@@ -110,7 +112,7 @@ function CreateProjectDialog({ open, onClose }: CreateProjectDialogProps) {
       if (err instanceof APIError) {
         setApiError(err.message)
       } else {
-        setApiError('An unexpected error occurred.')
+        setApiError(t('create.error_unexpected'))
       }
     },
   })
@@ -143,37 +145,37 @@ function CreateProjectDialog({ open, onClose }: CreateProjectDialogProps) {
       className="backdrop:bg-black/50 rounded-lg shadow-xl border border-gray-200 p-0 w-full max-w-md"
     >
       <form onSubmit={handleSubmit} className="p-6">
-        <h2 className="text-lg font-semibold text-gray-900">New Project</h2>
-        <p className="mt-1 text-sm text-gray-500">Create a new feature flag project.</p>
+        <h2 className="text-lg font-semibold text-gray-900">{t('create.title')}</h2>
+        <p className="mt-1 text-sm text-gray-500">{t('create.subtitle')}</p>
 
         <div className="mt-4 space-y-4">
           <div>
-            <Label htmlFor="project-name">Name</Label>
+            <Label htmlFor="project-name">{t('create.name_label')}</Label>
             <Input
               ref={nameRef}
               id="project-name"
               type="text"
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
-              placeholder="My Project"
+              placeholder={t('create.name_placeholder')}
               className="mt-1"
             />
           </div>
 
           <div>
-            <Label htmlFor="project-slug">Slug</Label>
+            <Label htmlFor="project-slug">{t('create.slug_label')}</Label>
             <Input
               id="project-slug"
               type="text"
               value={slug}
               onChange={(e) => handleSlugChange(e.target.value)}
-              placeholder="my-project"
+              placeholder={t('create.slug_placeholder')}
               hasError={!slugValid}
               className="mt-1 font-mono"
             />
             {!slugValid && (
               <p className="mt-1 text-xs text-red-600">
-                Slug must be lowercase letters, numbers, and hyphens only.
+                {t('create.slug_invalid')}
               </p>
             )}
           </div>
@@ -185,10 +187,10 @@ function CreateProjectDialog({ open, onClose }: CreateProjectDialogProps) {
 
         <div className="mt-6 flex justify-end gap-3">
           <Button type="button" variant="ghost" size="lg" onClick={handleClose}>
-            Cancel
+            {t('actions.cancel', { ns: 'common' })}
           </Button>
           <Button type="submit" variant="primary" size="lg" disabled={!canSubmit}>
-            {mutation.isPending ? 'Creating…' : 'Create'}
+            {mutation.isPending ? t('create.creating') : t('create.create_button')}
           </Button>
         </div>
       </form>

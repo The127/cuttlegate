@@ -1,6 +1,7 @@
 import { createRoute } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { projectRoute } from './$slug'
 import { fetchJSON, patchEmpty, postJSON, deleteRequest, APIError } from '../../api'
 import { getUserManager } from '../../auth'
@@ -31,6 +32,7 @@ export const memberListRoute = createRoute({
 })
 
 function MemberListPage() {
+  const { t } = useTranslation('projects')
   const { slug } = memberListRoute.useParams()
   const queryClient = useQueryClient()
   const queryKey = ['members', slug]
@@ -71,10 +73,10 @@ function MemberListPage() {
     onError: (err) => {
       const msg =
         err instanceof APIError && err.code === 'last_admin'
-          ? 'Cannot remove the last admin of this project.'
+          ? t('members.last_admin')
           : err instanceof APIError
             ? err.message
-            : 'Failed to remove member. Please try again.'
+            : t('members.remove_failed')
       setRemoveError(msg)
     },
   })
@@ -88,7 +90,7 @@ function MemberListPage() {
     },
     onError: (err, { userId }) => {
       const msg =
-        err instanceof APIError ? err.message : 'Failed to update role. Please try again.'
+        err instanceof APIError ? err.message : t('members.role_update_failed')
       setRoleErrors((prev) => ({ ...prev, [userId]: msg }))
     },
   })
@@ -97,19 +99,19 @@ function MemberListPage() {
   if (isError)
     return (
       <div className="p-6">
-        <span className="text-sm text-red-600">Failed to load members. </span>
+        <span className="text-sm text-red-600">{t('members.error')} </span>
         <button
           onClick={() => void refetch()}
           className="text-sm text-red-600 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
         >
-          Retry
+          {t('actions.retry', { ns: 'common' })}
         </button>
       </div>
     )
 
   return (
     <div className="p-6 max-w-4xl">
-      <h1 className="text-lg font-semibold text-gray-900 mb-6">Members</h1>
+      <h1 className="text-lg font-semibold text-gray-900 mb-6">{t('members.title')}</h1>
 
       {members.length === 0 ? (
         <MemberEmptyState />
@@ -119,13 +121,13 @@ function MemberListPage() {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide w-full">
-                  Member
+                  {t('members.column_member')}
                 </th>
                 <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide whitespace-nowrap">
-                  Role
+                  {t('members.column_role')}
                 </th>
                 <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide whitespace-nowrap">
-                  Joined
+                  {t('members.column_joined')}
                 </th>
                 {isAdmin && <th className="px-4 py-2" />}
               </tr>
@@ -196,6 +198,7 @@ function MemberRow({
   onRoleChange: (role: Role) => void
   onRemoveIntent: () => void
 }) {
+  const { t } = useTranslation('projects')
   const displayName = memberDisplayName(member)
   return (
     <tr className="hover:bg-gray-50">
@@ -204,7 +207,7 @@ function MemberRow({
           <span className="text-sm text-gray-900 font-medium">
             {displayName}
             {isSelf && (
-              <span className="ml-2 text-xs text-gray-400 font-normal">(you)</span>
+              <span className="ml-2 text-xs text-gray-400 font-normal">{t('members.you')}</span>
             )}
           </span>
           {member.email && (
@@ -222,7 +225,7 @@ function MemberRow({
               value={member.role}
               disabled={rolePending}
               onChange={(e) => onRoleChange(e.target.value as Role)}
-              aria-label={`Role for ${displayName}`}
+              aria-label={t('members.role_aria', { name: displayName })}
               className="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 bg-white"
             >
               {ROLES.map((r) => (
@@ -252,7 +255,7 @@ function MemberRow({
         <td className="px-4 py-3 whitespace-nowrap">
           <button
             onClick={onRemoveIntent}
-            aria-label={`Remove ${displayName}`}
+            aria-label={t('members.remove_aria', { name: displayName })}
             className="text-gray-400 hover:text-red-600 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 rounded p-0.5"
           >
             <svg
@@ -286,6 +289,7 @@ function RoleBadge({ role }: { role: Role }) {
 }
 
 function AddMemberForm({ slug }: { slug: string }) {
+  const { t } = useTranslation('projects')
   const queryClient = useQueryClient()
   const queryKey = ['members', slug]
   const [userId, setUserId] = useState('')
@@ -303,9 +307,9 @@ function AddMemberForm({ slug }: { slug: string }) {
     },
     onError: (err) => {
       if (err instanceof APIError && err.status === 409) {
-        setError('This user is already a member of this project.')
+        setError(t('members.already_member'))
       } else {
-        setError(err instanceof APIError ? err.message : 'Failed to add member. Please try again.')
+        setError(err instanceof APIError ? err.message : t('members.add_failed'))
       }
     },
   })
@@ -319,11 +323,11 @@ function AddMemberForm({ slug }: { slug: string }) {
 
   return (
     <div className="border border-gray-200 rounded-lg bg-white p-4">
-      <h2 className="text-sm font-medium text-gray-700 mb-3">Add member</h2>
+      <h2 className="text-sm font-medium text-gray-700 mb-3">{t('members.add_title')}</h2>
       <form onSubmit={handleSubmit} className="flex items-start gap-3 flex-wrap">
         <div className="flex-1 min-w-48">
           <label htmlFor="member-user-id" className="sr-only">
-            User ID
+            {t('members.user_id_label')}
           </label>
           <input
             id="member-user-id"
@@ -333,7 +337,7 @@ function AddMemberForm({ slug }: { slug: string }) {
               setUserId(e.target.value)
               setError(null)
             }}
-            placeholder="User ID (UUID)"
+            placeholder={t('members.user_id_placeholder')}
             aria-invalid={!!error}
             aria-describedby={error ? 'add-member-error' : undefined}
             className={`w-full font-mono text-sm border rounded px-2 py-1.5 focus:outline-none focus:ring-2 ${
@@ -345,7 +349,7 @@ function AddMemberForm({ slug }: { slug: string }) {
         </div>
         <div>
           <label htmlFor="member-role" className="sr-only">
-            Role
+            {t('members.role_label')}
           </label>
           <select
             id="member-role"
@@ -365,7 +369,7 @@ function AddMemberForm({ slug }: { slug: string }) {
           disabled={addMutation.isPending || !userId.trim()}
           className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap"
         >
-          {addMutation.isPending ? 'Adding\u2026' : 'Add member'}
+          {addMutation.isPending ? t('members.adding') : t('members.add_button')}
         </button>
       </form>
       {error && (
@@ -390,6 +394,7 @@ function RemoveMemberDialog({
   onConfirm: () => void
   onCancel: () => void
 }) {
+  const { t } = useTranslation('projects')
   useEscapeKey(onCancel)
   const displayName = memberDisplayName(member)
   return (
@@ -402,15 +407,13 @@ function RemoveMemberDialog({
       <div className="absolute inset-0 bg-black/30" onClick={onCancel} aria-hidden="true" />
       <div className="relative bg-white rounded-lg shadow-lg max-w-sm w-full mx-4 p-6">
         <h2 id="remove-member-title" className="text-base font-semibold text-gray-900">
-          Remove member?
+          {t('members.remove_dialog_title')}
         </h2>
         <p className="mt-2 text-sm text-gray-600">
-          This will remove{' '}
-          <span className="font-medium text-gray-800">{displayName}</span>
+          {t('members.remove_dialog_body', { name: displayName })}
           {member.email && (
             <span className="text-gray-500"> ({member.email})</span>
-          )}{' '}
-          from the project.
+          )}
         </p>
         {error && (
           <p className="mt-3 text-xs text-red-600">{error}</p>
@@ -422,14 +425,14 @@ function RemoveMemberDialog({
             disabled={isRemoving}
             className="px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
           >
-            Cancel
+            {t('actions.cancel', { ns: 'common' })}
           </button>
           <button
             onClick={onConfirm}
             disabled={isRemoving}
             className="px-3 py-1.5 text-sm font-medium bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500"
           >
-            {isRemoving ? 'Removing\u2026' : 'Remove'}
+            {isRemoving ? t('members.removing') : t('members.remove')}
           </button>
         </div>
       </div>
@@ -438,10 +441,11 @@ function RemoveMemberDialog({
 }
 
 function MemberEmptyState() {
+  const { t } = useTranslation('projects')
   return (
     <div className="text-center py-16 px-6 border border-gray-200 rounded-lg bg-white">
       <p className="text-sm text-gray-500">
-        Add team members to collaborate on this project.
+        {t('members.empty')}
       </p>
     </div>
   )

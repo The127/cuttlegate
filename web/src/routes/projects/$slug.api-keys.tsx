@@ -1,6 +1,7 @@
 import { createRoute } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { projectRoute } from './$slug'
 import { fetchJSON, postJSON, deleteRequest, APIError } from '../../api'
 import { formatRelativeDate } from '../../utils/date'
@@ -34,6 +35,7 @@ export const apiKeyListRoute = createRoute({
 })
 
 function APIKeyPage() {
+  const { t } = useTranslation('projects')
   const { slug } = apiKeyListRoute.useParams()
   const queryClient = useQueryClient()
 
@@ -81,23 +83,23 @@ function APIKeyPage() {
   return (
     <div className="p-6 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-lg font-semibold text-gray-900">API Keys</h1>
+        <h1 className="text-lg font-semibold text-gray-900">{t('api_keys.title')}</h1>
         <button
           onClick={() => setShowCreate(true)}
           disabled={envSlug === null}
           className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          New key
+          {t('api_keys.new_key')}
         </button>
       </div>
 
       {envsQuery.isLoading ? (
         <div className="h-8 w-48 bg-gray-100 rounded animate-pulse mb-4" />
       ) : envsQuery.isError ? (
-        <p className="text-sm text-red-600 mb-4">Failed to load environments.</p>
+        <p className="text-sm text-red-600 mb-4">{t('api_keys.environments_error')}</p>
       ) : envsQuery.data!.length === 0 ? (
         <p className="text-sm text-gray-500">
-          No environments yet — create an environment before managing API keys.
+          {t('api_keys.no_environments')}
         </p>
       ) : (
         <>
@@ -106,7 +108,7 @@ function APIKeyPage() {
               htmlFor="env-selector"
               className="block text-xs font-medium text-gray-500 mb-1"
             >
-              Environment
+              {t('api_keys.environment_label')}
             </label>
             <select
               id="env-selector"
@@ -126,12 +128,12 @@ function APIKeyPage() {
             <APIKeyListSkeleton />
           ) : keysQuery.isError ? (
             <div>
-              <span className="text-sm text-red-600">Failed to load API keys. </span>
+              <span className="text-sm text-red-600">{t('api_keys.error')} </span>
               <button
                 onClick={() => void keysQuery.refetch()}
                 className="text-sm text-red-600 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
               >
-                Retry
+                {t('actions.retry', { ns: 'common' })}
               </button>
             </div>
           ) : keys.length === 0 ? (
@@ -183,6 +185,7 @@ function APIKeyRow({
   apiKey: APIKey
   onRevokeIntent: () => void
 }) {
+  const { t } = useTranslation('projects')
   return (
     <li className="flex items-center justify-between px-4 py-3 gap-4">
       <div className="flex items-center gap-3 min-w-0">
@@ -201,10 +204,10 @@ function APIKeyRow({
         </time>
         <button
           onClick={onRevokeIntent}
-          aria-label={`Revoke key ${apiKey.name}`}
+          aria-label={t('api_keys.revoke_aria', { name: apiKey.name })}
           className="px-2 py-1 text-xs font-medium text-red-600 border border-red-200 rounded hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500"
         >
-          Revoke
+          {t('api_keys.revoke')}
         </button>
       </div>
     </li>
@@ -212,16 +215,17 @@ function APIKeyRow({
 }
 
 function APIKeyEmptyState({ onCreateClick }: { onCreateClick: () => void }) {
+  const { t } = useTranslation('projects')
   return (
     <div className="text-center py-16 px-6">
       <p className="text-sm text-gray-500">
-        No API keys yet — create one to enable SDK integration
+        {t('api_keys.empty')}
       </p>
       <button
         onClick={onCreateClick}
         className="mt-4 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
-        New key
+        {t('api_keys.new_key')}
       </button>
     </div>
   )
@@ -259,6 +263,7 @@ function CreateAPIKeyModal({
   onCreated: () => void
   onCancel: () => void
 }) {
+  const { t } = useTranslation('projects')
   const [phase, setPhase] = useState<CreatePhase>({ type: 'form' })
   const [name, setName] = useState('')
   const [serverError, setServerError] = useState<string | null>(null)
@@ -276,7 +281,7 @@ function CreateAPIKeyModal({
     },
     onError: (err) => {
       setServerError(
-        err instanceof APIError ? err.message : 'Something went wrong. Please try again.',
+        err instanceof APIError ? err.message : t('api_keys.server_error'),
       )
     },
   })
@@ -304,12 +309,12 @@ function CreateAPIKeyModal({
     <Modal labelledBy="create-key-title" onClose={onCancel}>
       <div className="relative bg-white rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
         <h2 id="create-key-title" className="text-base font-semibold text-gray-900 mb-4">
-          Create API key
+          {t('api_keys.create_title')}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="key-name" className="block text-xs font-medium text-gray-500 mb-1">
-              Name
+              {t('api_keys.name_label')}
             </label>
             <input
               id="key-name"
@@ -320,7 +325,7 @@ function CreateAPIKeyModal({
                 setName(e.target.value)
                 setServerError(null)
               }}
-              placeholder="Production SDK"
+              placeholder={t('api_keys.name_placeholder')}
               className="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -332,14 +337,14 @@ function CreateAPIKeyModal({
               disabled={createMutation.isPending}
               className="px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
             >
-              Cancel
+              {t('actions.cancel', { ns: 'common' })}
             </button>
             <button
               type="submit"
               disabled={createMutation.isPending || !name.trim()}
               className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              {createMutation.isPending ? 'Creating\u2026' : 'Create'}
+              {createMutation.isPending ? t('api_keys.creating') : t('api_keys.create_button')}
             </button>
           </div>
         </form>
@@ -361,6 +366,7 @@ function ShowOnceModal({
   plaintextKey: string
   onDone: () => void
 }) {
+  const { t } = useTranslation('projects')
   const [copied, setCopied] = useState(false)
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -391,31 +397,31 @@ function ShowOnceModal({
     <Modal labelledBy="show-key-title" onClose={onDone}>
       <div className="relative bg-white rounded-lg shadow-lg max-w-lg w-full mx-4 p-6">
         <h2 id="show-key-title" className="text-base font-semibold text-gray-900 mb-1">
-          API key created — {keyName}
+          {t('api_keys.show_once_title', { name: keyName })}
         </h2>
         <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 mb-4">
-          Copy this key now. It will not be shown again.
+          {t('api_keys.show_once_warning')}
         </p>
 
         <div className="mb-4">
-          <label className="block text-xs font-medium text-gray-500 mb-1">Your API key</label>
+          <label className="block text-xs font-medium text-gray-500 mb-1">{t('api_keys.your_key_label')}</label>
           <div className="flex items-center gap-2">
             <code className="flex-1 font-mono text-sm text-gray-900 bg-gray-50 border border-gray-200 rounded px-3 py-2 break-all select-all">
               {plaintextKey}
             </code>
             <button
               onClick={copyKey}
-              aria-label="Copy API key"
+              aria-label={t('api_keys.copy_aria')}
               className="shrink-0 px-3 py-2 text-xs font-medium border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              {copied ? 'Copied!' : 'Copy'}
+              {copied ? t('api_keys.copied') : t('api_keys.copy')}
             </button>
           </div>
         </div>
 
         <div className="mb-6">
           <label className="block text-xs font-medium text-gray-500 mb-1">
-            Getting started (curl)
+            {t('api_keys.getting_started_label')}
           </label>
           <pre className="font-mono text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded px-3 py-2 overflow-x-auto whitespace-pre">
             {curlSnippet}
@@ -427,7 +433,7 @@ function ShowOnceModal({
             onClick={onDone}
             className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            Done
+            {t('api_keys.done')}
           </button>
         </div>
       </div>
@@ -450,25 +456,26 @@ function RevokeAPIKeyModal({
   onConfirm: () => void
   onCancel: () => void
 }) {
+  const { t } = useTranslation('projects')
   return (
     <Modal labelledBy="revoke-key-title" onClose={onCancel}>
       <div className="relative bg-white rounded-lg shadow-lg max-w-sm w-full mx-4 p-6">
         <h2 id="revoke-key-title" className="text-base font-semibold text-gray-900">
-          Revoke key?
+          {t('api_keys.revoke_title')}
         </h2>
         <p className="mt-2 text-sm text-gray-600">
-          <span className="font-mono text-gray-800">
-            cg_{apiKey.display_prefix}…
-          </span>{' '}
-          ({apiKey.name}) will stop working immediately.
+          {t('api_keys.revoke_body', {
+            prefix: `cg_${apiKey.display_prefix}…`,
+            name: apiKey.name,
+          })}
         </p>
         {isLastKey && (
           <p className="mt-3 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
-            This is your last active API key. Revoking it will break all SDK integrations for this environment.
+            {t('api_keys.revoke_last_warning')}
           </p>
         )}
         {revokeFailed && (
-          <p className="mt-3 text-xs text-red-600">Failed to revoke. Please try again.</p>
+          <p className="mt-3 text-xs text-red-600">{t('api_keys.revoke_failed')}</p>
         )}
         <div className="mt-5 flex justify-end gap-3">
           <button
@@ -477,14 +484,14 @@ function RevokeAPIKeyModal({
             disabled={isRevoking}
             className="px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
           >
-            Cancel
+            {t('actions.cancel', { ns: 'common' })}
           </button>
           <button
             onClick={onConfirm}
             disabled={isRevoking}
             className="px-3 py-1.5 text-sm font-medium bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500"
           >
-            {isRevoking ? 'Revoking\u2026' : 'Revoke'}
+            {isRevoking ? t('api_keys.revoking') : t('api_keys.revoke')}
           </button>
         </div>
       </div>

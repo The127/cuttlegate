@@ -1,6 +1,7 @@
 import { createRoute, useLocation, useNavigate } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { projectRoute } from './$slug'
 import { fetchJSON, postJSON, deleteRequest, APIError } from '../../api'
 import { formatRelativeDate } from '../../utils/date'
@@ -26,6 +27,7 @@ function useActiveEnvSlug(): string | null {
 }
 
 function EnvironmentSettingsPage() {
+  const { t } = useTranslation('projects')
   const { slug } = environmentSettingsRoute.useParams()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -58,12 +60,12 @@ function EnvironmentSettingsPage() {
   if (isError)
     return (
       <div className="p-6">
-        <span className="text-sm text-red-600">Failed to load environments. </span>
+        <span className="text-sm text-red-600">{t('environments.error')} </span>
         <button
           onClick={() => void refetch()}
           className="text-sm text-red-600 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
         >
-          Retry
+          {t('actions.retry', { ns: 'common' })}
         </button>
       </div>
     )
@@ -73,12 +75,12 @@ function EnvironmentSettingsPage() {
   return (
     <div className="p-6 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-lg font-semibold text-gray-900">Environments</h1>
+        <h1 className="text-lg font-semibold text-gray-900">{t('environments.title')}</h1>
         <button
           onClick={() => setShowCreate(true)}
           className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          New environment
+          {t('environments.new_button')}
         </button>
       </div>
 
@@ -131,6 +133,7 @@ function EnvironmentRow({
   environment: Environment
   onDeleteIntent: () => void
 }) {
+  const { t } = useTranslation('projects')
   return (
     <li className="flex items-center justify-between px-4 py-3 gap-4">
       <div className="flex items-center gap-3 min-w-0">
@@ -149,7 +152,7 @@ function EnvironmentRow({
         </time>
         <button
           onClick={onDeleteIntent}
-          aria-label={`Delete environment ${environment.slug}`}
+          aria-label={t('environments.delete_aria', { slug: environment.slug })}
           className="text-gray-400 hover:text-red-600 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 rounded p-0.5"
         >
           <svg
@@ -172,16 +175,17 @@ function EnvironmentRow({
 }
 
 function EnvironmentEmptyState({ onCreateClick }: { onCreateClick: () => void }) {
+  const { t } = useTranslation('projects')
   return (
     <div className="text-center py-16 px-6">
       <p className="text-sm text-gray-500">
-        No environments yet — environments scope flag states, rules, and API keys.
+        {t('environments.empty')}
       </p>
       <button
         onClick={onCreateClick}
         className="mt-4 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
-        New environment
+        {t('environments.new_button')}
       </button>
     </div>
   )
@@ -198,11 +202,10 @@ function slugify(name: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
-function validateSlug(slug: string): string | null {
+function validateSlug(slug: string, t: (k: string, opts?: Record<string, unknown>) => string): string | null {
   if (slug.length === 0) return null
-  if (slug.length > MAX_SLUG_LENGTH) return `Slug must be ${MAX_SLUG_LENGTH} characters or fewer`
-  if (!SLUG_RE.test(slug))
-    return 'Slug must start with a letter or digit and contain only lowercase letters, digits, and hyphens'
+  if (slug.length > MAX_SLUG_LENGTH) return t('environments.slug_too_long', { max: MAX_SLUG_LENGTH })
+  if (!SLUG_RE.test(slug)) return t('environments.slug_invalid')
   return null
 }
 
@@ -248,6 +251,7 @@ function CreateEnvironmentModal({
   onCreated: () => void
   onCancel: () => void
 }) {
+  const { t } = useTranslation('projects')
   const [name, setName] = useState('')
   const [envSlug, setEnvSlug] = useState('')
   const [slugTouched, setSlugTouched] = useState(false)
@@ -261,7 +265,7 @@ function CreateEnvironmentModal({
     onError: (err) => {
       if (err instanceof APIError) {
         if (err.status === 409 || err.code === 'conflict') {
-          setSlugError('An environment with this slug already exists in this project')
+          setSlugError(t('environments.slug_conflict'))
           return
         }
         if (err.status === 400 && err.code === 'validation_error') {
@@ -270,7 +274,7 @@ function CreateEnvironmentModal({
         }
       }
       setServerError(
-        err instanceof APIError ? err.message : 'Something went wrong. Please try again.',
+        err instanceof APIError ? err.message : t('environments.server_error'),
       )
     },
   })
@@ -280,7 +284,7 @@ function CreateEnvironmentModal({
     if (!slugTouched) {
       const generated = slugify(value)
       setEnvSlug(generated)
-      setSlugError(validateSlug(generated))
+      setSlugError(validateSlug(generated, t))
     }
   }
 
@@ -292,19 +296,19 @@ function CreateEnvironmentModal({
   }
 
   function handleSlugBlur() {
-    setSlugError(validateSlug(envSlug))
+    setSlugError(validateSlug(envSlug, t))
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim()) return
-    const err = validateSlug(envSlug)
+    const err = validateSlug(envSlug, t)
     if (err) {
       setSlugError(err)
       return
     }
     if (!envSlug) {
-      setSlugError('Slug is required')
+      setSlugError(t('environments.slug_required'))
       return
     }
     setServerError(null)
@@ -315,12 +319,12 @@ function CreateEnvironmentModal({
     <Modal labelledBy="create-env-title" onClose={onCancel}>
       <div className="relative bg-white rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
         <h2 id="create-env-title" className="text-base font-semibold text-gray-900 mb-4">
-          Create environment
+          {t('environments.create_title')}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="env-name" className="block text-xs font-medium text-gray-500 mb-1">
-              Name
+              {t('environments.name_label')}
             </label>
             <input
               id="env-name"
@@ -328,13 +332,13 @@ function CreateEnvironmentModal({
               autoFocus
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
-              placeholder="Production"
+              placeholder={t('environments.name_placeholder')}
               className="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
             <label htmlFor="env-slug" className="block text-xs font-medium text-gray-500 mb-1">
-              Slug
+              {t('environments.slug_label')}
             </label>
             <input
               id="env-slug"
@@ -342,7 +346,7 @@ function CreateEnvironmentModal({
               value={envSlug}
               onChange={(e) => handleSlugChange(e.target.value)}
               onBlur={handleSlugBlur}
-              placeholder="production"
+              placeholder={t('environments.slug_placeholder')}
               aria-invalid={!!slugError}
               aria-describedby={slugError ? 'env-slug-error' : undefined}
               className={`w-full font-mono text-sm border rounded px-2 py-1.5 focus:outline-none focus:ring-2 ${
@@ -365,14 +369,14 @@ function CreateEnvironmentModal({
               disabled={createMutation.isPending}
               className="px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
             >
-              Cancel
+              {t('actions.cancel', { ns: 'common' })}
             </button>
             <button
               type="submit"
               disabled={createMutation.isPending || !!slugError || !name.trim() || !envSlug}
               className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              {createMutation.isPending ? 'Creating\u2026' : 'Create'}
+              {createMutation.isPending ? t('environments.creating') : t('environments.create_button')}
             </button>
           </div>
         </form>
@@ -394,22 +398,21 @@ function DeleteEnvironmentModal({
   onConfirm: () => void
   onCancel: () => void
 }) {
+  const { t } = useTranslation('projects')
   return (
     <Modal labelledBy="delete-env-title" onClose={onCancel}>
       <div className="relative bg-white rounded-lg shadow-lg max-w-sm w-full mx-4 p-6">
         <h2 id="delete-env-title" className="text-base font-semibold text-gray-900">
-          Delete environment?
+          {t('environments.delete_title')}
         </h2>
         <p className="mt-2 text-sm text-gray-600">
-          This will permanently delete{' '}
-          <span className="font-mono text-gray-800">{environment.slug}</span>.
+          {t('environments.delete_body', { slug: environment.slug })}
         </p>
         <p className="mt-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
-          Deleting this environment will permanently destroy all flag states, targeting rules, and
-          API keys scoped to it. This cannot be undone.
+          {t('environments.delete_warning')}
         </p>
         {deleteFailed && (
-          <p className="mt-3 text-xs text-red-600">Failed to delete. Please try again.</p>
+          <p className="mt-3 text-xs text-red-600">{t('environments.delete_failed')}</p>
         )}
         <div className="mt-5 flex justify-end gap-3">
           <button
@@ -418,14 +421,14 @@ function DeleteEnvironmentModal({
             disabled={isDeleting}
             className="px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
           >
-            Cancel
+            {t('actions.cancel', { ns: 'common' })}
           </button>
           <button
             onClick={onConfirm}
             disabled={isDeleting}
             className="px-3 py-1.5 text-sm font-medium bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500"
           >
-            {isDeleting ? 'Deleting\u2026' : 'Delete'}
+            {isDeleting ? t('environments.deleting') : t('environments.delete_button')}
           </button>
         </div>
       </div>

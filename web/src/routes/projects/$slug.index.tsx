@@ -1,6 +1,7 @@
 import { createRoute, Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { projectRoute } from './$slug'
 import { fetchJSON } from '../../api'
 import { formatRelativeDate } from '../../utils/date'
@@ -32,6 +33,7 @@ export const projectIndexRoute = createRoute({
 })
 
 function ProjectDashboard() {
+  const { t } = useTranslation('projects')
   const project = projectRoute.useLoaderData()
 
   const envsQuery = useQuery({
@@ -56,7 +58,7 @@ function ProjectDashboard() {
 
       <section className="mt-6">
         <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
-          Environments
+          {t('dashboard.environments_section')}
         </h2>
         {envsQuery.isLoading ? (
           <EnvironmentCardsSkeleton />
@@ -64,7 +66,7 @@ function ProjectDashboard() {
           <SectionError label="environments" onRetry={() => void envsQuery.refetch()} />
         ) : envsQuery.data!.length === 0 ? (
           <p className="text-sm text-gray-500">
-            No environments yet — create your first environment to start managing flags.
+            {t('dashboard.no_environments')}
           </p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -77,27 +79,27 @@ function ProjectDashboard() {
 
       <section className="mt-8">
         <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
-          Quick Links
+          {t('dashboard.quick_links_section')}
         </h2>
         <div className="flex gap-3 flex-wrap">
-          <QuickLink label="Compare Environments" to={`/projects/${project.slug}/compare`} />
-          <QuickLink label="Segments" to={`/projects/${project.slug}/segments`} />
-          <QuickLink label="Settings" to={`/projects/${project.slug}/settings`} />
-          <QuickLink label="Members" to={`/projects/${project.slug}/members`} />
-          <QuickLink label="API Keys" to={`/projects/${project.slug}/api-keys`} />
+          <QuickLink label={t('dashboard.compare')} to={`/projects/${project.slug}/compare`} />
+          <QuickLink label={t('dashboard.segments')} to={`/projects/${project.slug}/segments`} />
+          <QuickLink label={t('dashboard.settings')} to={`/projects/${project.slug}/settings`} />
+          <QuickLink label={t('dashboard.members')} to={`/projects/${project.slug}/members`} />
+          <QuickLink label={t('dashboard.api_keys')} to={`/projects/${project.slug}/api-keys`} />
         </div>
       </section>
 
       <section className="mt-8">
         <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
-          Recently Created Flags
+          {t('dashboard.recent_flags_section')}
         </h2>
         {flagsQuery.isLoading ? (
           <RecentFlagsSkeleton />
         ) : flagsQuery.isError ? (
           <SectionError label="flags" onRetry={() => void flagsQuery.refetch()} />
         ) : flagsQuery.data!.length === 0 ? (
-          <p className="text-sm text-gray-500">No flags in this project yet.</p>
+          <p className="text-sm text-gray-500">{t('dashboard.no_flags')}</p>
         ) : (
           <RecentFlagsList flags={flagsQuery.data!} />
         )}
@@ -107,6 +109,7 @@ function ProjectDashboard() {
 }
 
 function ProjectHeader({ name, slug }: { name: string; slug: string }) {
+  const { t } = useTranslation('projects')
   const [copied, setCopied] = useState(false)
 
   function copySlug() {
@@ -126,12 +129,12 @@ function ProjectHeader({ name, slug }: { name: string; slug: string }) {
         <button
           onClick={copySlug}
           className="relative font-mono text-sm text-gray-500 hover:text-blue-600 bg-gray-50 border border-gray-200 rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          aria-label={`Copy project slug ${slug}`}
+          aria-label={t('dashboard.copy_slug_aria', { slug })}
         >
           {slug}
           {copied && (
             <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-xs bg-gray-800 text-white rounded px-2 py-0.5 whitespace-nowrap pointer-events-none">
-              Copied!
+              {t('settings.copied')}
             </span>
           )}
         </button>
@@ -141,6 +144,7 @@ function ProjectHeader({ name, slug }: { name: string; slug: string }) {
 }
 
 function EnvironmentCard({ env, projectSlug }: { env: Environment; projectSlug: string }) {
+  const { t } = useTranslation('projects')
   const flagsQuery = useQuery({
     queryKey: ['flags', projectSlug, env.slug],
     queryFn: () =>
@@ -162,13 +166,13 @@ function EnvironmentCard({ env, projectSlug }: { env: Environment; projectSlug: 
       {flagsQuery.isLoading ? (
         <div className="mt-2 h-4 w-20 bg-gray-100 rounded animate-pulse" />
       ) : flagsQuery.isError ? (
-        <p className="mt-2 text-xs text-red-600">Failed to load</p>
+        <p className="mt-2 text-xs text-red-600">{t('dashboard.failed_to_load_env')}</p>
       ) : (
         <p className="mt-2 text-sm text-gray-600">
           <span className="font-medium text-gray-800">{enabled}</span>
           <span className="text-gray-400"> / </span>
           <span>{total}</span>
-          <span className="text-gray-400"> enabled</span>
+          <span className="text-gray-400"> {t('toggle.enabled', { ns: 'flags' }).toLowerCase()}</span>
         </p>
       )}
     </Link>
@@ -245,14 +249,15 @@ function RecentFlagsSkeleton() {
 }
 
 function SectionError({ label, onRetry }: { label: string; onRetry: () => void }) {
+  const { t } = useTranslation('projects')
   return (
     <div>
-      <span className="text-sm text-red-600">Failed to load {label}. </span>
+      <span className="text-sm text-red-600">{t('dashboard.failed_to_load', { resource: label })} </span>
       <button
         onClick={onRetry}
         className="text-sm text-red-600 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
       >
-        Retry
+        {t('actions.retry', { ns: 'common' })}
       </button>
     </div>
   )

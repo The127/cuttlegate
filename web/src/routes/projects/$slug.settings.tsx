@@ -1,6 +1,7 @@
 import { createRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import { useTranslation, Trans } from 'react-i18next'
 import { projectRoute } from './$slug'
 import { patchJSON, deleteRequest, APIError } from '../../api'
 import { useProjectRole } from '../../hooks/useProjectRole'
@@ -12,6 +13,7 @@ export const projectSettingsRoute = createRoute({
 })
 
 function ProjectSettingsPage() {
+  const { t } = useTranslation('projects')
   const project = projectRoute.useLoaderData()
   const roleQuery = useProjectRole(project.slug)
 
@@ -19,12 +21,12 @@ function ProjectSettingsPage() {
   if (roleQuery.isError)
     return (
       <div className="p-6">
-        <span className="text-sm text-red-600">Failed to load settings. </span>
+        <span className="text-sm text-red-600">{t('settings.failed_to_load')} </span>
         <button
           onClick={() => void roleQuery.refetch()}
           className="text-sm text-red-600 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
         >
-          Retry
+          {t('actions.retry', { ns: 'common' })}
         </button>
       </div>
     )
@@ -33,7 +35,7 @@ function ProjectSettingsPage() {
 
   return (
     <div className="p-6 max-w-2xl">
-      <h1 className="text-2xl font-semibold text-gray-900 mb-6">Settings</h1>
+      <h1 className="text-2xl font-semibold text-gray-900 mb-6">{t('settings.title')}</h1>
 
       <GeneralSection project={project} isAdmin={isAdmin} />
 
@@ -61,9 +63,10 @@ function GeneralSection({
   project: ProjectData
   isAdmin: boolean
 }) {
+  const { t } = useTranslation('projects')
   return (
     <section>
-      <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">General</h2>
+      <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">{t('settings.general_section')}</h2>
       <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100">
         <NameField project={project} isAdmin={isAdmin} />
         <SlugField slug={project.slug} />
@@ -73,6 +76,7 @@ function GeneralSection({
 }
 
 function NameField({ project, isAdmin }: { project: ProjectData; isAdmin: boolean }) {
+  const { t } = useTranslation('projects')
   const queryClient = useQueryClient()
   const [name, setName] = useState(project.name)
   const [saved, setSaved] = useState(false)
@@ -87,7 +91,7 @@ function NameField({ project, isAdmin }: { project: ProjectData; isAdmin: boolea
       setTimeout(() => setSaved(false), 2000)
     },
     onError: (err) => {
-      setServerError(err instanceof APIError ? err.message : 'Failed to save. Please try again.')
+      setServerError(err instanceof APIError ? err.message : t('settings.save_failed'))
     },
   })
 
@@ -101,7 +105,7 @@ function NameField({ project, isAdmin }: { project: ProjectData; isAdmin: boolea
   return (
     <div className="px-4 py-4">
       <label htmlFor="project-name" className="block text-xs font-medium text-gray-500 mb-1">
-        Project name
+        {t('settings.name_label')}
       </label>
       {isAdmin ? (
         <form onSubmit={handleSubmit} className="flex items-center gap-3">
@@ -121,7 +125,7 @@ function NameField({ project, isAdmin }: { project: ProjectData; isAdmin: boolea
             disabled={updateMutation.isPending || !name.trim() || name === project.name}
             className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            {updateMutation.isPending ? 'Saving…' : saved ? 'Saved' : 'Save'}
+            {updateMutation.isPending ? t('settings.saving') : saved ? t('settings.saved') : t('settings.save')}
           </button>
         </form>
       ) : (
@@ -133,6 +137,7 @@ function NameField({ project, isAdmin }: { project: ProjectData; isAdmin: boolea
 }
 
 function SlugField({ slug }: { slug: string }) {
+  const { t } = useTranslation('projects')
   const [copied, setCopied] = useState(false)
 
   function copySlug() {
@@ -147,7 +152,7 @@ function SlugField({ slug }: { slug: string }) {
 
   return (
     <div className="px-4 py-4">
-      <p className="text-xs font-medium text-gray-500 mb-1">Project slug</p>
+      <p className="text-xs font-medium text-gray-500 mb-1">{t('settings.slug_label')}</p>
       <div className="flex items-center gap-2">
         <span className="font-mono text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded px-2 py-1">
           {slug}
@@ -156,35 +161,36 @@ function SlugField({ slug }: { slug: string }) {
           <button
             onClick={copySlug}
             className="text-xs text-gray-500 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1 border border-gray-200 hover:border-blue-300 transition-colors"
-            aria-label={`Copy project slug ${slug}`}
+            aria-label={t('settings.copy_slug_aria', { slug })}
           >
-            {copied ? 'Copied!' : 'Copy'}
+            {copied ? t('settings.copied') : t('settings.copy')}
           </button>
         </div>
-        <p className="text-xs text-gray-400">Slug is immutable after creation.</p>
+        <p className="text-xs text-gray-400">{t('settings.slug_immutable')}</p>
       </div>
     </div>
   )
 }
 
 function DangerZone({ project }: { project: ProjectData }) {
+  const { t } = useTranslation('projects')
   const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   return (
     <section className="mt-8">
-      <h2 className="text-sm font-medium text-red-600 uppercase tracking-wide mb-4">Danger zone</h2>
+      <h2 className="text-sm font-medium text-red-600 uppercase tracking-wide mb-4">{t('settings.danger_section')}</h2>
       <div className="bg-white border border-red-200 rounded-lg px-4 py-4 flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-900">Delete this project</p>
+          <p className="text-sm font-medium text-gray-900">{t('settings.delete_title')}</p>
           <p className="text-xs text-gray-500 mt-0.5">
-            Permanently deletes all flags, environments, rules, members, and API keys.
+            {t('settings.delete_description')}
           </p>
         </div>
         <button
           onClick={() => setShowDeleteModal(true)}
           className="px-3 py-1.5 text-sm font-medium text-red-600 border border-red-300 rounded hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 shrink-0"
         >
-          Delete project
+          {t('settings.delete_button')}
         </button>
       </div>
 
@@ -202,6 +208,7 @@ function DeleteProjectModal({
   project: ProjectData
   onCancel: () => void
 }) {
+  const { t } = useTranslation('projects')
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [confirmName, setConfirmName] = useState('')
@@ -214,7 +221,7 @@ function DeleteProjectModal({
       void navigate({ to: '/' })
     },
     onError: (err) => {
-      setServerError(err instanceof APIError ? err.message : 'Failed to delete. Please try again.')
+      setServerError(err instanceof APIError ? err.message : t('delete_project.failed'))
     },
   })
 
@@ -239,26 +246,35 @@ function DeleteProjectModal({
       />
       <div className="relative bg-white rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
         <h2 id="delete-project-title" className="text-base font-semibold text-gray-900">
-          Delete project?
+          {t('delete_project.title')}
         </h2>
         <p className="mt-2 text-sm text-gray-600">
-          This will permanently delete{' '}
-          <span className="font-semibold text-gray-900">{project.name}</span> and everything in it:
+          <Trans
+            i18nKey="delete_project.body"
+            ns="projects"
+            values={{ name: project.name }}
+            components={{ strong: <span className="font-semibold text-gray-900" /> }}
+          />
         </p>
         <ul className="mt-2 text-sm text-gray-600 list-disc list-inside space-y-0.5">
-          <li>Feature flags and all their targeting rules</li>
-          <li>Environments and flag state per environment</li>
-          <li>Project members and API keys</li>
+          <li>{t('delete_project.item_flags')}</li>
+          <li>{t('delete_project.item_environments')}</li>
+          <li>{t('delete_project.item_members')}</li>
         </ul>
 
         <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded text-xs text-red-700">
-          This action cannot be undone.
+          {t('delete_project.warning')}
         </div>
 
         <form onSubmit={handleDelete} className="mt-4 space-y-3">
           <div>
             <label htmlFor="confirm-name" className="block text-xs font-medium text-gray-700 mb-1">
-              Type <span className="font-mono font-semibold">{project.name}</span> to confirm
+              <Trans
+                i18nKey="delete_project.confirm_label"
+                ns="projects"
+                values={{ name: project.name }}
+                components={{ mono: <span className="font-mono font-semibold" /> }}
+              />
             </label>
             <input
               id="confirm-name"
@@ -281,14 +297,14 @@ function DeleteProjectModal({
               disabled={deleteMutation.isPending}
               className="px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
             >
-              Cancel
+              {t('actions.cancel', { ns: 'common' })}
             </button>
             <button
               type="submit"
               disabled={confirmName !== project.name || deleteMutation.isPending}
               className="px-3 py-1.5 text-sm font-medium bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500"
             >
-              {deleteMutation.isPending ? 'Deleting…' : 'Delete project'}
+              {deleteMutation.isPending ? t('delete_project.deleting') : t('delete_project.delete_button')}
             </button>
           </div>
         </form>

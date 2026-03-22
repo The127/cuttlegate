@@ -6,6 +6,7 @@ import { initUserManager, type OIDCConfig } from './auth'
 import { BrandProvider, type BrandConfig } from './brand'
 import { createAppRouter } from './router'
 import { queryClient } from './queryClient'
+import { initI18n } from './i18n'
 import './styles.css'
 
 interface AppConfig extends OIDCConfig, BrandConfig {}
@@ -15,7 +16,7 @@ async function bootstrap() {
   if (!res.ok) {
     throw new Error(`Failed to load config: ${res.status}`)
   }
-  const config = (await res.json()) as AppConfig
+  const [config] = await Promise.all([(res.json() as Promise<AppConfig>), initI18n()])
 
   // Apply branding before first render to avoid flash of default styles.
   document.documentElement.style.setProperty('--color-accent', config.accent_colour)
