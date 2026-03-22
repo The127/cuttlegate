@@ -24,7 +24,7 @@ import (
 func main() {
     client, err := cuttlegate.NewClient(cuttlegate.Config{
         BaseURL:      "https://flags.example.com",
-        ServiceToken: "svc_your_token_here",
+        ServiceToken: "cg_your_api_key_here",
         Project:      "my-project",
         Environment:  "production",
     })
@@ -51,12 +51,12 @@ func main() {
     fmt.Println("dark-mode enabled:", result.Enabled)
 
     // Evaluate all flags for the environment:
-    results, err := client.Evaluate(ctx, evalCtx)
+    results, err := client.EvaluateAll(ctx, evalCtx)
     if err != nil {
         log.Fatal(err)
     }
-    for _, r := range results {
-        fmt.Printf("%s: enabled=%v reason=%s\n", r.Key, r.Enabled, r.Reason)
+    for key, r := range results {
+        fmt.Printf("%s: enabled=%v reason=%s\n", key, r.Enabled, r.Reason)
     }
 }
 ```
@@ -66,7 +66,7 @@ func main() {
 All methods return typed errors — no string-only errors.
 
 ```go
-result, err := client.Evaluate(ctx, evalCtx)
+results, err := client.EvaluateAll(ctx, evalCtx)
 if err != nil {
     var authErr *cuttlegate.AuthError
     var notFoundErr *cuttlegate.NotFoundError
@@ -117,7 +117,7 @@ Pass your own `*http.Client` if you have existing transport configuration (TLS, 
 ```go
 client, err := cuttlegate.NewClient(cuttlegate.Config{
     BaseURL:      "https://flags.example.com",
-    ServiceToken: "svc_your_token_here",
+    ServiceToken: "cg_your_api_key_here",
     Project:      "my-project",
     Environment:  "production",
     HTTPClient:   myConfiguredHTTPClient, // Timeout field is ignored when HTTPClient is set
@@ -131,7 +131,7 @@ If `HTTPClient` is nil, a default client with a 10-second timeout is used. The `
 | Field | Type | Required | Default | Description |
 |---|---|---|---|---|
 | `BaseURL` | `string` | yes | — | Base URL of the Cuttlegate server |
-| `ServiceToken` | `string` | yes | — | Service account token for auth |
+| `ServiceToken` | `string` | yes | — | API key from the Cuttlegate UI (`cg_...`) |
 | `Project` | `string` | yes | — | Project slug |
 | `Environment` | `string` | yes | — | Environment slug (e.g. `"production"`) |
 | `HTTPClient` | `*http.Client` | no | nil | Custom HTTP client; if set, `Timeout` is ignored |
