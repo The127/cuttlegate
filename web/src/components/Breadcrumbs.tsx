@@ -26,6 +26,12 @@ function useBreadcrumbs(): Crumb[] {
         label: 'Segments',
         to: `/projects/${params.slug}/segments`,
       })
+    } else if (routeId === '/_authenticated/projects/$slug/settings') {
+      const params = match.params as { slug: string }
+      crumbs.push({
+        label: 'Settings',
+        to: `/projects/${params.slug}/settings`,
+      })
     } else if (routeId === '/_authenticated/projects/$slug/environments/$envSlug') {
       const params = match.params as { slug: string; envSlug: string }
       crumbs.push({
