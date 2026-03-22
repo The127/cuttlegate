@@ -35,3 +35,17 @@ if (typeof window !== 'undefined' && !window.ResizeObserver) {
     disconnect() {}
   }
 }
+
+// Clipboard API — jsdom does not implement navigator.clipboard.
+// Define a stub so components using navigator.clipboard.writeText do not throw.
+// Individual tests that assert clipboard behaviour can spy on navigator.clipboard.writeText.
+if (typeof window !== 'undefined' && !navigator.clipboard) {
+  Object.defineProperty(window.navigator, 'clipboard', {
+    value: {
+      writeText: () => Promise.resolve(),
+      readText: () => Promise.resolve(''),
+    },
+    configurable: true,
+    writable: true,
+  })
+}
