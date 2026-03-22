@@ -22,6 +22,8 @@ All server configuration is read from environment variables at startup. No confi
 | `OIDC_SPA_AUTHORITY` | URL | `OIDC_ISSUER` | OIDC authority URL returned to the SPA (browser-reachable). Use when the server reaches the OIDC provider at a different URL than the browser (e.g. Docker internal vs `localhost`). | `http://localhost:5556/dex` |
 | `EVAL_RATE_LIMIT` | int | `600` | Maximum flag evaluation requests per user per rate-limit window. | `1000` |
 | `EVAL_RATE_LIMIT_WINDOW` | duration | `1m` | Window size for evaluation rate limiting. Uses Go `time.ParseDuration` format. | `30s` |
+| `EVAL_EVENT_RETENTION_DAYS` | int | `30` | Number of days to retain evaluation events. Must be > 0. | `90` |
+| `EVAL_EVENT_RETENTION_INTERVAL` | duration | `24h` | How often the retention worker runs to purge expired evaluation events. Uses Go `time.ParseDuration` format. Must be > 0. | `12h` |
 
 ## Health Endpoints
 
