@@ -19,9 +19,20 @@ func pkg(suffix string) string { return module + "/" + suffix }
 //  1. internal/domain imports stdlib only — no external or internal packages
 //  2. internal/adapters/* must not import sibling adapter packages
 //  3. internal/adapters/* must not import cmd
+//  4. internal/app imports stdlib and internal/domain/* only
+//
+// Tests: true causes packages.Load to produce additional test-related package
+// variants beyond the normal production packages. These include:
+//   - External test packages (PkgPath ends with "_test", e.g. "…/app_test")
+//   - Test binary packages (PkgPath ends with ".test", e.g. "…/app.test")
+//   - Synthesised test variants (PkgPath contains "[", e.g. "… [….test]")
+//
+// Production purity rules (1, 3, 4) must not fire for any test-related package.
+// checkRule skips test packages; checkTestImportRule applies only Rule 2 to them.
 func TestImportRules(t *testing.T) {
 	cfg := &packages.Config{
-		Mode: packages.NeedName | packages.NeedImports,
+		Mode:  packages.NeedName | packages.NeedImports,
+		Tests: true,
 	}
 	pkgs, err := packages.Load(cfg, module+"/...")
 	if err != nil {
@@ -34,12 +45,31 @@ func TestImportRules(t *testing.T) {
 	for _, p := range pkgs {
 		for imp := range p.Imports {
 			checkRule(t, p.PkgPath, imp)
+			checkTestImportRule(t, p.PkgPath, imp)
 		}
 	}
 }
 
+// isTestPackage reports whether pkgPath identifies a test-related package variant
+// produced by packages.Load when Tests: true. This includes:
+//   - External test packages ending in "_test" (e.g. "…/app_test")
+//   - Test binary packages ending in ".test" (e.g. "…/app.test")
+//   - Synthesised test variants containing "[" (e.g. "… [….test]")
+func isTestPackage(pkgPath string) bool {
+	return strings.HasSuffix(pkgPath, "_test") ||
+		strings.HasSuffix(pkgPath, ".test") ||
+		strings.Contains(pkgPath, "[")
+}
+
+// checkRule enforces production import rules. It is a no-op for test-related
+// package variants — those are handled by checkTestImportRule.
 func checkRule(t *testing.T, from, imp string) {
 	t.Helper()
+
+	// Test package variants are not subject to production purity rules.
+	if isTestPackage(from) {
+		return
+	}
 
 	// Rule 1: domain layer must not import outside the domain layer.
 	// Intra-domain imports (e.g. ports importing domain entities) are fine.
@@ -54,11 +84,8 @@ func checkRule(t *testing.T, from, imp string) {
 	}
 
 	// Rule 2: adapters must not import sibling adapters.
-	if strings.HasPrefix(from, pkg("internal/adapters/")) &&
-		strings.HasPrefix(imp, pkg("internal/adapters/")) {
-		if adapterDir(from) != adapterDir(imp) {
-			t.Errorf("IMPORT VIOLATION: %s\n\timports %s\n\treason: adapter packages must not cross-import siblings", from, imp)
-		}
+	if isCrossAdapterImport(from, imp) {
+		t.Errorf("IMPORT VIOLATION: %s\n\timports %s\n\treason: adapter packages must not cross-import siblings", from, imp)
 	}
 
 	// Rule 3: adapters must not import cmd.
@@ -75,6 +102,58 @@ func checkRule(t *testing.T, from, imp string) {
 	}
 }
 
+// checkTestImportRule enforces Rule 2 (no cross-adapter imports) for test-related
+// package variants. It is a no-op for production packages. The base package path
+// is recovered via testPackageBasePkg so adapterDir can identify the adapter
+// directory correctly even for "_test" and ".test" suffixed paths.
+func checkTestImportRule(t *testing.T, from, imp string) {
+	t.Helper()
+
+	if !isTestPackage(from) {
+		return
+	}
+	if isCrossAdapterImport(testPackageBasePkg(from), imp) {
+		t.Errorf("IMPORT VIOLATION: %s\n\timports %s\n\treason: adapter packages must not cross-import siblings", from, imp)
+	}
+}
+
+// testPackageBasePkg strips test variant suffixes from a test package path to
+// recover the base production package path. Examples:
+//
+//	"…/adapters/http_test"        → "…/adapters/http"
+//	"…/adapters/http.test"        → "…/adapters/http"
+//	"…/app_test [….test]"         → "…/app"
+func testPackageBasePkg(pkgPath string) string {
+	// Strip synthesised variant suffix (e.g. " [github.com/…]").
+	if i := strings.Index(pkgPath, " ["); i >= 0 {
+		pkgPath = pkgPath[:i]
+	}
+	// Strip ".test" suffix (test binary package).
+	pkgPath = strings.TrimSuffix(pkgPath, ".test")
+	// Strip "_test" suffix (external test package).
+	pkgPath = strings.TrimSuffix(pkgPath, "_test")
+	return pkgPath
+}
+
+// isCrossAdapterImport reports whether from is an adapter package that imports a
+// different sibling adapter package. Used by both checkRule and checkTestImportRule.
+// Imports that are themselves test packages (e.g. "…_test") are skipped — a test
+// binary package (e.g. "…/http.test") legitimately imports its own external test
+// package (e.g. "…/http_test") and that is not a sibling adapter violation.
+func isCrossAdapterImport(from, imp string) bool {
+	if !strings.HasPrefix(from, pkg("internal/adapters/")) {
+		return false
+	}
+	if !strings.HasPrefix(imp, pkg("internal/adapters/")) {
+		return false
+	}
+	// Skip if the import is itself a test package variant.
+	if isTestPackage(imp) {
+		return false
+	}
+	return adapterDir(from) != adapterDir(imp)
+}
+
 // adapterDir returns the immediate subdirectory name under internal/adapters/.
 // e.g. ".../internal/adapters/http/foo" → "http"
 func adapterDir(pkgPath string) string {
@@ -86,9 +165,13 @@ func adapterDir(pkgPath string) string {
 // TestCompositionRootExclusivity enforces that only cmd/server (the composition root)
 // may import both internal/adapters and internal/app. Any other package doing so
 // is wiring adapters and services outside the composition root.
+//
+// Test package variants are exempt: integration test files may legitimately import
+// both layers as part of test setup without violating the composition root rule.
 func TestCompositionRootExclusivity(t *testing.T) {
 	cfg := &packages.Config{
-		Mode: packages.NeedName | packages.NeedImports,
+		Mode:  packages.NeedName | packages.NeedImports,
+		Tests: true,
 	}
 	pkgs, err := packages.Load(cfg, module+"/...")
 	if err != nil {
@@ -99,7 +182,17 @@ func TestCompositionRootExclusivity(t *testing.T) {
 	}
 
 	for _, p := range pkgs {
+		// cmd/server is the legitimate composition root.
 		if strings.HasPrefix(p.PkgPath, pkg("cmd/server")) {
+			continue
+		}
+		// Test package variants are exempt from the composition root check.
+		// They may import both adapters and app as part of test setup.
+		// checkTestImportRule handles cross-adapter enforcement for test packages.
+		if isTestPackage(p.PkgPath) {
+			for imp := range p.Imports {
+				checkTestImportRule(t, p.PkgPath, imp)
+			}
 			continue
 		}
 
