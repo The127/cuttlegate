@@ -21,7 +21,7 @@ const COUNT_STALE_TIME = 60_000
 
 function useProjectCount<T>(slug: string, resource: string, key: string) {
   return useQuery({
-    queryKey: [resource, slug],
+    queryKey: [resource, slug, 'count'],
     queryFn: () =>
       fetchJSON<Record<string, T[]>>(
         `/api/v1/projects/${slug}/${resource}`,
