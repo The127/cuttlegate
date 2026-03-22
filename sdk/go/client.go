@@ -39,6 +39,18 @@ type Client interface {
 	// Reason "not_found" if the key is absent — does not return an error for a
 	// missing key. Prefer Evaluate, Bool, or String for new code.
 	EvaluateFlag(ctx context.Context, key string, evalCtx EvalContext) (FlagResult, error)
+
+	// Subscribe opens a real-time stream of flag state changes for the given key.
+	// Returns an update channel, an error channel, and an error if configuration
+	// is invalid. Both channels are closed when ctx is cancelled.
+	//
+	// The update channel delivers FlagUpdate values when the flag state changes.
+	// The error channel delivers non-fatal errors (reconnect attempts, parse errors)
+	// and a terminal AuthError before closing on 401/403.
+	//
+	// Multiple independent Subscribe calls on the same key return independent
+	// streams — cancelling one does not affect the others.
+	Subscribe(ctx context.Context, key string) (<-chan FlagUpdate, <-chan error, error)
 }
 
 // Config holds the configuration for a Cuttlegate client.
@@ -57,13 +69,18 @@ type Config struct {
 	// Example: "production"
 	Environment string
 
-	// HTTPClient is an optional custom HTTP client. If nil, a default client
-	// with the configured Timeout is used. If provided, the caller owns the
-	// client's timeout — the Timeout field is ignored.
+	// HTTPClient is an optional custom HTTP client for evaluation requests.
+	// If nil, a default client with the configured Timeout is used. If provided,
+	// the caller owns the client's timeout — the Timeout field is ignored.
 	HTTPClient *http.Client
 
-	// Timeout is the request timeout applied when HTTPClient is nil.
-	// Defaults to 10s.
+	// StreamHTTPClient is an optional custom HTTP client for SSE streaming
+	// connections (Subscribe). It must not have a short timeout — SSE
+	// connections are long-lived. If nil, a client with no timeout is used.
+	StreamHTTPClient *http.Client
+
+	// Timeout is the request timeout applied to evaluation requests when HTTPClient is nil.
+	// Defaults to 10s. Does not apply to SSE streaming connections.
 	Timeout time.Duration
 }
 
@@ -93,22 +110,29 @@ func NewClient(cfg Config) (Client, error) {
 		httpClient = &http.Client{Timeout: timeout}
 	}
 
+	streamHTTPClient := cfg.StreamHTTPClient
+	if streamHTTPClient == nil {
+		streamHTTPClient = &http.Client{} // no timeout — SSE connections are long-lived
+	}
+
 	return &client{
-		baseURL:      cfg.BaseURL,
-		serviceToken: cfg.ServiceToken,
-		project:      cfg.Project,
-		environment:  cfg.Environment,
-		httpClient:   httpClient,
+		baseURL:          cfg.BaseURL,
+		serviceToken:     cfg.ServiceToken,
+		project:          cfg.Project,
+		environment:      cfg.Environment,
+		httpClient:       httpClient,
+		streamHTTPClient: streamHTTPClient,
 	}, nil
 }
 
 // client is the unexported concrete implementation of Client.
 type client struct {
-	baseURL      string
-	serviceToken string
-	project      string
-	environment  string
-	httpClient   *http.Client
+	baseURL          string
+	serviceToken     string
+	project          string
+	environment      string
+	httpClient       *http.Client
+	streamHTTPClient *http.Client
 }
 
 type bulkEvalRequest struct {

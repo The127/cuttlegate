@@ -173,3 +173,15 @@ func (m *mockClient) Reset() {
 	m.flags = make(map[string]flagConfig)
 	m.evaluated = make(map[string]struct{})
 }
+
+// Subscribe returns an immediately-closed update channel and error channel.
+// The mock does not simulate real-time streaming — it satisfies the interface
+// for code that type-checks against cuttlegate.Client. Use a real httptest.Server
+// if your test needs to exercise the Subscribe code path.
+func (m *mockClient) Subscribe(ctx context.Context, key string) (<-chan cuttlegate.FlagUpdate, <-chan error, error) {
+	updates := make(chan cuttlegate.FlagUpdate)
+	errs := make(chan error)
+	close(updates)
+	close(errs)
+	return updates, errs, nil
+}
