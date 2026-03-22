@@ -46,7 +46,8 @@
     "api_keys": "API Keys",
     "copy_slug_aria": "Copy project slug {{slug}}",
     "failed_to_load": "Failed to load {{resource}}.",
-    "failed_to_load_env": "Failed to load"
+    "failed_to_load_env": "Failed to load",
+    "audit_log": "Audit Log"
   },
   "settings": {
     "title": "Settings",
@@ -171,5 +172,21 @@
     "next": "Next",
     "empty": "No flags in this project yet. Create a flag to see the comparison matrix.",
     "error": "Failed to load comparison matrix."
+  },
+  "audit": {
+    "title": "Audit Log",
+    "nav_link": "Audit Log",
+    "column_timestamp": "Timestamp",
+    "column_actor": "Actor",
+    "column_action": "Action",
+    "column_flag": "Flag",
+    "column_environment": "Environment",
+    "empty": "No audit entries yet",
+    "error": "Failed to load audit log.",
+    "load_more": "Load more",
+    "loading_more": "Loading…",
+    "filter_placeholder": "Filter by flag key…",
+    "filter_label": "Filter by flag key",
+    "timestamp_aria": "{{absolute}} ({{relative}})"
   }
 }

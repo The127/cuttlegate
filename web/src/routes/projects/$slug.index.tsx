@@ -87,6 +87,7 @@ function ProjectDashboard() {
           <QuickLink label={t('dashboard.settings')} to={`/projects/${project.slug}/settings`} />
           <QuickLink label={t('dashboard.members')} to={`/projects/${project.slug}/members`} />
           <QuickLink label={t('dashboard.api_keys')} to={`/projects/${project.slug}/api-keys`} />
+          <QuickLink label={t('dashboard.audit_log')} to={`/projects/${project.slug}/audit`} />
         </div>
       </section>
 
