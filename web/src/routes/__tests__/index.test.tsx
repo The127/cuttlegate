@@ -13,6 +13,7 @@ vi.mock('@tanstack/react-router', async () => {
       useParams: () => ({}),
     }),
     Link: ({ children, to, ...props }: any) => <a href={to} {...props}>{children}</a>,
+    useNavigate: () => vi.fn(),
   }
 })
 
@@ -41,9 +42,12 @@ async function getHomePage() {
 async function renderHome() {
   const qc = createQueryClient()
   const HomePage = await getHomePage()
+  const { CreateProjectDialogProvider } = await import('../../components/CreateProjectDialog')
   return render(
     <QueryClientProvider client={qc}>
-      <HomePage />
+      <CreateProjectDialogProvider>
+        <HomePage />
+      </CreateProjectDialogProvider>
     </QueryClientProvider>,
   )
 }

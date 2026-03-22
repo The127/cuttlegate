@@ -2,6 +2,7 @@ import { createRoute, Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { authenticatedRoute } from './_authenticated'
 import { fetchJSON } from '../api'
+import { useOpenCreateProjectDialog } from '../components/CreateProjectDialog'
 
 interface Project {
   id: string
@@ -30,6 +31,7 @@ function useProjectCount<T>(slug: string, resource: string, key: string) {
 }
 
 function HomePage() {
+  const openCreateDialog = useOpenCreateProjectDialog()
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['projects'],
     queryFn: () =>
@@ -61,17 +63,27 @@ function HomePage() {
         <p className="mt-2 text-sm text-gray-600">
           Create your first project to get started with feature flags.
         </p>
-        {/* CTA wired in #175 (Project creation UI) */}
-        <p className="mt-4 text-sm font-medium text-blue-600">
+        <button
+          onClick={openCreateDialog}
+          className="mt-4 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
+        >
           Create your first project
-        </p>
+        </button>
       </div>
     )
   }
 
   return (
     <div className="p-8">
-      <h1 className="text-lg font-semibold text-gray-900 mb-6">Projects</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-lg font-semibold text-gray-900">Projects</h1>
+        <button
+          onClick={openCreateDialog}
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
+        >
+          New Project
+        </button>
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {projects.map((project) => (
           <ProjectCard key={project.id} project={project} />

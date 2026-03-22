@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useLocation, useNavigate } from '@tanstack/react-router'
 import { fetchJSON } from '../api'
+import { useOpenCreateProjectDialog } from './CreateProjectDialog'
 
 interface Project {
   id: string
@@ -27,9 +28,12 @@ function useActiveParams() {
   }
 }
 
+const NEW_PROJECT_SENTINEL = '__new__'
+
 export function ProjectSwitcher() {
   const navigate = useNavigate()
   const { projectSlug, envSlug } = useActiveParams()
+  const openCreateDialog = useOpenCreateProjectDialog()
 
   const projectsQuery = useQuery({
     queryKey: ['projects'],
@@ -45,9 +49,18 @@ export function ProjectSwitcher() {
     enabled: projectSlug !== null,
   })
 
+  const handleProjectChange = (value: string) => {
+    if (value === NEW_PROJECT_SENTINEL) {
+      openCreateDialog()
+      return
+    }
+    if (value) {
+      void navigate({ to: '/projects/$slug', params: { slug: value } })
+    }
+  }
+
   return (
     <div className="flex items-center gap-3 px-4 py-2 border-b border-gray-200 bg-white">
-      {/* Project selector */}
       <div className="flex items-center gap-2">
         <label htmlFor="project-select" className="text-xs font-medium text-gray-500 uppercase tracking-wide">
           Project
@@ -67,19 +80,18 @@ export function ProjectSwitcher() {
         ) : projectsQuery.data?.length === 0 ? (
           <span className="text-xs text-gray-500">
             No projects yet —{' '}
-            <a href="/projects/new" className="text-blue-600 hover:text-blue-800">
+            <button
+              onClick={openCreateDialog}
+              className="text-blue-600 hover:text-blue-800"
+            >
               create one
-            </a>
+            </button>
           </span>
         ) : (
           <select
             id="project-select"
             value={projectSlug ?? ''}
-            onChange={(e) => {
-              if (e.target.value) {
-                void navigate({ to: '/projects/$slug', params: { slug: e.target.value } })
-              }
-            }}
+            onChange={(e) => handleProjectChange(e.target.value)}
             className="text-sm border border-gray-200 rounded px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Select project…</option>
@@ -88,11 +100,11 @@ export function ProjectSwitcher() {
                 {p.name}
               </option>
             ))}
+            <option value={NEW_PROJECT_SENTINEL}>+ New Project…</option>
           </select>
         )}
       </div>
 
-      {/* Environment selector — shown only when a project is active */}
       {projectSlug !== null && (
         <div className="flex items-center gap-2">
           <span className="text-gray-300">/</span>
