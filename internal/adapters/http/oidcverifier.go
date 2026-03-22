@@ -10,19 +10,40 @@ import (
 	"github.com/karo/cuttlegate/internal/domain"
 )
 
+// MissingRolePolicy controls behaviour when a verified OIDC token carries no
+// role claim. reject is the secure default; viewer enables a permissive
+// fallback for operators who need it.
+type MissingRolePolicy string
+
+const (
+	// MissingRolePolicyReject returns 401 when the role claim is absent.
+	// This is the default — a missing claim is treated as a misconfiguration.
+	MissingRolePolicyReject MissingRolePolicy = "reject"
+
+	// MissingRolePolicyViewer grants the viewer role when the role claim is
+	// absent and emits a warning log. Opt-in via OIDC_MISSING_ROLE_POLICY=viewer.
+	MissingRolePolicyViewer MissingRolePolicy = "viewer"
+)
+
+// errMissingRoleClaim is returned by Verify when the token has no role claim
+// and the policy is MissingRolePolicyReject.
+var errMissingRoleClaim = errors.New("oidc: missing role claim")
+
 // OIDCVerifier implements ports.TokenVerifier by validating Bearer tokens
 // against the OIDC provider's JWKS. JWKS keys are fetched on first use and
 // cached automatically by the go-oidc library.
 type OIDCVerifier struct {
-	verifier  *gooidc.IDTokenVerifier
-	roleClaim string
-	logger    *slog.Logger
+	verifier          *gooidc.IDTokenVerifier
+	roleClaim         string
+	missingRolePolicy MissingRolePolicy
+	logger            *slog.Logger
 }
 
 // NewOIDCVerifier discovers the OIDC provider at issuer and returns a verifier.
 // audience is the expected aud claim — pass an empty string to skip the check.
 // roleClaim is the JWT claim name carrying the Cuttlegate role (e.g. "role").
-func NewOIDCVerifier(ctx context.Context, issuer, audience, roleClaim string, logger *slog.Logger) (*OIDCVerifier, error) {
+// policy controls behaviour when the role claim is absent from a verified token.
+func NewOIDCVerifier(ctx context.Context, issuer, audience, roleClaim string, policy MissingRolePolicy, logger *slog.Logger) (*OIDCVerifier, error) {
 	provider, err := gooidc.NewProvider(ctx, issuer)
 	if err != nil {
 		return nil, err
@@ -34,9 +55,10 @@ func NewOIDCVerifier(ctx context.Context, issuer, audience, roleClaim string, lo
 		cfg.SkipClientIDCheck = true
 	}
 	return &OIDCVerifier{
-		verifier:  provider.Verifier(cfg),
-		roleClaim: roleClaim,
-		logger:    logger,
+		verifier:          provider.Verifier(cfg),
+		roleClaim:         roleClaim,
+		missingRolePolicy: policy,
+		logger:            logger,
 	}, nil
 }
 
@@ -61,7 +83,10 @@ func (v *OIDCVerifier) Verify(ctx context.Context, token string) (domain.User, e
 	name, _ := claims["name"].(string)
 
 	roleStr := extractRoleClaim(claims[v.roleClaim])
-	role := resolveRole(ctx, v.logger, roleStr, sub)
+	role, err := resolveRole(ctx, v.logger, roleStr, sub, v.missingRolePolicy)
+	if err != nil {
+		return domain.User{}, err
+	}
 
 	return domain.User{Sub: sub, Email: email, Name: name, Role: role}, nil
 }
@@ -93,18 +118,37 @@ func extractRoleClaim(raw any) string {
 	return ""
 }
 
-// resolveRole maps a raw role claim string to a domain.Role. If the string is
-// non-empty but unrecognised, it logs a warning and defaults to viewer.
-func resolveRole(ctx context.Context, logger *slog.Logger, roleStr, sub string) domain.Role {
+// resolveRole maps a raw role claim string to a domain.Role.
+//
+// If roleStr is empty (claim absent), behaviour depends on policy:
+//   - MissingRolePolicyReject (default): returns errMissingRoleClaim; subject is logged
+//   - MissingRolePolicyViewer: grants viewer and emits a WARN log with subject and policy
+//
+// If roleStr is non-empty but unrecognised, logs a warning and defaults to viewer.
+func resolveRole(ctx context.Context, logger *slog.Logger, roleStr, sub string, policy MissingRolePolicy) (domain.Role, error) {
+	if roleStr == "" {
+		if policy == MissingRolePolicyViewer {
+			logger.WarnContext(ctx, "oidc: missing role claim, defaulting to viewer",
+				"sub", sub,
+				"policy", string(policy),
+			)
+			return domain.RoleViewer, nil
+		}
+		// Default: MissingRolePolicyReject
+		logger.WarnContext(ctx, "oidc: missing role claim, rejecting token",
+			"sub", sub,
+			"policy", string(policy),
+		)
+		return domain.Role(""), errMissingRoleClaim
+	}
+
 	role := domain.Role(roleStr)
 	if role.Valid() {
-		return role
+		return role, nil
 	}
-	if roleStr != "" {
-		logger.WarnContext(ctx, "unrecognised OIDC role claim, defaulting to viewer",
-			"role", roleStr,
-			"sub", sub,
-		)
-	}
-	return domain.RoleViewer
+	logger.WarnContext(ctx, "unrecognised OIDC role claim, defaulting to viewer",
+		"role", roleStr,
+		"sub", sub,
+	)
+	return domain.RoleViewer, nil
 }

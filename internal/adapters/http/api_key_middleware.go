@@ -79,7 +79,7 @@ func RequireBearerOrAPIKey(verifier ports.TokenVerifier, apiKeys apiKeyAuthentic
 			// OIDC path: standard Bearer token verification
 			user, err := verifier.Verify(r.Context(), token)
 			if err != nil {
-				writeUnauthorized(w)
+				writeVerifyError(w, err)
 				return
 			}
 

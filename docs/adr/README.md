@@ -44,3 +44,4 @@ See `template.md`. Status values: `Proposed`, `Accepted`, `Deprecated`, `Superse
 | [0014](0014-typed-entity-ids.md) | Typed entity IDs to replace bare string IDs | Accepted |
 | [0015](0015-radix-select-as-only-radix-primitive.md) | Radix Select as the only Radix UI primitive | Accepted |
 | [0016](0016-user-profile-cache.md) | User profile cache — upsert from OIDC token claims | Accepted |
+| [0017](0017-oidc-missing-role-policy.md) | OIDC missing role claim — reject by default, viewer opt-in | Accepted |

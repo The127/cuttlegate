@@ -56,6 +56,7 @@ func run() error {
 		cfg.OIDCIssuer,
 		cfg.OIDCAudience,
 		cfg.OIDCRoleClaim,
+		cfg.OIDCMissingRolePolicy,
 		slog.Default(),
 	)
 	if err != nil {

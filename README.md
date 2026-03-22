@@ -37,3 +37,16 @@ just test   # run tests
 just ci     # lint + all tests — mirrors CI exactly (requires Docker for postgres)
 ```
 
+
+## Configuration
+
+Key environment variables (see `docker-compose.yml` for the full list):
+
+| Variable | Default | Description |
+|---|---|---|
+| `OIDC_ISSUER` | — (required) | OIDC provider base URL for discovery |
+| `OIDC_AUDIENCE` | — | Expected `aud` claim; empty skips the check |
+| `OIDC_ROLE_CLAIM` | `role` | JWT claim name carrying the Cuttlegate role (`admin`, `editor`, `viewer`) |
+| `OIDC_MISSING_ROLE_POLICY` | `reject` | What to do when a valid token has no role claim. `reject` returns 401; `viewer` grants viewer role and logs a warning. Any other value is a startup error. |
+| `DATABASE_URL` | — | Postgres connection string |
+| `ADDR` | `:8080` | Listen address |
