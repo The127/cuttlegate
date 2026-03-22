@@ -90,6 +90,12 @@
     "context_expand_aria": "Expand input context for row {{id}}",
     "rule_id_label": "Rule"
   },
+  "table": {
+    "col_key": "Key",
+    "col_name": "Name",
+    "col_default_variant": "Default",
+    "col_status": "Status"
+  },
   "compare": {
     "title": "Compare Environments",
     "flag_column": "Flag",

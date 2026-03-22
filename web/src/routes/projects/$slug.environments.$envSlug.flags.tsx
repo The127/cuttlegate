@@ -1,10 +1,20 @@
 import { createRoute, Link } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useTranslation, Trans } from 'react-i18next'
 import { projectEnvRoute } from './$slug.environments.$envSlug'
 import { fetchJSON, patchJSON, postJSON, deleteRequest, APIError } from '../../api'
-import { Button, Input, Label, Select, SelectItem } from '../../components/ui'
+import {
+  Button,
+  Input,
+  Label,
+  Select,
+  SelectItem,
+  DataTable,
+  CopyableCode,
+  StatusBadge,
+} from '../../components/ui'
+import type { ColumnDef } from '../../components/ui'
 
 interface Variant {
   key: string
@@ -61,6 +71,98 @@ function FlagListPage() {
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const [showCreate, setShowCreate] = useState(false)
 
+  const columns = useMemo<ColumnDef<FlagItem>[]>(
+    () => [
+      {
+        key: 'key',
+        header: t('table.col_key'),
+        sortable: true,
+        sortValue: (f) => f.key,
+        cell: (f) => (
+          <CopyableCode
+            value={f.key}
+            aria-label={t('list.copy_key_aria', { key: f.key })}
+          />
+        ),
+      },
+      {
+        key: 'name',
+        header: t('table.col_name'),
+        sortable: true,
+        sortValue: (f) => f.name,
+        cell: (f) => (
+          <Link
+            to="/projects/$slug/environments/$envSlug/flags/$key"
+            params={{ slug, envSlug, key: f.key }}
+            className="text-sm text-gray-700 truncate hover:text-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
+          >
+            {f.name}
+          </Link>
+        ),
+      },
+      {
+        key: 'default_variant',
+        header: t('table.col_default_variant'),
+        cell: (f) => (
+          <span className="font-mono text-xs text-gray-500 bg-gray-100 border border-gray-200 rounded px-1.5 py-0.5">
+            {f.default_variant_key}
+          </span>
+        ),
+      },
+      {
+        key: 'status',
+        header: t('table.col_status'),
+        cell: (f) => {
+          const isToggling = toggleMutation.isPending && toggleMutation.variables?.key === f.key
+          const isError = toggleErrorKey === f.key
+          const status = isError ? 'warning' : f.enabled ? 'enabled' : 'disabled'
+          const label = isError
+            ? t('toggle.failed')
+            : f.enabled
+              ? t('toggle.enabled')
+              : t('toggle.disabled')
+          return (
+            <button
+              onClick={() => toggleMutation.mutate({ key: f.key, enabled: !f.enabled })}
+              disabled={isToggling}
+              aria-pressed={f.enabled}
+              aria-label={f.enabled ? t('toggle.disable') : t('toggle.enable')}
+              className="focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded-full disabled:opacity-60"
+            >
+              <StatusBadge status={status} label={label} />
+            </button>
+          )
+        },
+      },
+      {
+        key: 'actions',
+        header: '',
+        cell: (f) => (
+          <button
+            onClick={() => setPendingDelete(f.key)}
+            aria-label={t('list.delete_flag_aria', { key: f.key })}
+            className="text-gray-400 hover:text-red-600 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 rounded p-0.5"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-4 h-4"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fillRule="evenodd"
+                d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
+        ),
+      },
+    ],
+    [t, slug, envSlug, toggleMutation, toggleErrorKey],
+  )
+
   if (isLoading) return <FlagListSkeleton />
   if (isError) return <FlagListError onRetry={() => void refetch()} />
 
@@ -73,26 +175,14 @@ function FlagListPage() {
         <Button onClick={() => setShowCreate(true)}>{t('list.new_flag')}</Button>
       </div>
 
-      {flags.length === 0 ? (
-        <EmptyState onCreateClick={() => setShowCreate(true)} />
-      ) : (
-        <ul className="divide-y divide-gray-100 border border-gray-200 rounded-lg bg-white">
-          {flags.map((flag) => (
-            <FlagRow
-              key={flag.id}
-              flag={flag}
-              slug={slug}
-              envSlug={envSlug}
-              onToggle={(enabled) => toggleMutation.mutate({ key: flag.key, enabled })}
-              onDeleteIntent={() => setPendingDelete(flag.key)}
-              isToggling={
-                toggleMutation.isPending && toggleMutation.variables?.key === flag.key
-              }
-              isToggleError={toggleErrorKey === flag.key}
-            />
-          ))}
-        </ul>
-      )}
+      <div className="border border-gray-200 rounded-lg bg-white overflow-hidden">
+        <DataTable
+          columns={columns}
+          data={flags}
+          aria-label={t('list.title')}
+          emptyState={<EmptyState onCreateClick={() => setShowCreate(true)} />}
+        />
+      </div>
 
       {showCreate && (
         <CreateFlagModal
@@ -119,119 +209,6 @@ function FlagListPage() {
         />
       )}
     </div>
-  )
-}
-
-function FlagRow({
-  flag,
-  slug,
-  envSlug,
-  onToggle,
-  onDeleteIntent,
-  isToggling,
-  isToggleError,
-}: {
-  flag: FlagItem
-  slug: string
-  envSlug: string
-  onToggle: (enabled: boolean) => void
-  onDeleteIntent: () => void
-  isToggling: boolean
-  isToggleError: boolean
-}) {
-  const { t } = useTranslation('flags')
-  const [copied, setCopied] = useState(false)
-
-  function copyKey() {
-    void navigator.clipboard
-      .writeText(flag.key)
-      .then(() => {
-        setCopied(true)
-        setTimeout(() => setCopied(false), 1500)
-      })
-      .catch(() => {
-        // clipboard write unavailable (non-HTTPS or permission denied)
-      })
-  }
-
-  return (
-    <li className="flex items-center justify-between px-4 py-3 gap-4">
-      <div className="flex items-center gap-3 min-w-0">
-        {/* Flag key — click to copy */}
-        <div className="relative">
-          <button
-            onClick={copyKey}
-            className="font-mono text-sm text-gray-800 hover:text-blue-600 bg-gray-50 border border-gray-200 rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
-            aria-label={t('list.copy_key_aria', { key: flag.key })}
-          >
-            {flag.key}
-          </button>
-          {copied && (
-            <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-xs bg-gray-800 text-white rounded px-2 py-0.5 whitespace-nowrap pointer-events-none">
-              {t('states.copied', { ns: 'common' })}
-            </span>
-          )}
-        </div>
-
-        {/* Flag name — links to detail view */}
-        <Link
-          to="/projects/$slug/environments/$envSlug/flags/$key"
-          params={{ slug, envSlug, key: flag.key }}
-          className="text-sm text-gray-700 truncate hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
-        >
-          {flag.name}
-        </Link>
-
-        {/* Default variant badge */}
-        <span className="font-mono text-xs text-gray-500 bg-gray-100 border border-gray-200 rounded px-1.5 py-0.5 shrink-0">
-          {flag.default_variant_key}
-        </span>
-      </div>
-
-      <div className="flex items-center gap-3 shrink-0">
-        {/* Enabled/disabled pill toggle */}
-        <button
-          onClick={() => onToggle(!flag.enabled)}
-          disabled={isToggling}
-          aria-pressed={flag.enabled}
-          aria-label={flag.enabled ? t('toggle.disable') : t('toggle.enable')}
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-60 ${
-            isToggleError
-              ? 'bg-red-50 text-red-700 border-red-200 focus:ring-red-500'
-              : flag.enabled
-                ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 focus:ring-green-500'
-                : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200 focus:ring-gray-400'
-          }`}
-        >
-          <span
-            className={`w-1.5 h-1.5 rounded-full ${isToggleError ? 'bg-red-500' : flag.enabled ? 'bg-green-500' : 'bg-gray-400'}`}
-            aria-hidden="true"
-          />
-          {isToggleError ? t('toggle.failed') : flag.enabled ? t('toggle.enabled') : t('toggle.disabled')}
-        </button>
-
-        {/* Delete */}
-        <button
-          onClick={onDeleteIntent}
-          aria-label={t('list.delete_flag_aria', { key: flag.key })}
-          className="text-gray-400 hover:text-red-600 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 rounded p-0.5"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-4 h-4"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            aria-hidden="true"
-          >
-            <path
-              fillRule="evenodd"
-              d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-              clipRule="evenodd"
-            />
-          </svg>
-        </button>
-      </div>
-    </li>
   )
 }
 
@@ -424,7 +401,8 @@ function CreateFlagModal({
             <Button
               type="submit"
               variant="primary"
-              disabled={createMutation.isPending || !!keyError}
+              loading={createMutation.isPending}
+              disabled={!!keyError}
             >
               {createMutation.isPending ? t('states.creating', { ns: 'common' }) : t('actions.create', { ns: 'common' })}
             </Button>
@@ -485,7 +463,7 @@ function DeleteConfirmModal({
           <Button autoFocus variant="secondary" onClick={onCancel} disabled={isDeleting}>
             {t('actions.cancel', { ns: 'common' })}
           </Button>
-          <Button variant="danger" onClick={onConfirm} disabled={isDeleting}>
+          <Button variant="destructive" onClick={onConfirm} loading={isDeleting}>
             {isDeleting ? t('states.deleting', { ns: 'common' }) : t('actions.delete', { ns: 'common' })}
           </Button>
         </div>
