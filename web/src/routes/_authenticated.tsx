@@ -1,9 +1,11 @@
-import { Outlet, createRoute } from '@tanstack/react-router'
+import { Outlet, createRoute, useRouterState } from '@tanstack/react-router'
+import { useEffect, useRef } from 'react'
 import { rootRoute } from './__root'
 import { getUserManager } from '../auth'
 import { ProjectSwitcher } from '../components/ProjectSwitcher'
 import { CreateProjectDialogProvider } from '../components/CreateProjectDialog'
 import { Breadcrumbs } from '../components/Breadcrumbs'
+import { LiveAnnouncerProvider } from '../hooks/useLiveAnnouncer'
 import { APIError } from '../api'
 
 export const authenticatedRoute = createRoute({
@@ -51,15 +53,28 @@ function RouteError({ error }: { error: unknown }) {
 }
 
 function AppShell() {
+  const mainRef = useRef<HTMLElement>(null)
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const prevPathname = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (prevPathname.current !== null && prevPathname.current !== pathname) {
+      mainRef.current?.focus()
+    }
+    prevPathname.current = pathname
+  }, [pathname])
+
   return (
-    <CreateProjectDialogProvider>
-      <div className="min-h-screen bg-gray-50">
-        <ProjectSwitcher />
-        <Breadcrumbs />
-        <main>
-          <Outlet />
-        </main>
-      </div>
-    </CreateProjectDialogProvider>
+    <LiveAnnouncerProvider>
+      <CreateProjectDialogProvider>
+        <div className="min-h-screen bg-gray-50">
+          <ProjectSwitcher />
+          <Breadcrumbs />
+          <main id="main-content" ref={mainRef} tabIndex={-1} className="outline-none">
+            <Outlet />
+          </main>
+        </div>
+      </CreateProjectDialogProvider>
+    </LiveAnnouncerProvider>
   )
 }

@@ -1,8 +1,9 @@
-import { createContext, useContext, useRef, useState, useEffect } from 'react'
+import { createContext, useCallback, useContext, useRef, useState, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { postJSON, APIError } from '../api'
 import { Button, Input, Label } from './ui'
+import { useLiveAnnouncer } from '../hooks/useLiveAnnouncer'
 
 interface ProjectResponse {
   id: string
@@ -30,11 +31,28 @@ export function useOpenCreateProjectDialog(): () => void {
 
 export function CreateProjectDialogProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false)
+  const triggerRef = useRef<HTMLElement | null>(null)
+
+  const handleOpen = useCallback(() => {
+    triggerRef.current = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null
+    setOpen(true)
+  }, [])
+
+  const handleClose = useCallback(() => {
+    setOpen(false)
+    const trigger = triggerRef.current
+    triggerRef.current = null
+    if (trigger) {
+      requestAnimationFrame(() => trigger.focus())
+    }
+  }, [])
 
   return (
-    <CreateProjectDialogContext.Provider value={() => setOpen(true)}>
+    <CreateProjectDialogContext.Provider value={handleOpen}>
       {children}
-      <CreateProjectDialog open={open} onClose={() => setOpen(false)} />
+      <CreateProjectDialog open={open} onClose={handleClose} />
     </CreateProjectDialogContext.Provider>
   )
 }
@@ -49,6 +67,7 @@ function CreateProjectDialog({ open, onClose }: CreateProjectDialogProps) {
   const nameRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const announce = useLiveAnnouncer()
 
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
@@ -83,6 +102,7 @@ function CreateProjectDialog({ open, onClose }: CreateProjectDialogProps) {
       postJSON<ProjectResponse>('/api/v1/projects', body),
     onSuccess: (data) => {
       void queryClient.invalidateQueries({ queryKey: ['projects'] })
+      announce(`Project ${data.name} created`)
       handleClose()
       void navigate({ to: '/projects/$slug', params: { slug: data.slug } })
     },
@@ -160,7 +180,7 @@ function CreateProjectDialog({ open, onClose }: CreateProjectDialogProps) {
         </div>
 
         {apiError && (
-          <p className="mt-3 text-xs text-red-600">{apiError}</p>
+          <p role="alert" className="mt-3 text-xs text-red-600">{apiError}</p>
         )}
 
         <div className="mt-6 flex justify-end gap-3">

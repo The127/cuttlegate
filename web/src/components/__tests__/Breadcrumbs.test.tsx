@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import { renderWithAxe } from '../../test/renderWithAxe'
 
 // Mock TanStack Router — control useMatches return value
 const mockMatches: any[] = []
@@ -128,5 +129,17 @@ describe('Breadcrumbs', () => {
 
     const nav = screen.getByRole('navigation', { name: 'Breadcrumb' })
     expect(nav).toBeInTheDocument()
+  })
+
+  it('passes axe accessibility check', async () => {
+    setMatches([
+      { routeId: '__root__' },
+      { routeId: '/_authenticated' },
+      { routeId: '/_authenticated/projects/$slug', params: { slug: 'my-proj' }, loaderData: { name: 'My Project' } },
+      { routeId: '/_authenticated/projects/$slug/environments/$envSlug', params: { slug: 'my-proj', envSlug: 'staging' } },
+      { routeId: '/_authenticated/projects/$slug/environments/$envSlug/flags/$key/rules' },
+    ])
+    const { axeResults } = await renderWithAxe(<Breadcrumbs />)
+    expect(axeResults).toHaveNoViolations()
   })
 })
