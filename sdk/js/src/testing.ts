@@ -30,6 +30,7 @@ const MOCK_EVALUATED_AT = '1970-01-01T00:00:00Z';
 interface FlagConfig {
   enabled: boolean;
   value: string | null;
+  valueKey: string;
 }
 
 export interface MockCuttlegateClient extends CuttlegateClient {
@@ -54,6 +55,7 @@ export function createMockClient(): MockCuttlegateClient {
           key,
           enabled: config.enabled,
           value: config.value,
+          valueKey: config.valueKey,
           reason: 'mock',
           evaluatedAt: MOCK_EVALUATED_AT,
         });
@@ -65,17 +67,18 @@ export function createMockClient(): MockCuttlegateClient {
       evaluated.add(key);
       const config = flags.get(key);
       if (!config) {
-        return { enabled: false, value: null, reason: 'mock_default' };
+        return { enabled: false, value: null, valueKey: '', reason: 'mock_default' };
       }
       return {
         enabled: config.enabled,
         value: config.value,
+        valueKey: config.valueKey,
         reason: 'mock',
       };
     },
 
     enable(key: string): void {
-      flags.set(key, { enabled: true, value: null });
+      flags.set(key, { enabled: true, value: null, valueKey: 'true' });
     },
 
     disable(key: string): void {
@@ -83,7 +86,7 @@ export function createMockClient(): MockCuttlegateClient {
     },
 
     setVariant(key: string, value: string): void {
-      flags.set(key, { enabled: true, value });
+      flags.set(key, { enabled: true, value, valueKey: value });
     },
 
     assertEvaluated(key: string): void {

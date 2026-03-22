@@ -5,7 +5,10 @@ import type { CuttlegateConfig, EvalContext } from './types.js';
 export interface EvaluationResult {
   key: string;
   enabled: boolean;
+  /** @deprecated Prefer valueKey — null for bool flags. */
   value: string | null;
+  /** Always present. "true"/"false" for bool flags, variant key for all others. */
+  valueKey: string;
   reason: string;
   evaluatedAt: string;
 }
@@ -13,7 +16,10 @@ export interface EvaluationResult {
 /** Result of evaluating a single flag by key. */
 export interface FlagResult {
   enabled: boolean;
+  /** @deprecated Prefer valueKey — null for bool flags. */
   value: string | null;
+  /** Always present. "true"/"false" for bool flags, variant key for all others. */
+  valueKey: string;
   reason: string;
 }
 
@@ -42,6 +48,7 @@ const BulkEvaluateResponseSchema = z.object({
       key: z.string(),
       enabled: z.boolean(),
       value: z.string().nullable(),
+      value_key: z.string().default(''),
       reason: z.string(),
       type: z.string(),
     }),
@@ -130,6 +137,7 @@ export function createClient(config: CuttlegateConfig): CuttlegateClient {
       key: flag.key,
       enabled: flag.enabled,
       value: flag.value,
+      valueKey: flag.value_key || flag.value || '',
       reason: flag.reason,
       evaluatedAt,
     }));
@@ -139,9 +147,9 @@ export function createClient(config: CuttlegateConfig): CuttlegateClient {
     const results = await evaluate(context);
     const match = results.find((r) => r.key === key);
     if (!match) {
-      return { enabled: false, value: null, reason: 'not_found' };
+      return { enabled: false, value: null, valueKey: '', reason: 'not_found' };
     }
-    return { enabled: match.enabled, value: match.value, reason: match.reason };
+    return { enabled: match.enabled, value: match.value, valueKey: match.valueKey, reason: match.reason };
   }
 
   return { evaluate, evaluateFlag };

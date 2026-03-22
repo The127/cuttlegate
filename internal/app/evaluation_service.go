@@ -11,11 +11,12 @@ import (
 
 // EvalView is the result of evaluating a flag for a given user context.
 type EvalView struct {
-	Key     string
-	Enabled bool
-	Value   *string // nil for bool flags
-	Reason  domain.EvalReason
-	Type    domain.FlagType
+	Key      string
+	Enabled  bool
+	Value    *string // nil for bool flags; deprecated — prefer ValueKey
+	ValueKey string  // always present; "true"/"false" for bool flags, variant key for all others
+	Reason   domain.EvalReason
+	Type     domain.FlagType
 }
 
 // EvaluationService orchestrates flag evaluation use cases.
@@ -74,10 +75,11 @@ func (s *EvaluationService) Evaluate(ctx context.Context, projectID, environment
 	result := domain.Evaluate(flag, state, rules, evalCtx, userSegments)
 
 	view := &EvalView{
-		Key:     flag.Key,
-		Enabled: result.Reason != domain.ReasonDisabled,
-		Reason:  result.Reason,
-		Type:    flag.Type,
+		Key:      flag.Key,
+		Enabled:  result.Reason != domain.ReasonDisabled,
+		ValueKey: result.VariantKey,
+		Reason:   result.Reason,
+		Type:     flag.Type,
 	}
 	if flag.Type != domain.FlagTypeBool {
 		view.Value = &result.VariantKey
@@ -133,10 +135,11 @@ func (s *EvaluationService) EvaluateAll(ctx context.Context, projectID, environm
 		result := domain.Evaluate(flag, state, rules, evalCtx, userSegments)
 
 		view := EvalView{
-			Key:     flag.Key,
-			Enabled: result.Reason != domain.ReasonDisabled,
-			Reason:  result.Reason,
-			Type:    flag.Type,
+			Key:      flag.Key,
+			Enabled:  result.Reason != domain.ReasonDisabled,
+			ValueKey: result.VariantKey,
+			Reason:   result.Reason,
+			Type:     flag.Type,
 		}
 		if flag.Type != domain.FlagTypeBool {
 			view.Value = &result.VariantKey

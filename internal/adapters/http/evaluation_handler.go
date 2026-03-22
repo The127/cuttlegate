@@ -47,11 +47,12 @@ type evalContextJSON struct {
 }
 
 type evaluateResponse struct {
-	Key     string  `json:"key"`
-	Enabled bool    `json:"enabled"`
-	Value   *string `json:"value"`
-	Reason  string  `json:"reason"`
-	Type    string  `json:"type"`
+	Key      string  `json:"key"`
+	Enabled  bool    `json:"enabled"`
+	Value    *string `json:"value"`
+	ValueKey string  `json:"value_key"`
+	Reason   string  `json:"reason"`
+	Type     string  `json:"type"`
 }
 
 func (h *EvaluationHandler) resolveEvalRequest(w http.ResponseWriter, r *http.Request) (*domain.Project, *domain.Environment, domain.EvalContext, bool) {
@@ -114,11 +115,12 @@ func (h *EvaluationHandler) evaluate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, evaluateResponse{
-		Key:     view.Key,
-		Enabled: view.Enabled,
-		Value:   view.Value,
-		Reason:  string(view.Reason),
-		Type:    string(view.Type),
+		Key:      view.Key,
+		Enabled:  view.Enabled,
+		Value:    view.Value,
+		ValueKey: view.ValueKey,
+		Reason:   string(view.Reason),
+		Type:     string(view.Type),
 	})
 }
 
@@ -142,11 +144,12 @@ func (h *EvaluationHandler) evaluateAll(w http.ResponseWriter, r *http.Request) 
 	flags := make([]evaluateResponse, len(views))
 	for i, v := range views {
 		flags[i] = evaluateResponse{
-			Key:     v.Key,
-			Enabled: v.Enabled,
-			Value:   v.Value,
-			Reason:  string(v.Reason),
-			Type:    string(v.Type),
+			Key:      v.Key,
+			Enabled:  v.Enabled,
+			Value:    v.Value,
+			ValueKey: v.ValueKey,
+			Reason:   string(v.Reason),
+			Type:     string(v.Type),
 		}
 	}
 

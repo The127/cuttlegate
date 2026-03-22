@@ -13,14 +13,16 @@ type EvalContext struct {
 type EvalResult struct {
 	Key         string `json:"key"`
 	Enabled     bool   `json:"enabled"`
-	Value       string `json:"value"` // empty string for bool flags
+	Value       string `json:"value"`     // empty string for bool flags; deprecated — prefer ValueKey
+	ValueKey    string `json:"value_key"` // always present; "true"/"false" for bool flags, variant key for all others
 	Reason      string `json:"reason"`
 	EvaluatedAt string `json:"evaluated_at"`
 }
 
 // FlagResult is the result of evaluating a single flag by key.
 type FlagResult struct {
-	Enabled bool
-	Value   string // empty string for bool flags
-	Reason  string
+	Enabled  bool
+	Value    string // empty string for bool flags; deprecated — prefer ValueKey
+	ValueKey string // always present; "true"/"false" for bool flags, variant key for all others
+	Reason   string
 }

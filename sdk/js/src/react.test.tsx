@@ -37,7 +37,7 @@ function makeEvalResult(
   enabled: boolean,
   value: string | null = null,
 ): EvaluationResult {
-  return { key, enabled, value, reason: 'default', evaluatedAt: '2026-03-21T12:00:00Z' };
+  return { key, enabled, value, valueKey: value ?? '', reason: 'default', evaluatedAt: '2026-03-21T12:00:00Z' };
 }
 
 /** Test component that renders useFlag output. */

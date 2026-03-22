@@ -47,11 +47,12 @@ func newEvalMux(svc *fakeEvaluationService, auth func(http.Handler) http.Handler
 
 func TestEvaluationHandler_Evaluate_Disabled(t *testing.T) {
 	svc := &fakeEvaluationService{view: &app.EvalView{
-		Key:     "my-flag",
-		Enabled: false,
-		Value:   nil,
-		Reason:  domain.ReasonDisabled,
-		Type:    domain.FlagTypeBool,
+		Key:      "my-flag",
+		Enabled:  false,
+		Value:    nil,
+		ValueKey: "false",
+		Reason:   domain.ReasonDisabled,
+		Type:     domain.FlagTypeBool,
 	}}
 	mux := newEvalMux(svc, noopAuth)
 
@@ -80,16 +81,21 @@ func TestEvaluationHandler_Evaluate_Disabled(t *testing.T) {
 	if resp["type"] != "bool" {
 		t.Errorf("expected type=bool, got %v", resp["type"])
 	}
+	// @happy: value_key is always present, even for disabled bool flags
+	if resp["value_key"] != "false" {
+		t.Errorf("expected value_key=false, got %v", resp["value_key"])
+	}
 }
 
 func TestEvaluationHandler_Evaluate_RuleMatch(t *testing.T) {
 	variant := "variant-a"
 	svc := &fakeEvaluationService{view: &app.EvalView{
-		Key:     "my-flag",
-		Enabled: true,
-		Value:   &variant,
-		Reason:  domain.ReasonRuleMatch,
-		Type:    domain.FlagTypeString,
+		Key:      "my-flag",
+		Enabled:  true,
+		Value:    &variant,
+		ValueKey: "variant-a",
+		Reason:   domain.ReasonRuleMatch,
+		Type:     domain.FlagTypeString,
 	}}
 	mux := newEvalMux(svc, noopAuth)
 
@@ -113,6 +119,10 @@ func TestEvaluationHandler_Evaluate_RuleMatch(t *testing.T) {
 	}
 	if resp["type"] != "string" {
 		t.Errorf("expected type=string, got %v", resp["type"])
+	}
+	// @happy: value_key equals value for non-bool flags
+	if resp["value_key"] != "variant-a" {
+		t.Errorf("expected value_key=variant-a, got %v", resp["value_key"])
 	}
 }
 
@@ -253,9 +263,9 @@ func TestEvaluationHandler_EvaluateAll_MultipleFlags(t *testing.T) {
 	ts := time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC)
 	svc := &fakeEvaluationService{
 		views: []app.EvalView{
-			{Key: "flag-1", Enabled: true, Value: &variantA, Reason: domain.ReasonRuleMatch, Type: domain.FlagTypeString},
-			{Key: "flag-2", Enabled: false, Value: nil, Reason: domain.ReasonDisabled, Type: domain.FlagTypeBool},
-			{Key: "flag-3", Enabled: true, Value: nil, Reason: domain.ReasonDefault, Type: domain.FlagTypeBool},
+			{Key: "flag-1", Enabled: true, Value: &variantA, ValueKey: "variant-a", Reason: domain.ReasonRuleMatch, Type: domain.FlagTypeString},
+			{Key: "flag-2", Enabled: false, Value: nil, ValueKey: "false", Reason: domain.ReasonDisabled, Type: domain.FlagTypeBool},
+			{Key: "flag-3", Enabled: true, Value: nil, ValueKey: "true", Reason: domain.ReasonDefault, Type: domain.FlagTypeBool},
 		},
 		evaluatedAt: ts,
 	}
@@ -295,6 +305,20 @@ func TestEvaluationHandler_EvaluateAll_MultipleFlags(t *testing.T) {
 	}
 	if first["type"] != "string" {
 		t.Errorf("expected type=string, got %v", first["type"])
+	}
+	// @happy: value_key present and equals value for string flag
+	if first["value_key"] != "variant-a" {
+		t.Errorf("expected value_key=variant-a, got %v", first["value_key"])
+	}
+
+	// @happy: value_key present for bool flags without value
+	second := flags[1].(map[string]any)
+	if second["value_key"] != "false" {
+		t.Errorf("expected value_key=false for disabled bool flag, got %v", second["value_key"])
+	}
+	third := flags[2].(map[string]any)
+	if third["value_key"] != "true" {
+		t.Errorf("expected value_key=true for enabled bool flag, got %v", third["value_key"])
 	}
 
 	if resp["evaluated_at"] != "2026-03-20T10:00:00Z" {

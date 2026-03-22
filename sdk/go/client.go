@@ -101,11 +101,12 @@ type bulkEvalRequest struct {
 }
 
 type bulkEvalResponseFlag struct {
-	Key     string  `json:"key"`
-	Enabled bool    `json:"enabled"`
-	Value   *string `json:"value"`
-	Reason  string  `json:"reason"`
-	Type    string  `json:"type"`
+	Key      string  `json:"key"`
+	Enabled  bool    `json:"enabled"`
+	Value    *string `json:"value"`
+	ValueKey string  `json:"value_key"`
+	Reason   string  `json:"reason"`
+	Type     string  `json:"type"`
 }
 
 type bulkEvalResponse struct {
@@ -157,14 +158,21 @@ func (c *client) Evaluate(ctx context.Context, evalCtx EvalContext) ([]EvalResul
 
 	results := make([]EvalResult, 0, len(parsed.Flags))
 	for _, f := range parsed.Flags {
+		// value_key is always present for servers that support it; fall back to
+		// dereferencing Value for older servers that do not yet send value_key.
+		valueKey := f.ValueKey
 		value := ""
 		if f.Value != nil {
 			value = *f.Value
+		}
+		if valueKey == "" {
+			valueKey = value
 		}
 		results = append(results, EvalResult{
 			Key:         f.Key,
 			Enabled:     f.Enabled,
 			Value:       value,
+			ValueKey:    valueKey,
 			Reason:      f.Reason,
 			EvaluatedAt: parsed.EvaluatedAt,
 		})
@@ -179,8 +187,8 @@ func (c *client) EvaluateFlag(ctx context.Context, key string, evalCtx EvalConte
 	}
 	for _, r := range results {
 		if r.Key == key {
-			return FlagResult{Enabled: r.Enabled, Value: r.Value, Reason: r.Reason}, nil
+			return FlagResult{Enabled: r.Enabled, Value: r.Value, ValueKey: r.ValueKey, Reason: r.Reason}, nil
 		}
 	}
-	return FlagResult{Enabled: false, Value: "", Reason: "not_found"}, nil
+	return FlagResult{Enabled: false, Value: "", ValueKey: "", Reason: "not_found"}, nil
 }

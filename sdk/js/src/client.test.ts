@@ -19,8 +19,8 @@ function mockFetchResponse(body: unknown, status = 200): typeof fetch {
 
 const bulkResponse = {
   flags: [
-    { key: 'dark-mode', enabled: true, value: null, reason: 'rule_match', type: 'bool' },
-    { key: 'banner-text', enabled: true, value: 'holiday', reason: 'default', type: 'string' },
+    { key: 'dark-mode', enabled: true, value: null, value_key: 'true', reason: 'rule_match', type: 'bool' },
+    { key: 'banner-text', enabled: true, value: 'holiday', value_key: 'holiday', reason: 'default', type: 'string' },
   ],
   evaluated_at: '2026-03-21T10:00:00Z',
 };
@@ -134,6 +134,7 @@ describe('evaluate', () => {
       key: 'dark-mode',
       enabled: true,
       value: null,
+      valueKey: 'true',
       reason: 'rule_match',
       evaluatedAt: '2026-03-21T10:00:00Z',
     });
@@ -141,6 +142,7 @@ describe('evaluate', () => {
       key: 'banner-text',
       enabled: true,
       value: 'holiday',
+      valueKey: 'holiday',
       reason: 'default',
       evaluatedAt: '2026-03-21T10:00:00Z',
     });
@@ -206,14 +208,15 @@ describe('evaluateFlag', () => {
     const client = createClient({ ...validConfig, fetch: mockFetchResponse(bulkResponse) });
 
     const result = await client.evaluateFlag('dark-mode', { user_id: 'u1', attributes: {} });
-    expect(result).toEqual({ enabled: true, value: null, reason: 'rule_match' });
+    // @happy: valueKey is "true" for bool flag; value remains null (v1 compat)
+    expect(result).toEqual({ enabled: true, value: null, valueKey: 'true', reason: 'rule_match' });
   });
 
   it('returns not_found for unknown key without throwing', async () => {
     const client = createClient({ ...validConfig, fetch: mockFetchResponse(bulkResponse) });
 
     const result = await client.evaluateFlag('beta-feature', { user_id: 'u1', attributes: {} });
-    expect(result).toEqual({ enabled: false, value: null, reason: 'not_found' });
+    expect(result).toEqual({ enabled: false, value: null, valueKey: '', reason: 'not_found' });
   });
 
   it('makes only one HTTP call (wraps evaluate)', async () => {

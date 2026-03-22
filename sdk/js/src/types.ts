@@ -18,12 +18,16 @@ export type FlagType = 'bool' | 'string' | 'number' | 'json';
  * Response from `POST /api/v1/projects/:slug/environments/:env/flags/:key/evaluate`.
  *
  * `value` is `null` for `bool` flags; a string representing the variant key for
- * all other flag types.
+ * all other flag types. Deprecated — prefer `value_key`.
+ *
+ * `value_key` is always present for all flag types. For `bool` flags it is
+ * `"true"` or `"false"`; for all other types it equals `value`.
  */
 export interface EvalResponse {
   key: string;
   enabled: boolean;
-  value: string | null;
+  value: string | null; // deprecated — prefer value_key
+  value_key: string;
   reason: EvalReason;
   type: FlagType;
 }
