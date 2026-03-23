@@ -116,6 +116,28 @@
   "api_key": {
     "show_once_warning": "Copy this key now. It will not be shown again."
   },
+  "history": {
+    "title": "Change history",
+    "col_timestamp": "Timestamp",
+    "col_environment": "Environment",
+    "col_actor": "Actor",
+    "col_action": "Change",
+    "empty": "No changes recorded yet",
+    "empty_filtered": "No changes for this environment",
+    "error": "Could not load change history",
+    "env_filter_all": "All environments",
+    "env_filter_aria": "Filter by environment",
+    "table_aria": "Flag change history",
+    "env_none": "—",
+    "action_flag_created": "Created",
+    "action_flag_updated": "Updated",
+    "action_flag_variant_added": "Variant added",
+    "action_flag_variant_renamed": "Variant renamed",
+    "action_flag_variant_deleted": "Variant deleted",
+    "action_flag_state_changed": "State changed",
+    "action_flag_deleted": "Deleted",
+    "action_flag_promoted": "Promoted"
+  },
   "promote": {
     "button": "Promote to…",
     "bulk_button": "Promote all →",

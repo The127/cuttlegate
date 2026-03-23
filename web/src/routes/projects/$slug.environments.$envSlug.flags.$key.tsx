@@ -1,13 +1,13 @@
 import { createRoute, useNavigate, Link } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, type ChangeEvent } from 'react'
+import { useState, useMemo, type ChangeEvent } from 'react'
 import { useTranslation, Trans } from 'react-i18next'
 import { projectEnvRoute } from './$slug.environments.$envSlug'
 import { fetchJSON, patchJSON, postJSON, deleteRequest, APIError } from '../../api'
 import { useFlagSSE } from '../../hooks/useFlagSSE'
 import { Button, Input, Select, SelectItem } from '../../components/ui'
 import { PromoteDialog } from '../../components/PromoteDialog'
-import { formatRelativeDate } from '../../utils/date'
+import { formatAbsoluteDate, formatRelativeDate } from '../../utils/date'
 
 interface Variant {
   key: string
@@ -153,6 +153,8 @@ function FlagDetailPage() {
       <FlagStatsPanel slug={slug} envSlug={envSlug} flagKey={key} />
 
       <EvaluationPanel slug={slug} envSlug={envSlug} flagKey={key} />
+
+      <FlagChangeHistoryPanel slug={slug} flagKey={key} />
 
       {pendingDelete && (
         <DeleteConfirmModal
@@ -754,6 +756,187 @@ function EvalResultDisplay({ result }: { result: EvalResponse }) {
         <span className="text-xs text-gray-700 dark:text-gray-300">{reasonLabel}</span>
       </div>
     </div>
+  )
+}
+
+interface HistoryEntry {
+  id: string
+  occurred_at: string
+  actor_email: string
+  action: string
+  environment_slug: string
+}
+
+interface HistoryListResponse {
+  entries: HistoryEntry[]
+  next_cursor: string | null
+}
+
+const ACTION_LABELS: Record<string, string> = {
+  'flag.created': 'history.action_flag_created',
+  'flag.updated': 'history.action_flag_updated',
+  'flag.variant_added': 'history.action_flag_variant_added',
+  'flag.variant_renamed': 'history.action_flag_variant_renamed',
+  'flag.variant_deleted': 'history.action_flag_variant_deleted',
+  'flag.state_changed': 'history.action_flag_state_changed',
+  'flag.deleted': 'history.action_flag_deleted',
+  'flag.promoted': 'history.action_flag_promoted',
+}
+
+const ENV_FILTER_ALL = '__all__'
+
+function FlagChangeHistoryPanel({ slug, flagKey }: { slug: string; flagKey: string }) {
+  const { t } = useTranslation('flags')
+  const [open, setOpen] = useState(false)
+  const [envFilter, setEnvFilter] = useState(ENV_FILTER_ALL)
+
+  const { data, isError } = useQuery<HistoryListResponse>({
+    queryKey: ['flag-history', slug, flagKey],
+    queryFn: () =>
+      fetchJSON<HistoryListResponse>(
+        `/api/v1/projects/${slug}/audit?flag_key=${encodeURIComponent(flagKey)}&limit=20`,
+      ),
+  })
+
+  const allEntries = useMemo(() => data?.entries ?? [], [data])
+
+  const distinctEnvs = useMemo(() => {
+    const envs = new Set<string>()
+    for (const e of allEntries) {
+      if (e.environment_slug) envs.add(e.environment_slug)
+    }
+    return Array.from(envs).sort()
+  }, [allEntries])
+
+  const showEnvFilter = distinctEnvs.length >= 2
+
+  const visibleEntries = useMemo(() => {
+    if (envFilter === ENV_FILTER_ALL) return allEntries
+    return allEntries.filter((e) => e.environment_slug === envFilter)
+  }, [allEntries, envFilter])
+
+  return (
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg mt-4">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="w-full flex items-center justify-between px-5 py-3 text-left focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--color-accent)]"
+      >
+        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+          {t('history.title')}
+        </span>
+        <span className="text-gray-400 dark:text-gray-500 text-sm" aria-hidden="true">
+          {open ? '▲' : '▼'}
+        </span>
+      </button>
+
+      {open && (
+        <div className="border-t border-gray-100 dark:border-gray-700">
+          {isError ? (
+            <div className="px-5 py-4" role="status">
+              <p className="text-sm text-red-600 dark:text-red-400">{t('history.error')}</p>
+            </div>
+          ) : (
+            <>
+              {showEnvFilter && (
+                <div className="px-5 pt-4 pb-2">
+                  <Select
+                    value={envFilter}
+                    onValueChange={setEnvFilter}
+                    aria-label={t('history.env_filter_aria')}
+                  >
+                    <SelectItem value="__all__">{t('history.env_filter_all')}</SelectItem>
+                    {distinctEnvs.map((env) => (
+                      <SelectItem key={env} value={env}>
+                        {env}
+                      </SelectItem>
+                    ))}
+                  </Select>
+                </div>
+              )}
+              {visibleEntries.length === 0 ? (
+                <div className="px-5 py-8 text-center" role="status">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {envFilter === '__all__'
+                      ? t('history.empty')
+                      : t('history.empty_filtered')}
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table
+                    className="w-full text-sm"
+                    aria-label={t('history.table_aria')}
+                  >
+                    <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                      <tr>
+                        <th scope="col" className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">
+                          {t('history.col_timestamp')}
+                        </th>
+                        <th scope="col" className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">
+                          {t('history.col_environment')}
+                        </th>
+                        <th scope="col" className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">
+                          {t('history.col_actor')}
+                        </th>
+                        <th scope="col" className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">
+                          {t('history.col_action')}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                      {visibleEntries.map((entry) => (
+                        <HistoryEntryRow key={entry.id} entry={entry} />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function HistoryEntryRow({ entry }: { entry: HistoryEntry }) {
+  const { t } = useTranslation('flags')
+  const actionLabel = ACTION_LABELS[entry.action]
+    ? t(ACTION_LABELS[entry.action])
+    : entry.action
+  const absolute = formatAbsoluteDate(entry.occurred_at)
+  const relative = formatRelativeDate(entry.occurred_at)
+
+  return (
+    <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+      <td className="px-4 py-3 whitespace-nowrap">
+        <time
+          dateTime={entry.occurred_at}
+          title={relative}
+          className="text-xs text-gray-600 dark:text-gray-400 tabular-nums"
+        >
+          {absolute}
+        </time>
+      </td>
+      <td className="px-4 py-3 whitespace-nowrap">
+        {entry.environment_slug ? (
+          <span className="font-mono text-xs text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-2 py-0.5">
+            {entry.environment_slug}
+          </span>
+        ) : (
+          <span className="text-xs text-gray-400 dark:text-gray-500">{t('history.env_none')}</span>
+        )}
+      </td>
+      <td className="px-4 py-3 whitespace-nowrap">
+        <span className="text-sm text-gray-800 dark:text-gray-200">{entry.actor_email}</span>
+      </td>
+      <td className="px-4 py-3 whitespace-nowrap">
+        <span className="font-mono text-xs text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-2 py-0.5">
+          {actionLabel}
+        </span>
+      </td>
+    </tr>
   )
 }
 
