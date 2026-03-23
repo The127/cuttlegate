@@ -1,6 +1,6 @@
 # Frontend Index
 
-_Generated 2026-03-22 23:37 UTC. Read this at session start for frontend orientation._
+_Generated 2026-03-23 10:52 UTC. Read this at session start for frontend orientation._
 
 ## Routes (`web/src/routes/`)
 
@@ -35,6 +35,15 @@ _Generated 2026-03-22 23:37 UTC. Read this at session start for frontend orienta
 | `Button` | `ui/Button.tsx` | — |
 | `CopyableCode` | `ui/CopyableCode.tsx` | — |
 | `DataTable` | `ui/DataTable.tsx` | — |
+| `Dialog` | `ui/Dialog.tsx` | — |
+| `DialogTrigger` | `ui/Dialog.tsx` | — |
+| `DialogContent` | `ui/Dialog.tsx` | — |
+| `DialogHeader` | `ui/Dialog.tsx` | — |
+| `DialogTitle` | `ui/Dialog.tsx` | — |
+| `DialogDescription` | `ui/Dialog.tsx` | — |
+| `DialogFooter` | `ui/Dialog.tsx` | — |
+| `DialogClose` | `ui/Dialog.tsx` | — |
+| `DialogCloseButton` | `ui/Dialog.tsx` | — |
 | `FormFieldContext` | `ui/FormField.tsx` | — |
 | `useFormFieldId` | `ui/FormField.tsx` | — |
 | `FormField` | `ui/FormField.tsx` | — |
