@@ -10,7 +10,6 @@ import (
 	"github.com/karo/cuttlegate/internal/domain/ports"
 )
 
-
 // PostgresFlagEvaluationStatsRepository implements ports.FlagEvaluationStatsRepository using PostgreSQL.
 type PostgresFlagEvaluationStatsRepository struct {
 	db DBTX

@@ -287,4 +287,3 @@ func TestEvaluationStatsHandler_GetBuckets_APIKeyRejected(t *testing.T) {
 		t.Errorf("error: want unauthorized, got %q", body["error"])
 	}
 }
-

@@ -57,7 +57,7 @@ func (r *fakeStatsRepository) GetByFlagEnvironment(_ context.Context, flagID, en
 // bucketsResult holds the canned result for GetBuckets in tests.
 type fakeStatsRepositoryWithBuckets struct {
 	*fakeStatsRepository
-	buckets []domain.EvaluationBucket
+	buckets   []domain.EvaluationBucket
 	bucketErr error
 }
 
