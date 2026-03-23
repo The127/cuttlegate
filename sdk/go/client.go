@@ -35,9 +35,9 @@ type Client interface {
 	// Each call makes one HTTP round trip — prefer EvaluateAll when evaluating multiple flags.
 	String(ctx context.Context, key string, evalCtx EvalContext) (string, error)
 
-	// EvaluateFlag evaluates a single flag by key. Returns FlagResult with
+	// Deprecated: EvaluateFlag evaluates a single flag by key. Returns FlagResult with
 	// Reason "not_found" if the key is absent — does not return an error for a
-	// missing key. Prefer Evaluate, Bool, or String for new code.
+	// missing key. Use Evaluate, Bool, or String for new code.
 	EvaluateFlag(ctx context.Context, key string, evalCtx EvalContext) (FlagResult, error)
 
 	// Subscribe opens a real-time stream of flag state changes for the given key.

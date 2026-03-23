@@ -31,8 +31,8 @@ type EvalResult struct {
 	EvaluatedAt string `json:"evaluated_at"`
 }
 
-// FlagResult is the result of evaluating a single flag by key via EvaluateFlag.
-// Prefer Evaluate, Bool, or String for new code — they return structured errors
+// Deprecated: FlagResult is the result of evaluating a single flag by key via EvaluateFlag.
+// Use Evaluate, Bool, or String for new code — they return structured errors
 // rather than encoding not-found as a Reason string.
 type FlagResult struct {
 	Enabled bool
