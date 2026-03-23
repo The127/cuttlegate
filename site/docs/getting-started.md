@@ -5,7 +5,9 @@ sidebar_position: 1
 
 # Getting Started
 
-This guide takes you from zero to your first SDK-powered flag evaluation — with targeting rules, segments, and a real audit trail. You need Docker installed — nothing else.
+This guide takes you from zero to your first SDK-powered flag evaluation — with targeting rules, segments, and a real audit trail.
+
+**Prerequisites:** Docker, Git, and either Node 18+ (for the JS path) or Go 1.21+ (for the Go path). Nothing else.
 
 By the end you will have:
 
@@ -23,16 +25,22 @@ cd cuttlegate
 docker compose up --build
 ```
 
-This starts four services:
+:::note First run takes 2–5 minutes
+On a cold Docker cache, `docker compose up --build` pulls several images before starting. This is normal. Wait for the log line `server listening on :8080` before proceeding.
+:::
+
+This starts six services:
 
 | Service | Port | Purpose |
 |---|---|---|
-| **db** | 5432 | PostgreSQL database |
-| **dex** | 5556 | Local OIDC identity provider |
+| **db** | 5433 | PostgreSQL database (Cuttlegate) |
 | **migrate** | — | Applies database migrations, then exits |
 | **server** | 8080 | Cuttlegate API + embedded web UI |
+| **keyline-db** | — | PostgreSQL database (identity provider) |
+| **keyline** | 5002 | Local OIDC identity provider |
+| **keyline-ui** | 5003 | Identity provider admin UI |
 
-Wait until you see the server log line indicating it is listening on `:8080`.
+Wait until you see `server listening on :8080` in the compose output before continuing.
 
 ## 2. Log in
 
@@ -40,10 +48,10 @@ Open [http://localhost:8080](http://localhost:8080) in your browser. Click **Log
 
 | Field | Value |
 |---|---|
-| Email | `admin@example.com` |
+| Email | `admin@cuttlegate.local` |
 | Password | `password` |
 
-After login you are redirected to the Cuttlegate dashboard. The docker-compose configuration maps the Dex `name` claim to the Cuttlegate role, so the test user has **admin** access.
+After login you are redirected to the Cuttlegate dashboard. The pre-seeded admin account has **admin** access.
 
 ## 3. Create a project
 
@@ -70,22 +78,27 @@ Copy the key immediately — it is shown only once. It looks like `cg_...`.
 
 API keys are scoped to a single project + environment pair and are used by the SDK to authenticate evaluation requests.
 
-## 7. Create a segment
+## 7. Create a segment and add members
 
-Segments are named groups of users defined by attribute conditions. They let you reuse audience definitions across multiple flags and rules.
+Segments are named groups of users. Membership is explicit — you add user IDs to a segment, and targeting rules match on whether the evaluating user is in that list.
 
 Navigate to **Segments** within your project and click **New Segment**:
 
 - **Name:** `Pro users`
 - **Key:** `pro-users`
 
-Add a condition to the segment:
+Save the segment. Now add the demo user to it. In the UI, open the `pro-users` segment and click **Add Member**, entering `user-1`.
 
-- **Attribute:** `plan`
-- **Operator:** `equals`
-- **Value:** `pro`
+Alternatively, use the API directly:
 
-Save the segment. Any user whose evaluation context includes `"plan": "pro"` is a member of this segment.
+```bash
+curl -s -X PUT http://localhost:8080/api/v1/projects/my-app/segments/pro-users/members \
+  -H "Authorization: Bearer cg_YOUR_API_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{"members": ["user-1"]}'
+```
+
+Any SDK call that evaluates with `user_id: "user-1"` will now match the `pro-users` segment.
 
 ## 8. Add a targeting rule
 
@@ -97,7 +110,7 @@ Navigate back to the `dark-mode` flag and open the `production` environment sett
 
 Save the rule. The flag now behaves as follows:
 
-- Users in the `pro-users` segment (`plan: pro`) → **enabled**, reason `targeting_rule`
+- Users in the `pro-users` segment (`user-1`) → **enabled**, reason `rule_match`
 - All other users → **enabled**, reason `default` (the flag is on; no rule matched their context)
 
 :::tip Fallthrough behaviour
@@ -128,13 +141,13 @@ const cg = createClient({
   environment: 'production',
 });
 
-// Evaluate as a pro user — matches the targeting rule
+// Evaluate as a segment member — matches the targeting rule
 const proResult = await cg.evaluateFlag('dark-mode', {
   user_id: 'user-1',
   attributes: { plan: 'pro' },
 });
 console.log('pro user enabled:', proResult.enabled);  // true
-console.log('reason:', proResult.reason);             // targeting_rule
+console.log('reason:', proResult.reason);             // rule_match
 
 // Evaluate as a free user — no rule match, falls through to default
 const freeResult = await cg.evaluateFlag('dark-mode', {
@@ -203,7 +216,7 @@ func main() {
     if err != nil {
         log.Fatal(err)
     }
-    fmt.Println("reason:", result.Reason) // targeting_rule
+    fmt.Println("reason:", result.Reason) // rule_match
 }
 ```
 
@@ -226,10 +239,10 @@ You will see the evaluation events from your SDK calls. Each entry shows:
 - The flag key and environment
 - Whether the flag was enabled
 - The **reason** — one of:
-  - `targeting_rule` — a targeting rule matched the user's context
+  - `rule_match` — a targeting rule matched the user
   - `default` — no rule matched; the flag fell through to its default state
   - `segment_deleted` — a targeting rule referenced a segment that no longer exists; the rule was skipped and evaluation fell through to the next matching rule or the flag's default
-- The **matched rule name** — visible for `targeting_rule` evaluations; not present for `default` or `segment_deleted`
+- The **matched rule name** — visible for `rule_match` evaluations; not present for `default` or `segment_deleted`
 
 This makes it straightforward to verify that your rules are matching the right users in production.
 
