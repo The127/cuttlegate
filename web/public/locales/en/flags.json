@@ -51,6 +51,7 @@
       "tab_js": "JS",
       "tab_python": "Python",
       "dismiss": "Dismiss",
+      "dismiss_aria": "Dismiss SDK setup guide",
       "region_aria": "SDK setup guide"
     }
   },

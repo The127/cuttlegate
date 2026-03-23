@@ -375,6 +375,7 @@ function SdkPrompt({ flagKey }: { flagKey: string }) {
       <div className="flex justify-end px-4 pb-3 bg-white dark:bg-gray-900">
         <button
           onClick={handleDismiss}
+          aria-label={t('create.sdk_prompt.dismiss_aria')}
           className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
         >
           {t('create.sdk_prompt.dismiss')}
