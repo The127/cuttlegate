@@ -11,6 +11,7 @@ vi.mock('@tanstack/react-router', async () => {
       ...opts,
       options: opts,
       useParams: () => ({}),
+      useLoaderData: () => ({ id: 'proj-1', name: 'Test Project', slug: 'test-project', created_at: '2026-01-01T00:00:00Z' }),
     }),
     Link: ({ children, to, ...props }: any) => <a href={to} {...props}>{children}</a>,
     useNavigate: () => vi.fn(),

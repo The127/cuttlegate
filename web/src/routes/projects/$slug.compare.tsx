@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { projectRoute } from './$slug'
 import { fetchJSON } from '../../api'
 import { PromoteDialog } from '../../components/PromoteDialog'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 
 interface Environment {
   id: string
@@ -43,6 +44,7 @@ function CompareEnvironmentsPage() {
   const { t } = useTranslation('projects')
   const { t: tFlags } = useTranslation('flags')
   const project = projectRoute.useLoaderData()
+  useDocumentTitle(t('compare.page_title'), project.name)
   const queryClient = useQueryClient()
   const [page, setPage] = useState(0)
   // slug of the env being promoted from; null when dialog is closed

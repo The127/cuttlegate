@@ -15,6 +15,7 @@ import {
   DialogFooter,
 } from '../../components/ui/Dialog'
 import { CreateEnvironmentDialog } from '../../components/CreateEnvironmentDialog'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 
 interface Environment {
   id: string
@@ -39,6 +40,8 @@ function useActiveEnvSlug(): string | null {
 function EnvironmentSettingsPage() {
   const { t } = useTranslation('projects')
   const { slug } = environmentSettingsRoute.useParams()
+  const project = projectRoute.useLoaderData()
+  useDocumentTitle(t('environments.title'), t('settings.title'), project.name)
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const activeEnvSlug = useActiveEnvSlug()

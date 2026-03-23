@@ -1,6 +1,6 @@
 import { Outlet, createRootRoute, useLocation } from '@tanstack/react-router'
-import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 
 export const rootRoute = createRootRoute({
   component: () => <Outlet />,
@@ -11,10 +11,7 @@ export function NotFoundPage() {
   const { t } = useTranslation('common')
   const location = useLocation()
   const url = location.pathname
-
-  useEffect(() => {
-    document.title = `${t('not_found.title')} — ${t('app_name')}`
-  }, [t])
+  useDocumentTitle(`${t('not_found.title')} \u2014 ${t('not_found.page_title')}`)
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-surface-elevated)]">

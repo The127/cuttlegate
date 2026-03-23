@@ -17,6 +17,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '../../components/ui/Dialog'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 
 type Role = 'admin' | 'editor' | 'viewer'
 const ROLES: Role[] = ['admin', 'editor', 'viewer']
@@ -45,6 +46,8 @@ export const memberListRoute = createRoute({
 function MemberListPage() {
   const { t } = useTranslation('projects')
   const { slug } = memberListRoute.useParams()
+  const project = projectRoute.useLoaderData()
+  useDocumentTitle(t('members.title'), project.name)
   const queryClient = useQueryClient()
   const queryKey = ['members', slug]
 

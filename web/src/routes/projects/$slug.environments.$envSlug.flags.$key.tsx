@@ -3,12 +3,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useMemo, type ChangeEvent } from 'react'
 import { useTranslation, Trans } from 'react-i18next'
 import { projectEnvRoute } from './$slug.environments.$envSlug'
+import { projectRoute } from './$slug'
 import { fetchJSON, patchJSON, postJSON, deleteRequest, APIError } from '../../api'
 import { useFlagSSE } from '../../hooks/useFlagSSE'
 import { Button, Input, Select, SelectItem, CopyableCode, Textarea } from '../../components/ui'
 import { PromoteDialog } from '../../components/PromoteDialog'
 import { FlagAnalyticsPanel } from '../../components/FlagAnalyticsPanel'
 import { formatAbsoluteDate, formatRelativeDate } from '../../utils/date'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 
 interface Variant {
   key: string
@@ -50,6 +52,8 @@ export const flagDetailRoute = createRoute({
 function FlagDetailPage() {
   const { t } = useTranslation('flags')
   const { slug, envSlug, key } = flagDetailRoute.useParams()
+  const project = projectRoute.useLoaderData()
+  useDocumentTitle(key, envSlug, project.name)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const queryKey = ['flag', slug, envSlug, key]

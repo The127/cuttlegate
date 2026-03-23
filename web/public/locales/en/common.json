@@ -32,6 +32,7 @@
   },
   "not_found": {
     "title": "404",
+    "page_title": "Not Found",
     "body": "The page {{url}} could not be found.",
     "return_to_home": "Return to home"
   },

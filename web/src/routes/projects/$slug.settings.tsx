@@ -14,6 +14,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '../../components/ui/Dialog'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 
 export const projectSettingsRoute = createRoute({
   getParentRoute: () => projectRoute,
@@ -24,6 +25,7 @@ export const projectSettingsRoute = createRoute({
 function ProjectSettingsPage() {
   const { t } = useTranslation('projects')
   const project = projectRoute.useLoaderData()
+  useDocumentTitle(t('settings.title'), project.name)
   const roleQuery = useProjectRole(project.slug)
 
   if (roleQuery.isLoading) return <SettingsSkeleton />

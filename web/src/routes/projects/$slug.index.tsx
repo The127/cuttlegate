@@ -15,6 +15,7 @@ import {
   DialogCloseButton,
 } from '../../components/ui/Dialog'
 import { CreateEnvironmentDialog } from '../../components/CreateEnvironmentDialog'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 
 interface Environment {
   id: string
@@ -45,6 +46,7 @@ export const projectIndexRoute = createRoute({
 function ProjectDashboard() {
   const { t } = useTranslation('projects')
   const project = projectRoute.useLoaderData()
+  useDocumentTitle(project.name)
   const queryClient = useQueryClient()
 
   const envsQuery = useQuery({

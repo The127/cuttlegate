@@ -6,6 +6,7 @@ import { projectRoute } from './$slug'
 import { fetchJSON } from '../../api'
 import { formatAbsoluteDate, formatRelativeDate } from '../../utils/date'
 import { Input } from '../../components/ui/Input'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 
 interface AuditEntry {
   id: string
@@ -31,6 +32,8 @@ export const auditRoute = createRoute({
 function AuditLogPage() {
   const { t } = useTranslation('projects')
   const { slug } = auditRoute.useParams()
+  const project = projectRoute.useLoaderData()
+  useDocumentTitle(t('audit.page_title'), project.name)
   const [flagKey, setFlagKey] = useState('')
   const debouncedFlagKey = useDebounced(flagKey, 300)
 

@@ -8,6 +8,7 @@ import { Sidebar } from '../components/Sidebar'
 import { CreateProjectDialogProvider } from '../components/CreateProjectDialog'
 import { LiveAnnouncerProvider } from '../hooks/useLiveAnnouncer'
 import { APIError } from '../api'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 
 export const authenticatedRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -59,10 +60,7 @@ function InShellNotFoundPage() {
   const { t } = useTranslation('common')
   const location = useLocation()
   const url = location.pathname
-
-  useEffect(() => {
-    document.title = `${t('not_found.title')} — ${t('app_name')}`
-  }, [t])
+  useDocumentTitle(`${t('not_found.title')} \u2014 ${t('not_found.page_title')}`)
 
   return (
     <div className="flex flex-1 items-center justify-center p-8">

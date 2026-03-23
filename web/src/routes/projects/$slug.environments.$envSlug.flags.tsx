@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useMemo } from 'react'
 import { useTranslation, Trans } from 'react-i18next'
 import { projectEnvRoute } from './$slug.environments.$envSlug'
+import { projectRoute } from './$slug'
 import { fetchJSON, patchJSON, postJSON, deleteRequest, APIError } from '../../api'
 import {
   Button,
@@ -24,6 +25,7 @@ import {
 } from '../../components/ui/Dialog'
 import type { ColumnDef } from '../../components/ui'
 import { formatRelativeDate } from '../../utils/date'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 
 interface Environment {
   id: string
@@ -71,6 +73,8 @@ export const flagListRoute = createRoute({
 function FlagListPage() {
   const { t } = useTranslation('flags')
   const { slug, envSlug } = flagListRoute.useParams()
+  const project = projectRoute.useLoaderData()
+  useDocumentTitle(t('page_title'), envSlug, project.name)
   const queryClient = useQueryClient()
   const queryKey = ['flags', slug, envSlug]
 

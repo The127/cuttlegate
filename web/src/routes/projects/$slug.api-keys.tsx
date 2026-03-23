@@ -19,6 +19,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '../../components/ui/Dialog'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 
 interface Environment {
   id: string
@@ -53,6 +54,8 @@ export const apiKeyListRoute = createRoute({
 function APIKeyPage() {
   const { t } = useTranslation('projects')
   const { slug } = apiKeyListRoute.useParams()
+  const project = projectRoute.useLoaderData()
+  useDocumentTitle(t('api_keys.title'), project.name)
   const queryClient = useQueryClient()
 
   const envsQuery = useQuery({

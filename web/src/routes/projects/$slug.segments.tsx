@@ -17,6 +17,7 @@ import {
   DialogFooter,
   DialogCloseButton,
 } from '../../components/ui/Dialog'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 
 interface Segment {
   id: string
@@ -36,6 +37,8 @@ export const segmentListRoute = createRoute({
 function SegmentListPage() {
   const { t } = useTranslation('segments')
   const { slug } = segmentListRoute.useParams()
+  const project = projectRoute.useLoaderData()
+  useDocumentTitle(t('title'), project.name)
   const queryClient = useQueryClient()
   const queryKey = ['segments', slug]
 

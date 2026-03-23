@@ -5,6 +5,7 @@ import { authenticatedRoute } from './_authenticated'
 import { fetchJSON } from '../api'
 import { useOpenCreateProjectDialog } from '../components/CreateProjectDialog'
 import { Button } from '../components/ui/Button'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 
 interface Project {
   id: string
@@ -35,6 +36,7 @@ function useProjectCount<T>(slug: string, resource: string, key: string) {
 function HomePage() {
   const { t } = useTranslation('projects')
   const openCreateDialog = useOpenCreateProjectDialog()
+  useDocumentTitle(t('list.title'))
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['projects'],
     queryFn: () =>
