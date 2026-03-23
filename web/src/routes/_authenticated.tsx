@@ -1,4 +1,4 @@
-import { Outlet, createRoute, useRouterState } from '@tanstack/react-router'
+import { Outlet, createRoute, useLocation, useRouterState } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { rootRoute } from './__root'
@@ -23,6 +23,7 @@ export const authenticatedRoute = createRoute({
     }
   },
   errorComponent: RouteError,
+  notFoundComponent: InShellNotFoundPage,
   component: AppShell,
 })
 
@@ -49,6 +50,28 @@ function RouteError({ error }: { error: unknown }) {
       <div className="max-w-md w-full p-8 bg-[var(--color-surface)] rounded-lg shadow-sm border border-[var(--color-border)]">
         <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">{t('errors.something_went_wrong')}</h1>
         <p className="mt-2 text-sm text-[var(--color-text-secondary)] font-mono">{message}</p>
+      </div>
+    </div>
+  )
+}
+
+function InShellNotFoundPage() {
+  const { t } = useTranslation('common')
+  const location = useLocation()
+  const url = location.pathname
+
+  useEffect(() => {
+    document.title = `${t('not_found.title')} — ${t('app_name')}`
+  }, [t])
+
+  return (
+    <div className="flex flex-1 items-center justify-center p-8">
+      <div className="text-center">
+        <h1 className="text-2xl font-semibold text-[var(--color-text-primary)]">{t('not_found.title')}</h1>
+        <p className="mt-2 text-[var(--color-text-secondary)]">{t('not_found.body', { url })}</p>
+        <a href="/" className="mt-4 inline-block text-sm text-[var(--color-accent)] hover:underline">
+          {t('not_found.return_to_home')}
+        </a>
       </div>
     </div>
   )

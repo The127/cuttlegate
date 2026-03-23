@@ -7,6 +7,7 @@ import { BrandProvider, type BrandConfig } from './brand'
 import { createAppRouter } from './router'
 import { queryClient } from './queryClient'
 import { initI18n } from './i18n'
+import { ErrorBoundary } from './ErrorBoundary'
 import './styles.css'
 
 interface AppConfig extends OIDCConfig, BrandConfig {}
@@ -31,11 +32,13 @@ async function bootstrap() {
 
   ReactDOM.createRoot(rootEl).render(
     <React.StrictMode>
-      <BrandProvider config={config}>
-        <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
-        </QueryClientProvider>
-      </BrandProvider>
+      <ErrorBoundary>
+        <BrandProvider config={config}>
+          <QueryClientProvider client={queryClient}>
+            <RouterProvider router={router} />
+          </QueryClientProvider>
+        </BrandProvider>
+      </ErrorBoundary>
     </React.StrictMode>,
   )
 }
