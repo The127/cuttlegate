@@ -117,7 +117,6 @@ describe('CreateEnvironmentDialog', () => {
     await waitFor(() => screen.getByLabelText('Name'))
 
     await userEvent.type(screen.getByLabelText('Name'), 'Production')
-    // slug auto-generated as "production"
     await userEvent.click(screen.getByRole('button', { name: 'Create' }))
 
     await waitFor(() => {
@@ -162,7 +161,6 @@ describe('CreateEnvironmentDialog', () => {
       ).toBeInTheDocument()
     })
     expect(onCreated).not.toHaveBeenCalled()
-    // Dialog stays open — heading still visible
     expect(screen.getByRole('heading', { name: 'Create environment' })).toBeInTheDocument()
   })
 
@@ -195,7 +193,7 @@ describe('CreateEnvironmentDialog', () => {
 
   it('renders without accessibility violations on error state', async () => {
     mockPostJSON.mockRejectedValue(new Error('server error'))
-    const { container: _container } = renderDialog({})
+    renderDialog({})
 
     await waitFor(() => screen.getByLabelText('Name'))
     await userEvent.type(screen.getByLabelText('Name'), 'Staging')
