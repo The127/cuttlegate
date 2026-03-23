@@ -31,6 +31,9 @@ type fakeAPIKeyRepo struct {
 }
 
 func (f *fakeAPIKeyRepo) Create(_ context.Context, _ *domain.APIKey) error { return nil }
+func (f *fakeAPIKeyRepo) GetByID(_ context.Context, _ string) (*domain.APIKey, error) {
+	return f.key, f.err
+}
 func (f *fakeAPIKeyRepo) GetByHash(_ context.Context, _ [32]byte) (*domain.APIKey, error) {
 	return f.key, f.err
 }
@@ -38,6 +41,9 @@ func (f *fakeAPIKeyRepo) ListByEnvironment(_ context.Context, _, _ string) ([]*d
 	return nil, nil
 }
 func (f *fakeAPIKeyRepo) Revoke(_ context.Context, _ string) error { return nil }
+func (f *fakeAPIKeyRepo) UpdateCapabilityTier(_ context.Context, _ string, _ domain.ToolCapabilityTier) error {
+	return nil
+}
 
 type fakeFlagSvc struct {
 	views      []*app.FlagEnvironmentView

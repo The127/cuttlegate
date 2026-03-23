@@ -22,7 +22,7 @@
  *   5 @auth-bypass unauthenticated request → {"error":"unauthenticated"}
  *   6 @edge      tools/list with read-tier key omits write-tier tools
  *   7 @edge      tools/list with write-tier key includes write-tier tools
- *   8 @edge      SKIPPED — requires PATCH API key tier endpoint (no endpoint yet)
+ *   8 @edge      key downgraded mid-session — write call rejected (ADR 0028 live lookup)
  */
 
 import { test, expect } from '@playwright/test';
@@ -33,6 +33,7 @@ import {
   createFlag,
   toggleFlag,
   createAPIKey,
+  updateAPIKeyTier,
   listAuditEvents,
 } from '../internal/factory';
 
@@ -141,6 +142,7 @@ interface TestFixtures {
   adminToken: string;
   readKey: string;
   writeKey: string;
+  writeKeyId: string;
 }
 
 async function setupTestState(): Promise<TestFixtures> {
@@ -167,6 +169,7 @@ async function setupTestState(): Promise<TestFixtures> {
     adminToken,
     readKey: readAPIKey.key,
     writeKey: writeAPIKey.key,
+    writeKeyId: writeAPIKey.id,
   };
 }
 
@@ -311,11 +314,55 @@ test.describe('MCP capability tier enforcement', () => {
     expect(names).toContain('disable_flag');
   });
 
-  // Scenario 8 @edge — SKIPPED: requires PATCH endpoint to update API key tier
-  // The live per-call lookup downgrade invariant (ADR 0028) cannot be tested end-to-end
-  // until a REST endpoint exists to update a key's capability_tier.
-  // Follow-up: file an issue for PATCH /api/v1/projects/{slug}/environments/{env_slug}/api-keys/{key_id}
-  test.skip('Scenario 8: key downgraded mid-session is rejected on subsequent write call', async () => {
-    // Not implementable yet — no PATCH endpoint to downgrade a key's tier.
+  test('Scenario 8 @edge: key downgraded mid-session is rejected on subsequent write call', async () => {
+    // Ensure the flag is disabled so enable_flag is a valid write operation.
+    await toggleFlag(fixtures.adminToken, fixtures.projectSlug, fixtures.envSlug, fixtures.flagKey, false);
+
+    // 1. Open an MCP session with the write-tier key and confirm write works.
+    const sessionID = await openMCPSession(fixtures.writeKey);
+    const writeResp = await mcpCall(sessionID, fixtures.writeKey, 'tools/call', {
+      name: 'enable_flag',
+      arguments: {
+        project_slug: fixtures.projectSlug,
+        environment_slug: fixtures.envSlug,
+        key: fixtures.flagKey,
+      },
+    });
+    expect(writeResp.error).toBeUndefined();
+    const writePayload = toolText(writeResp.result) as { enabled: boolean };
+    expect(writePayload.enabled).toBe(true);
+
+    // 2. Admin downgrades the key's tier to read via the PATCH endpoint.
+    await updateAPIKeyTier(
+      fixtures.adminToken,
+      fixtures.projectSlug,
+      fixtures.envSlug,
+      fixtures.writeKeyId,
+      'read',
+    );
+
+    // Reset flag so the same write operation is valid again.
+    await toggleFlag(fixtures.adminToken, fixtures.projectSlug, fixtures.envSlug, fixtures.flagKey, false);
+
+    // 3. Same session, same key — write call should now be rejected.
+    const rejectedResp = await mcpCall(sessionID, fixtures.writeKey, 'tools/call', {
+      name: 'enable_flag',
+      arguments: {
+        project_slug: fixtures.projectSlug,
+        environment_slug: fixtures.envSlug,
+        key: fixtures.flagKey,
+      },
+    });
+    expect(rejectedResp.error).toBeUndefined();
+    const rejectedPayload = toolText(rejectedResp.result) as {
+      error: string;
+      required: string;
+      provided: string;
+    };
+    expect(rejectedPayload).toMatchObject({
+      error: 'insufficient_capability',
+      required: 'write',
+      provided: 'read',
+    });
   });
 });

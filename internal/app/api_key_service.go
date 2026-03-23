@@ -108,6 +108,44 @@ func (s *APIKeyService) Revoke(ctx context.Context, id string) error {
 	return s.repo.Revoke(ctx, id)
 }
 
+// UpdateCapabilityTier changes the capability tier of an existing API key.
+// Returns ErrNotFound if the key does not exist, ErrKeyRevoked if the key has
+// been revoked, or a ValidationError if the tier value is invalid.
+// Requires admin role.
+func (s *APIKeyService) UpdateCapabilityTier(ctx context.Context, id string, tier domain.ToolCapabilityTier) (*APIKeyView, error) {
+	if _, err := requireRole(ctx, domain.RoleAdmin); err != nil {
+		return nil, err
+	}
+
+	if !tier.Valid() {
+		return nil, &domain.ValidationError{Field: "capability_tier", Message: "must be one of: read, write, destructive"}
+	}
+
+	key, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if key.Revoked() {
+		return nil, domain.ErrKeyRevoked
+	}
+
+	if err := s.repo.UpdateCapabilityTier(ctx, id, tier); err != nil {
+		return nil, err
+	}
+
+	return &APIKeyView{
+		ID:             key.ID,
+		ProjectID:      key.ProjectID,
+		EnvironmentID:  key.EnvironmentID,
+		Name:           key.Name,
+		DisplayPrefix:  key.DisplayPrefix,
+		CapabilityTier: string(tier),
+		CreatedAt:      key.CreatedAt,
+		RevokedAt:      key.RevokedAt,
+	}, nil
+}
+
 // Authenticate verifies a plaintext API key and returns the scoped project and
 // environment IDs. Returns ErrForbidden if the key is invalid, revoked, or
 // does not match any stored key. This method does not require an AuthContext —
