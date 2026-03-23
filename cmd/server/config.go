@@ -20,6 +20,7 @@ type Config struct {
 	OIDCRedirectURI            string                        // OIDC redirect_uri for the SPA (returned by /api/v1/config)
 	OIDCSPAAuthority           string                        // OIDC authority URL for the SPA (browser-reachable); defaults to OIDCIssuer
 	Addr                       string                        // listen address (default: :8080)
+	MCPAddr                    string                        // MCP server listen address (default: :8081); env: MCP_ADDR
 	DSN                        string                        // postgres DATABASE_URL; required when AutoMigrate is true
 	AutoMigrate                bool                          // run migrations at startup — dev/test only; unsafe in production (rolling restarts can race between old pods and a migrated schema)
 	EvalRateLimit              int                           // max evaluation requests per user per EvalRateLimitWindow (default: 600)
@@ -37,6 +38,10 @@ func Load() (Config, error) {
 	addr := os.Getenv("ADDR")
 	if addr == "" {
 		addr = ":8080"
+	}
+	mcpAddr := os.Getenv("MCP_ADDR")
+	if mcpAddr == "" {
+		mcpAddr = ":8081"
 	}
 	roleClaim := os.Getenv("OIDC_ROLE_CLAIM")
 	if roleClaim == "" {
@@ -100,6 +105,7 @@ func Load() (Config, error) {
 		OIDCRedirectURI:            os.Getenv("OIDC_REDIRECT_URI"),
 		OIDCSPAAuthority:           spaAuthority,
 		Addr:                       addr,
+		MCPAddr:                    mcpAddr,
 		DSN:                        os.Getenv("DATABASE_URL"),
 		AutoMigrate:                os.Getenv("AUTO_MIGRATE") == "true",
 		EvalRateLimit:              evalRateLimit,

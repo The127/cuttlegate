@@ -123,3 +123,20 @@ func (s *APIKeyService) Authenticate(ctx context.Context, plaintext string) (pro
 	}
 	return key.ProjectID, key.EnvironmentID, nil
 }
+
+// AuthenticateMCP verifies a plaintext API key and returns the full APIKey entity,
+// including CapabilityTier. Used by the MCP adapter at connection time to determine
+// which tools to advertise in the tools/list response.
+// Returns ErrForbidden if the key is invalid or revoked.
+// This method does not require an AuthContext — it is called before auth is established.
+func (s *APIKeyService) AuthenticateMCP(ctx context.Context, plaintext string) (*domain.APIKey, error) {
+	hash := domain.HashAPIKey(plaintext)
+	key, err := s.repo.GetByHash(ctx, hash)
+	if err != nil {
+		return nil, domain.ErrForbidden
+	}
+	if key.Revoked() {
+		return nil, domain.ErrForbidden
+	}
+	return key, nil
+}
