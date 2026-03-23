@@ -13,7 +13,7 @@ Anyone who has shipped software and wished feature flagging was simpler, more pr
 - **One thing done really well** — any proposal that expands scope beyond feature flagging gets challenged before it gets designed. We are not a platform, a workflow tool, or an experimentation framework. We are a feature flag tool.
 - **Documentation parity** — documentation is a first-class deliverable, not an afterthought. No feature is done until it is documented. Getting started must feel effortless. Doc debt is product debt.
 - **Developer experience** — SDK ergonomics, error messages, onboarding time, and API shape matter as much as correctness. A tool that is painful to adopt is a tool nobody recommends.
-- **Operator experience** — the dashboard, audit trail, and configuration surface are the product for the people running Cuttlegate. Clarity and legibility are not polish; they are function. A tool that looks bad and feels bad is a tool no one wants to run.
+- **Operator experience** — the dashboard, audit trail, and configuration surface are the product for the people running Cuttlegate. Clarity and legibility are not polish; they are function. A tool that looks bad and feels bad is a tool no one wants to run. Design coherence — consistent tokens, component patterns, and interaction rules — is the engineering infrastructure that makes this possible; it is built and maintained like any other system.
 - **Clean code and architecture** — the codebase is something contributors are proud to read, not just use. The architecture is honest: the layers mean what they say.
 - **Fun** — if working on this stops being fun, something is wrong with the process, not the people.
 
@@ -41,6 +41,7 @@ Milestones in Hivetrack are high-level steering tools, not just issue containers
 | M4: Client SDKs | SDK surfaces — the primary developer touchpoint |
 | M5: Observability | Metrics, audit trail, operational visibility |
 | M6: Open Source Ready | Documentation, getting started, onboarding — what makes or breaks adoption |
+| M7: Operator Experience | Design system, UI coherence, first-run flow — so the dashboard feels as good as the API |
 
 ## Project owner's role
 
