@@ -6,6 +6,7 @@ import { projectRoute } from './$slug'
 import { fetchJSON, postJSON, patchJSON, putJSON, deleteRequest, APIError } from '../../api'
 import { formatRelativeDate } from '../../utils/date'
 import { Button } from '../../components/ui/Button'
+import { Input } from '../../components/ui/Input'
 import { Textarea } from '../../components/ui/Textarea'
 import {
   Dialog,

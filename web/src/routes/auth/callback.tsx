@@ -38,7 +38,7 @@ function CallbackPage() {
           <p className="mt-2 text-sm text-[var(--color-text-secondary)] font-mono">{error}</p>
           <a
             href="/"
-            className="mt-4 inline-block text-sm text-[var(--color-accent)] hover:text-[var(--color-accent)]
+            className="mt-4 inline-block text-sm text-[var(--color-accent)] hover:text-[var(--color-accent)]"
           >
             Return to home
           </a>
