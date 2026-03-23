@@ -15,14 +15,15 @@ const (
 
 // APIKey represents a hashed API key scoped to a project and environment.
 type APIKey struct {
-	ID            string
-	ProjectID     string
-	EnvironmentID string
-	Name          string
-	KeyHash       [32]byte
-	DisplayPrefix string
-	CreatedAt     time.Time
-	RevokedAt     *time.Time
+	ID             string
+	ProjectID      string
+	EnvironmentID  string
+	Name           string
+	KeyHash        [32]byte
+	DisplayPrefix  string
+	CapabilityTier ToolCapabilityTier
+	CreatedAt      time.Time
+	RevokedAt      *time.Time
 }
 
 // Revoked reports whether the key has been revoked.
@@ -43,13 +44,14 @@ func GenerateAPIKey(id, projectID, environmentID, name string) (*APIKey, string,
 	hash := sha256.Sum256([]byte(plaintext))
 
 	return &APIKey{
-		ID:            id,
-		ProjectID:     projectID,
-		EnvironmentID: environmentID,
-		Name:          name,
-		KeyHash:       hash,
-		DisplayPrefix: encoded[:displayPrefixLen],
-		CreatedAt:     time.Now(),
+		ID:             id,
+		ProjectID:      projectID,
+		EnvironmentID:  environmentID,
+		Name:           name,
+		KeyHash:        hash,
+		DisplayPrefix:  encoded[:displayPrefixLen],
+		CapabilityTier: TierRead,
+		CreatedAt:      time.Now(),
 	}, plaintext, nil
 }
 

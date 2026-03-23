@@ -56,3 +56,4 @@ See `template.md`. Status values: `Proposed`, `Accepted`, `Deprecated`, `Superse
 | [0025](0025-cached-client-single-sse-connection.md) | CachedClient uses a single SSE connection for all flags | Accepted |
 | [0026](0026-polling-for-evaluation-stats-not-sse.md) | Polling for evaluation stats refresh, not SSE | Accepted |
 | [0027](0027-python-sdk-sync-first-httpx-pep544.md) | Python SDK — sync-first client, httpx, PEP 544 protocol | Accepted |
+| [0028](0028-mcp-tool-capability-tiers.md) | MCP tool capability tiers — read / write / destructive | Accepted |
