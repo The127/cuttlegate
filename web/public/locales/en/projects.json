@@ -19,7 +19,8 @@
     "create_one": "create one",
     "failed_to_load": "Failed to load",
     "retry": "retry",
-    "no_projects_prefix": "No projects yet —"
+    "no_projects_prefix": "No projects yet —",
+    "no_environments_nudge": "No environments — Create one"
   },
   "create": {
     "title": "New Project",

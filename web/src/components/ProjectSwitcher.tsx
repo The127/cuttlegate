@@ -1,9 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { useLocation, useNavigate } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fetchJSON } from '../api'
 import { useOpenCreateProjectDialog } from './CreateProjectDialog'
 import { useBrand } from '../brand'
+import { getUserManager } from '../auth'
+import { Select, SelectItem } from './ui/Select'
 
 interface Project {
   id: string
@@ -30,6 +33,15 @@ function useActiveParams() {
   }
 }
 
+/** Derive up to two initials from a full name string. Returns "?" if name is absent. */
+function deriveInitials(name: string | undefined): string {
+  if (!name) return '?'
+  const words = name.trim().split(/\s+/).filter(Boolean)
+  if (words.length === 0) return '?'
+  if (words.length === 1) return words[0].charAt(0).toUpperCase()
+  return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase()
+}
+
 const NEW_PROJECT_SENTINEL = '__new__'
 
 export function ProjectSwitcher() {
@@ -38,6 +50,17 @@ export function ProjectSwitcher() {
   const { projectSlug, envSlug } = useActiveParams()
   const openCreateDialog = useOpenCreateProjectDialog()
   const { app_name, logo_url } = useBrand()
+  const [initials, setInitials] = useState<string>('?')
+
+  useEffect(() => {
+    void getUserManager()
+      .getUser()
+      .then((user) => {
+        if (user) {
+          setInitials(deriveInitials(user.profile.name))
+        }
+      })
+  }, [])
 
   const projectsQuery = useQuery({
     queryKey: ['projects'],
@@ -63,20 +86,38 @@ export function ProjectSwitcher() {
     }
   }
 
+  const handleEnvChange = (value: string) => {
+    if (value && projectSlug) {
+      void navigate({
+        to: '/projects/$slug/environments/$envSlug/flags',
+        params: { slug: projectSlug, envSlug: value },
+      })
+    }
+  }
+
+  const noEnvironments =
+    !envsQuery.isLoading && !envsQuery.isError && (envsQuery.data?.length ?? 0) === 0
+
   return (
-    <div className="flex items-center gap-3 px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+    <header className="h-14 shrink-0 flex items-center gap-3 px-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+      {/* Wordmark / logo */}
       <div className="flex items-center gap-2 mr-2">
         {logo_url !== null ? (
           <img src={logo_url} alt={app_name} className="h-6 w-auto" />
         ) : (
-          <span className="text-sm font-semibold text-[var(--color-text-primary)]">{app_name}</span>
+          <span
+            className="text-sm font-semibold text-[var(--color-text-primary)]"
+            style={{ fontFamily: 'var(--font-mono)' }}
+          >
+            {app_name}
+          </span>
         )}
       </div>
-      <div className="w-px h-5 bg-[var(--color-surface-elevated)]" aria-hidden="true" />
+
+      <div className="w-px h-5 bg-[var(--color-border-hover)]" aria-hidden="true" />
+
+      {/* Project switcher */}
       <div className="flex items-center gap-2">
-        <label htmlFor="project-select" className="text-xs font-medium text-[var(--color-text-secondary)] font-medium">
-          {t('switcher.project_label')}
-        </label>
         {projectsQuery.isLoading ? (
           <div className="h-8 w-32 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
         ) : projectsQuery.isError ? (
@@ -100,65 +141,82 @@ export function ProjectSwitcher() {
             </button>
           </span>
         ) : (
-          <select
-            id="project-select"
+          <Select
             value={projectSlug ?? ''}
-            onChange={(e) => handleProjectChange(e.target.value)}
-            className="text-sm border border-[var(--color-border)] rounded px-2 py-1 bg-[var(--color-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            onValueChange={handleProjectChange}
+            placeholder={t('switcher.select_project')}
+            aria-label={t('switcher.project_label')}
           >
-            <option value="">{t('switcher.select_project')}</option>
             {projectsQuery.data?.map((p) => (
-              <option key={p.id} value={p.slug}>
+              <SelectItem key={p.id} value={p.slug}>
                 {p.name}
-              </option>
+              </SelectItem>
             ))}
-            <option value={NEW_PROJECT_SENTINEL}>{t('switcher.new_project_option')}</option>
-          </select>
+            <SelectItem value={NEW_PROJECT_SENTINEL}>
+              {t('switcher.new_project_option')}
+            </SelectItem>
+          </Select>
         )}
       </div>
 
+      {/* Environment switcher — only when inside a project */}
       {projectSlug !== null && (
-        <div className="flex items-center gap-2">
-          <span className="text-[var(--color-text-muted)]">/</span>
-          <label htmlFor="env-select" className="text-xs font-medium text-[var(--color-text-secondary)] font-medium">
-            {t('switcher.environment_label')}
-          </label>
-          {envsQuery.isLoading ? (
-            <div className="h-8 w-28 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
-          ) : envsQuery.isError ? (
-            <span className="text-xs text-[var(--color-status-error)] flex items-center gap-1">
-              {t('switcher.failed_to_load')}
+        <>
+          <span className="text-[var(--color-text-muted)]" aria-hidden="true">/</span>
+          <div className="flex items-center gap-2">
+            {envsQuery.isLoading ? (
+              <div className="h-8 w-28 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+            ) : envsQuery.isError ? (
+              <span className="text-xs text-[var(--color-status-error)] flex items-center gap-1">
+                {t('switcher.failed_to_load')}
+                <button
+                  onClick={() => void envsQuery.refetch()}
+                  className="underline hover:no-underline"
+                >
+                  {t('switcher.retry')}
+                </button>
+              </span>
+            ) : noEnvironments ? (
               <button
-                onClick={() => void envsQuery.refetch()}
-                className="underline hover:no-underline"
-              >
-                {t('switcher.retry')}
-              </button>
-            </span>
-          ) : (
-            <select
-              id="env-select"
-              value={envSlug ?? ''}
-              onChange={(e) => {
-                if (e.target.value && projectSlug) {
-                  void navigate({
-                    to: '/projects/$slug/environments/$envSlug/flags',
-                    params: { slug: projectSlug, envSlug: e.target.value },
-                  })
+                onClick={() =>
+                  void navigate({ to: '/projects/$slug', params: { slug: projectSlug } })
                 }
-              }}
-              className="text-sm border border-[var(--color-border)] rounded px-2 py-1 bg-[var(--color-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
-            >
-              <option value="">{t('switcher.select_environment')}</option>
-              {envsQuery.data?.map((e) => (
-                <option key={e.id} value={e.slug}>
-                  {e.name}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
+                className="text-xs text-[var(--color-accent)] hover:text-[var(--color-accent)] flex items-center gap-1"
+              >
+                {t('switcher.no_environments_nudge')}
+                <span aria-hidden="true">→</span>
+              </button>
+            ) : (
+              <Select
+                value={envSlug ?? ''}
+                onValueChange={handleEnvChange}
+                placeholder={t('switcher.select_environment')}
+                aria-label={t('switcher.environment_label')}
+              >
+                {envsQuery.data?.map((e) => (
+                  <SelectItem key={e.id} value={e.slug}>
+                    {e.name}
+                  </SelectItem>
+                ))}
+              </Select>
+            )}
+          </div>
+        </>
       )}
-    </div>
+
+      {/* Spacer */}
+      <div className="flex-1" aria-hidden="true" />
+
+      {/* User avatar — initials derived from OIDC profile.name; no API call */}
+      <div
+        className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold text-[var(--color-text-primary)] select-none shrink-0"
+        style={{
+          background: 'linear-gradient(135deg, var(--color-accent-start), var(--color-accent-end))',
+        }}
+        aria-label={`User avatar: ${initials}`}
+      >
+        {initials}
+      </div>
+    </header>
   )
 }

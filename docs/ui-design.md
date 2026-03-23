@@ -197,13 +197,25 @@ Hover state: `border-color: var(--color-border-hover)` + `box-shadow: 0 4px 20px
 
 Do not add inner padding inconsistently. Standard card padding: `p-4` (16px).
 
+#### Top bar
+
+- Height: `h-14`; background: `var(--color-surface)`; bottom border: `1px solid var(--color-border)`
+- **Left:** logo or text-only wordmark. If text-only (no `logo_url`), render app name in JetBrains Mono (`fontFamily: 'var(--font-mono)'`).
+- **Centre-left:** project switcher (Radix `Select` from `web/src/components/ui/Select.tsx`); environment switcher (same). A separator `/` in `--color-text-muted` divides the two.
+- **Environment nudge:** when a project has zero environments, render a text button "No environments — Create one →" in `--color-accent` that navigates to the project dashboard. Do not render a disabled select.
+- **Right:** user avatar — circle, `h-8 w-8`, gradient fill (`--color-accent-start` → `--color-accent-end`), white initials derived from OIDC `profile.name`. Derivation: first letter of first word + first letter of last word, uppercased. Fallback: first letter if single-word name, `?` if absent. No API call — reads from the in-memory OIDC user object via `getUserManager().getUser()`.
+- No `bg-white`, `bg-gray-*`, or `dark:` classes. No `uppercase tracking-wide`.
+
 #### Sidebar navigation
 
 - Background: `--color-surface`, right border `--color-border`
+- Width: `w-56` (224px) — fixed, not collapsible in v1.0
 - Nav item rest: `--color-text-secondary`, `px-3 py-2`, `border-radius: var(--radius-sm)`
 - Nav item hover: `--color-surface-elevated` background
-- **Active nav item:** 3px gradient left border (`--color-accent-start` → `--color-accent-end`) + `--color-surface-elevated` background + `--color-text-primary` text
-- Nav item icon: 16px Lucide icon, left of label, same colour as text
+- **Active nav item:** 3px gradient left accent (`--color-accent-start` → `--color-accent-end`) via `::before` pseudo-element (absolute, `left-0 top-0 bottom-0 w-[3px]`, `linear-gradient(to bottom, ...)`) + `--color-surface-elevated` background + `--color-text-primary` text
+- Nav item icon: 16px inline SVG icon, left of label, same colour as text
+- **Sidebar only renders on project routes** (`/projects/*`). Home page `/` shows no sidebar.
+- All nav labels sourced from `common.json` under the `nav` key via `useTranslation('common')`.
 
 ---
 
@@ -341,3 +353,6 @@ If something is missing soul — it feels assembled rather than designed, or it 
 | 2026-03-23 | Forbidden patterns list established: bg-white, bg-gray-*, dark: classes, uppercase tracking-wide banned | M9 design session |
 | 2026-03-23 | Section headings: title case only — uppercase tracking-wide pattern retired project-wide | M9 design session |
 | 2026-03-23 | Destructive confirm button: solid red only, not gradient — red reserved for destructive actions | M9 design session |
+| 2026-03-23 | Top bar specification added: h-14, JetBrains Mono wordmark, Radix Select switchers, gradient user avatar, environment nudge | Sprint 23 #300 |
+| 2026-03-23 | Sidebar: fixed w-56, active ::before gradient accent (to bottom), project-route only | Sprint 23 #300 |
+| 2026-03-23 | Breadcrumbs bar removed entirely — sidebar + page heading provides sufficient context | Sprint 23 #300 |

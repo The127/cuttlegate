@@ -34,5 +34,13 @@
     "title": "404",
     "body": "Page not found.",
     "return_to_home": "Return to home"
+  },
+  "nav": {
+    "flags": "Flags",
+    "segments": "Segments",
+    "api_keys": "API Keys",
+    "members": "Members",
+    "audit": "Audit",
+    "settings": "Settings"
   }
 }
