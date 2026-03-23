@@ -32,6 +32,11 @@ export function useOpenCreateProjectDialog(): () => void {
 
 export function CreateProjectDialogProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false)
+  // Manual focus-return retained from the pre-Radix implementation.
+  // Radix Dialog also restores focus to the trigger on close, but this explicit
+  // capture + restore is belt-and-suspenders: it covers any edge case where the
+  // trigger element is not the Radix DialogTrigger (the Provider context exposes
+  // handleOpen imperatively, so the trigger is captured at call time).
   const triggerRef = useRef<HTMLElement | null>(null)
 
   const handleOpen = useCallback(() => {
