@@ -51,6 +51,31 @@ describe('TierSelector', () => {
     expect(destructiveBtn?.className).not.toContain('bg-amber-500')
   })
 
+  // @happy — inline description renders for read and write tiers
+  it('shows read description when read is selected', () => {
+    render(<TierSelector value="read" onChange={() => {}} />)
+    expect(screen.getByText('Allows flag reads only')).toBeInTheDocument()
+  })
+
+  it('shows write description when write is selected', () => {
+    render(<TierSelector value="write" onChange={() => {}} />)
+    expect(screen.getByText('Allows flag reads and writes')).toBeInTheDocument()
+  })
+
+  it('does not show a neutral description when destructive is selected', () => {
+    render(<TierSelector value="destructive" onChange={() => {}} />)
+    expect(screen.queryByText('Allows flag reads only')).not.toBeInTheDocument()
+    expect(screen.queryByText('Allows flag reads and writes')).not.toBeInTheDocument()
+  })
+
+  it('description updates when tier changes from read to write', () => {
+    const { rerender } = render(<TierSelector value="read" onChange={() => {}} />)
+    expect(screen.getByText('Allows flag reads only')).toBeInTheDocument()
+    rerender(<TierSelector value="write" onChange={() => {}} />)
+    expect(screen.getByText('Allows flag reads and writes')).toBeInTheDocument()
+    expect(screen.queryByText('Allows flag reads only')).not.toBeInTheDocument()
+  })
+
   // @happy — onChange called with correct tier
   it('calls onChange with write when Write button clicked', () => {
     const onChange = vi.fn()

@@ -33,7 +33,7 @@ const TIERS: TierOption[] = [
   {
     value: 'destructive',
     labelKey: 'api_keys.tier_destructive_label',
-    descriptionKey: 'api_keys.tier_destructive_description',
+    descriptionKey: '',
     activeClasses:
       'bg-amber-500 text-white border-amber-500',
     inactiveClasses:
@@ -55,6 +55,7 @@ export interface TierSelectorProps {
  */
 export function TierSelector({ value, onChange }: TierSelectorProps) {
   const { t } = useTranslation('projects')
+  const activeTier = TIERS.find(tier => tier.value === value)
 
   return (
     <div>
@@ -84,6 +85,11 @@ export function TierSelector({ value, onChange }: TierSelectorProps) {
       {value === 'destructive' && (
         <p className="mt-1.5 text-xs text-amber-700 dark:text-amber-400">
           {t('api_keys.tier_destructive_warning')}
+        </p>
+      )}
+      {activeTier?.descriptionKey && (
+        <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+          {t(activeTier.descriptionKey)}
         </p>
       )}
     </div>
