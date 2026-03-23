@@ -71,7 +71,7 @@ function ProjectDashboard() {
       <ProjectHeader name={project.name} slug={project.slug} />
 
       <section className="mt-6">
-        <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+        <h2 className="text-sm font-medium text-[var(--color-text-secondary)] font-medium mb-3">
           {t('dashboard.environments_section')}
         </h2>
         {envsQuery.isLoading ? (
@@ -90,7 +90,7 @@ function ProjectDashboard() {
       </section>
 
       <section className="mt-8">
-        <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+        <h2 className="text-sm font-medium text-[var(--color-text-secondary)] font-medium mb-3">
           {t('dashboard.quick_links_section')}
         </h2>
         <div className="flex gap-3 flex-wrap">
@@ -104,7 +104,7 @@ function ProjectDashboard() {
       </section>
 
       <section className="mt-8">
-        <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+        <h2 className="text-sm font-medium text-[var(--color-text-secondary)] font-medium mb-3">
           {t('dashboard.recent_flags_section')}
         </h2>
         {flagsQuery.isLoading ? (
@@ -279,7 +279,7 @@ function CreateFlagModal({
             <DialogHeader>
               <DialogTitle>{t('create.success_title')}</DialogTitle>
             </DialogHeader>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-sm text-[var(--color-text-secondary)] mb-4">
               {t('create.success_body')}
             </p>
             <CopyableCode
@@ -300,7 +300,7 @@ function CreateFlagModal({
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="flag-key-dashboard" className="text-xs text-gray-500 mb-1">
+                <Label htmlFor="flag-key-dashboard" className="text-xs text-[var(--color-text-secondary)] mb-1">
                   {t('create.key_label')}
                 </Label>
                 <Input
@@ -317,14 +317,14 @@ function CreateFlagModal({
                   className="font-mono py-1.5 px-2"
                 />
                 {keyError && (
-                  <p id="flag-key-dashboard-error" className="mt-1 text-xs text-red-600 dark:text-red-400">
+                  <p id="flag-key-dashboard-error" className="mt-1 text-xs text-[var(--color-status-error)]">
                     {keyError}
                   </p>
                 )}
               </div>
 
               <div>
-                <Label htmlFor="flag-name-dashboard" className="text-xs text-gray-500 mb-1">
+                <Label htmlFor="flag-name-dashboard" className="text-xs text-[var(--color-text-secondary)] mb-1">
                   {t('create.name_label')}
                 </Label>
                 <Input
@@ -338,7 +338,7 @@ function CreateFlagModal({
               </div>
 
               <div>
-                <Label htmlFor="flag-type-dashboard" className="text-xs text-gray-500 mb-1">
+                <Label htmlFor="flag-type-dashboard" className="text-xs text-[var(--color-text-secondary)] mb-1">
                   {t('create.type_label')}
                 </Label>
                 <Select
@@ -355,7 +355,7 @@ function CreateFlagModal({
               </div>
 
               {serverError && (
-                <p className="text-xs text-red-600 dark:text-red-400">{serverError}</p>
+                <p className="text-xs text-[var(--color-status-error)]">{serverError}</p>
               )}
 
               <div className="flex justify-end gap-3 pt-2">
@@ -404,16 +404,16 @@ function ProjectHeader({ name, slug }: { name: string; slug: string }) {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{name}</h1>
+      <h1 className="text-2xl font-semibold text-[var(--color-text-primary)]">{name}</h1>
       <div className="mt-1 flex items-center gap-2">
         <button
           onClick={copySlug}
-          className="relative font-mono text-sm text-gray-500 dark:text-gray-400 hover:text-[var(--color-accent)] bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+          className="relative font-mono text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
           aria-label={t('dashboard.copy_slug_aria', { slug })}
         >
           {slug}
           {copied && (
-            <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-xs bg-gray-800 dark:bg-gray-600 text-white rounded px-2 py-0.5 whitespace-nowrap pointer-events-none">
+            <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-xs bg-[var(--color-surface-elevated)] text-white rounded px-2 py-0.5 whitespace-nowrap pointer-events-none">
               {t('settings.copied')}
             </span>
           )}
@@ -440,19 +440,19 @@ function EnvironmentCard({ env, projectSlug }: { env: Environment; projectSlug: 
     <Link
       to="/projects/$slug/environments/$envSlug/flags"
       params={{ slug: projectSlug, envSlug: env.slug }}
-      className="block border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 p-4 hover:border-[var(--color-accent)] hover:shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+      className="block border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] p-4 hover:border-[var(--color-accent)] hover:shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
     >
-      <h3 className="font-mono text-sm font-medium text-gray-900 dark:text-gray-100">{env.name}</h3>
+      <h3 className="font-mono text-sm font-medium text-[var(--color-text-primary)]">{env.name}</h3>
       {flagsQuery.isLoading ? (
-        <div className="mt-2 h-4 w-20 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+        <div className="mt-2 h-4 w-20 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
       ) : flagsQuery.isError ? (
-        <p className="mt-2 text-xs text-red-600 dark:text-red-400">{t('dashboard.failed_to_load_env')}</p>
+        <p className="mt-2 text-xs text-[var(--color-status-error)]">{t('dashboard.failed_to_load_env')}</p>
       ) : (
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          <span className="font-medium text-gray-800 dark:text-gray-200">{enabled}</span>
-          <span className="text-gray-400 dark:text-gray-500"> / </span>
+        <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+          <span className="font-medium text-[var(--color-text-primary)]">{enabled}</span>
+          <span className="text-[var(--color-text-muted)]"> / </span>
           <span>{total}</span>
-          <span className="text-gray-400 dark:text-gray-500"> {t('toggle.enabled', { ns: 'flags' }).toLowerCase()}</span>
+          <span className="text-[var(--color-text-muted)]"> {t('toggle.enabled', { ns: 'flags' }).toLowerCase()}</span>
         </p>
       )}
     </Link>
@@ -463,7 +463,7 @@ function QuickLink({ label, to }: { label: string; to: string }) {
   return (
     <Link
       to={to}
-      className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+      className="px-3 py-1.5 text-sm font-medium text-[var(--color-text-primary)] border border-[var(--color-border)] rounded hover:bg-[var(--color-surface)] hover:border-[var(--color-border)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
     >
       {label}
     </Link>
@@ -476,18 +476,18 @@ function RecentFlagsList({ flags }: { flags: ProjectFlag[] }) {
     .slice(0, 5)
 
   return (
-    <ul className="divide-y divide-gray-100 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
+    <ul className="divide-y divide-[var(--color-border)] border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)]">
       {recent.map((flag) => (
         <li key={flag.id} className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3 min-w-0">
-            <span className="font-mono text-sm text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-2 py-0.5">
+            <span className="font-mono text-sm text-[var(--color-text-primary)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-2 py-0.5">
               {flag.key}
             </span>
-            <span className="text-sm text-gray-600 dark:text-gray-400 truncate">{flag.name}</span>
+            <span className="text-sm text-[var(--color-text-secondary)] truncate">{flag.name}</span>
           </div>
           <time
             dateTime={flag.created_at}
-            className="text-xs text-gray-400 dark:text-gray-500 shrink-0 ml-4"
+            className="text-xs text-[var(--color-text-muted)] shrink-0 ml-4"
             title={new Date(flag.created_at).toLocaleString()}
           >
             {formatRelativeDate(flag.created_at)}
@@ -502,9 +502,9 @@ function EnvironmentCardsSkeleton() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 p-4">
-          <div className="h-4 w-20 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
-          <div className="mt-2 h-4 w-24 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+        <div key={i} className="border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] p-4">
+          <div className="h-4 w-20 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+          <div className="mt-2 h-4 w-24 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
         </div>
       ))}
     </div>
@@ -513,14 +513,14 @@ function EnvironmentCardsSkeleton() {
 
 function RecentFlagsSkeleton() {
   return (
-    <ul className="divide-y divide-gray-100 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
+    <ul className="divide-y divide-[var(--color-border)] border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)]">
       {[1, 2, 3].map((i) => (
         <li key={i} className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="h-6 w-28 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
-            <div className="h-4 w-40 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+            <div className="h-6 w-28 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+            <div className="h-4 w-40 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
           </div>
-          <div className="h-3 w-12 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+          <div className="h-3 w-12 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
         </li>
       ))}
     </ul>
@@ -531,10 +531,10 @@ function SectionError({ label, onRetry }: { label: string; onRetry: () => void }
   const { t } = useTranslation('projects')
   return (
     <div>
-      <span className="text-sm text-red-600 dark:text-red-400">{t('dashboard.failed_to_load', { resource: label })} </span>
+      <span className="text-sm text-[var(--color-status-error)]">{t('dashboard.failed_to_load', { resource: label })} </span>
       <button
         onClick={onRetry}
-        className="text-sm text-red-600 dark:text-red-400 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
+        className="text-sm text-[var(--color-status-error)] underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-[var(--color-status-error)] rounded"
       >
         {t('actions.retry', { ns: 'common' })}
       </button>

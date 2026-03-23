@@ -119,7 +119,7 @@ function FlagListPage() {
           <Link
             to="/projects/$slug/environments/$envSlug/flags/$key"
             params={{ slug, envSlug, key: f.key }}
-            className="text-sm text-gray-700 dark:text-gray-200 truncate hover:text-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
+            className="text-sm text-[var(--color-text-primary)] truncate hover:text-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
           >
             {f.name}
           </Link>
@@ -129,7 +129,7 @@ function FlagListPage() {
         key: 'default_variant',
         header: t('table.col_default_variant'),
         cell: (f) => (
-          <span className="font-mono text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-1.5 py-0.5">
+          <span className="font-mono text-xs text-[var(--color-text-secondary)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1.5 py-0.5">
             {f.default_variant_key}
           </span>
         ),
@@ -171,7 +171,7 @@ function FlagListPage() {
           <button
             onClick={() => setPendingDelete(f.key)}
             aria-label={t('list.delete_flag_aria', { key: f.key })}
-            className="text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 rounded p-0.5"
+            className="text-[var(--color-text-muted)] hover:text-[var(--color-status-error)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-status-error)] rounded p-0.5"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -201,11 +201,11 @@ function FlagListPage() {
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('list.title')}</h1>
+        <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">{t('list.title')}</h1>
         <Button onClick={() => setShowCreate(true)}>{t('list.new_flag')}</Button>
       </div>
 
-      <div className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 overflow-hidden">
+      <div className="border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] overflow-hidden">
         <DataTable
           columns={columns}
           data={flags}
@@ -247,15 +247,15 @@ function LastEvaluatedCell({ slug, envSlug, flagKey }: { slug: string; envSlug: 
   const { data } = useFlagStats(slug, envSlug, flagKey)
 
   if (!data) {
-    return <span className="text-xs text-gray-400 dark:text-gray-500">—</span>
+    return <span className="text-xs text-[var(--color-text-muted)]">—</span>
   }
 
   if (!data.last_evaluated_at || data.evaluation_count === 0) {
-    return <span className="text-xs text-gray-400 dark:text-gray-500">{t('stats.never_evaluated')}</span>
+    return <span className="text-xs text-[var(--color-text-muted)]">{t('stats.never_evaluated')}</span>
   }
 
   return (
-    <span className="text-xs text-gray-500 dark:text-gray-400">{formatRelativeDate(data.last_evaluated_at)}</span>
+    <span className="text-xs text-[var(--color-text-secondary)]">{formatRelativeDate(data.last_evaluated_at)}</span>
   )
 }
 
@@ -263,7 +263,7 @@ function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
   const { t } = useTranslation('flags')
   return (
     <div className="text-center py-16 px-6">
-      <p className="text-sm text-gray-500 dark:text-gray-400">
+      <p className="text-sm text-[var(--color-text-secondary)]">
         {t('list.empty_state')}
       </p>
       <Button onClick={onCreateClick} size="lg" className="mt-4">
@@ -344,10 +344,10 @@ function SdkPrompt({ flagKey }: { flagKey: string }) {
     <section
       role="region"
       aria-label={t('create.sdk_prompt.region_aria')}
-      className="mt-5 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+      className="mt-5 border border-[var(--color-border)] rounded-lg overflow-hidden"
     >
-      <div className="px-4 pt-4 pb-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
+      <div className="px-4 pt-4 pb-3 bg-[var(--color-surface-elevated)] border-b border-[var(--color-border)]">
+        <p className="text-sm font-medium text-[var(--color-text-primary)]">
           {t('create.sdk_prompt.heading')}
         </p>
         <div className="mt-2 flex gap-1" role="tablist">
@@ -360,8 +360,8 @@ function SdkPrompt({ flagKey }: { flagKey: string }) {
               className={[
                 'px-3 py-1 text-xs font-medium rounded border transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]',
                 activeTab === tab
-                  ? 'border-[var(--color-accent)] text-[var(--color-accent)] bg-white dark:bg-gray-900'
-                  : 'border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900 hover:border-gray-400 dark:hover:border-gray-400',
+                  ? 'border-[var(--color-accent)] text-[var(--color-accent)] bg-[var(--color-surface)]'
+                  : 'border-[var(--color-border)] text-[var(--color-text-secondary)] bg-[var(--color-surface)] hover:border-[var(--color-border)]
               ].join(' ')}
             >
               {t(`create.sdk_prompt.tab_${tab}`)}
@@ -369,14 +369,14 @@ function SdkPrompt({ flagKey }: { flagKey: string }) {
           ))}
         </div>
       </div>
-      <pre className="p-4 text-xs font-mono overflow-x-auto bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 leading-relaxed">
+      <pre className="p-4 text-xs font-mono overflow-x-auto bg-[var(--color-surface)] text-[var(--color-text-primary)] leading-relaxed">
         {buildSnippet(activeTab, flagKey)}
       </pre>
-      <div className="flex justify-end px-4 pb-3 bg-white dark:bg-gray-900">
+      <div className="flex justify-end px-4 pb-3 bg-[var(--color-surface)]">
         <button
           onClick={handleDismiss}
           aria-label={t('create.sdk_prompt.dismiss_aria')}
-          className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
+          className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
         >
           {t('create.sdk_prompt.dismiss')}
         </button>
@@ -486,7 +486,7 @@ function CreateFlagModal({
             <DialogHeader>
               <DialogTitle>{t('create.success_title')}</DialogTitle>
             </DialogHeader>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-sm text-[var(--color-text-secondary)] mb-4">
               {t('create.success_body')}
             </p>
             <CopyableCode
@@ -508,7 +508,7 @@ function CreateFlagModal({
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="flag-key" className="text-xs text-gray-500 mb-1">{t('create.key_label')}</Label>
+                <Label htmlFor="flag-key" className="text-xs text-[var(--color-text-secondary)] mb-1">{t('create.key_label')}</Label>
                 <Input
                   id="flag-key"
                   type="text"
@@ -523,14 +523,14 @@ function CreateFlagModal({
                   className="font-mono py-1.5 px-2"
                 />
                 {keyError && (
-                  <p id="flag-key-error" className="mt-1 text-xs text-red-600 dark:text-red-400">
+                  <p id="flag-key-error" className="mt-1 text-xs text-[var(--color-status-error)]">
                     {keyError}
                   </p>
                 )}
               </div>
 
               <div>
-                <Label htmlFor="flag-name" className="text-xs text-gray-500 mb-1">{t('create.name_label')}</Label>
+                <Label htmlFor="flag-name" className="text-xs text-[var(--color-text-secondary)] mb-1">{t('create.name_label')}</Label>
                 <Input
                   id="flag-name"
                   type="text"
@@ -542,7 +542,7 @@ function CreateFlagModal({
               </div>
 
               <div>
-                <Label htmlFor="flag-type" className="text-xs text-gray-500 mb-1">{t('create.type_label')}</Label>
+                <Label htmlFor="flag-type" className="text-xs text-[var(--color-text-secondary)] mb-1">{t('create.type_label')}</Label>
                 <Select
                   value={type}
                   onValueChange={setType}
@@ -557,7 +557,7 @@ function CreateFlagModal({
               </div>
 
               {serverError && (
-                <p className="text-xs text-red-600 dark:text-red-400">{serverError}</p>
+                <p className="text-xs text-[var(--color-status-error)]">{serverError}</p>
               )}
 
               <div className="flex justify-end gap-3 pt-2">
@@ -607,16 +607,16 @@ function DeleteConfirmModal({
         <DialogHeader>
           <DialogTitle>{t('delete.title')}</DialogTitle>
         </DialogHeader>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
+        <p className="text-sm text-[var(--color-text-secondary)]">
           <Trans
             i18nKey="delete.body"
             ns="flags"
             values={{ key: flagKey }}
-            components={{ mono: <span className="font-mono text-gray-800 dark:text-gray-200" /> }}
+            components={{ mono: <span className="font-mono text-[var(--color-text-primary)]" /> }}
           />
         </p>
         {deleteFailed && (
-          <p className="mt-3 text-xs text-red-600 dark:text-red-400">{t('delete.failed')}</p>
+          <p className="mt-3 text-xs text-[var(--color-status-error)]">{t('delete.failed')}</p>
         )}
         <DialogFooter>
           <Button autoFocus variant="secondary" onClick={onCancel} disabled={isDeleting}>
@@ -635,20 +635,20 @@ function FlagListSkeleton() {
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <div className="h-6 w-32 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
-        <div className="h-8 w-24 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+        <div className="h-6 w-32 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+        <div className="h-8 w-24 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
       </div>
-      <ul className="divide-y divide-gray-100 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
+      <ul className="divide-y divide-[var(--color-border)] border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)]">
         {[1, 2, 3].map((i) => (
           <li key={i} className="flex items-center justify-between px-4 py-3 gap-4">
             <div className="flex items-center gap-3">
-              <div className="h-6 w-28 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
-              <div className="h-4 w-40 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
-              <div className="h-5 w-16 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+              <div className="h-6 w-28 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+              <div className="h-4 w-40 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+              <div className="h-5 w-16 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
             </div>
             <div className="flex items-center gap-3">
-              <div className="h-6 w-20 bg-gray-100 dark:bg-gray-700 rounded-full animate-pulse" />
-              <div className="h-4 w-4 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+              <div className="h-6 w-20 bg-[var(--color-surface-elevated)] rounded-full animate-pulse" />
+              <div className="h-4 w-4 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
             </div>
           </li>
         ))}
@@ -661,10 +661,10 @@ function FlagListError({ onRetry }: { onRetry: () => void }) {
   const { t } = useTranslation('flags')
   return (
     <div className="p-6">
-      <span className="text-sm text-red-600 dark:text-red-400">{t('list.error')} </span>
+      <span className="text-sm text-[var(--color-status-error)]">{t('list.error')} </span>
       <button
         onClick={onRetry}
-        className="text-sm text-red-600 dark:text-red-400 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
+        className="text-sm text-[var(--color-status-error)] underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-[var(--color-status-error)] rounded"
       >
         {t('actions.retry', { ns: 'common' })}
       </button>

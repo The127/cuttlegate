@@ -9,19 +9,20 @@ export type ButtonVariant =
   | 'destructive'
 export type ButtonSize = 'sm' | 'md' | 'lg'
 
+// Destructive/danger: solid red per docs/ui-design.md — no gradient, no subtlety.
 const DANGER_CLASSES =
-  'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed'
+  'bg-[#f87171] text-white hover:bg-[#ef4444] focus:ring-[var(--color-status-error)] disabled:opacity-50 disabled:cursor-not-allowed'
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
     'bg-[var(--color-accent)] text-white hover:opacity-90 focus:ring-[var(--color-accent)] disabled:opacity-50 disabled:cursor-not-allowed',
   secondary:
-    'text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 focus:ring-gray-400 disabled:opacity-50 disabled:cursor-not-allowed',
+    'bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] border border-[var(--color-border)] hover:border-[var(--color-border-hover)] focus:ring-[var(--color-accent)] disabled:opacity-50 disabled:cursor-not-allowed',
   ghost:
-    'text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-gray-100 focus:ring-gray-400 disabled:opacity-50 disabled:cursor-not-allowed',
+    'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] focus:ring-[var(--color-accent)] disabled:opacity-50 disabled:cursor-not-allowed',
   danger: DANGER_CLASSES,
   'danger-outline':
-    'text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed',
+    'text-[var(--color-status-error)] border border-[var(--color-border)] hover:border-[var(--color-status-error)] focus:ring-[var(--color-status-error)] disabled:opacity-50 disabled:cursor-not-allowed',
   // destructive is a semantic alias for danger — same visual style
   destructive: DANGER_CLASSES,
 }

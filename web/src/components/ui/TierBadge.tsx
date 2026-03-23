@@ -2,20 +2,22 @@ import { useTranslation } from 'react-i18next'
 
 export type ToolCapabilityTier = 'read' | 'write' | 'destructive'
 
+// Dark-by-default tier badge colours per docs/ui-design.md TierBadge spec.
+// Uses rgba() values so no dark: variant prefix is needed.
 const tierConfig: Record<ToolCapabilityTier, { classes: string; labelKey: string }> = {
   read: {
     classes:
-      'bg-neutral-100 text-neutral-600 border border-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:border-neutral-700',
+      'bg-[rgba(255,255,255,0.06)] text-[var(--color-text-secondary)] border border-[var(--color-border)]',
     labelKey: 'api_keys.tier_read_label',
   },
   write: {
     classes:
-      'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800',
+      'bg-[rgba(79,124,255,0.15)] text-[#818cf8] border border-[rgba(79,124,255,0.3)]',
     labelKey: 'api_keys.tier_write_label',
   },
   destructive: {
     classes:
-      'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800',
+      'bg-[rgba(251,191,36,0.12)] text-[#fbbf24] border border-[rgba(251,191,36,0.25)]',
     labelKey: 'api_keys.tier_destructive_label',
   },
 }
@@ -28,7 +30,7 @@ export interface TierBadgeProps {
 /**
  * TierBadge — coloured pill for API key capability tier.
  *
- * read: grey, write: blue, destructive: amber.
+ * read: grey, write: blue-purple, destructive: amber.
  * See docs/ui-design.md for the tier badge colour convention.
  */
 export function TierBadge({ tier, className = '' }: TierBadgeProps) {

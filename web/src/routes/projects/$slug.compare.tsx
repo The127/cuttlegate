@@ -114,7 +114,7 @@ function CompareEnvironmentsPage() {
 
   return (
     <div className="p-6">
-      <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">{t('compare.title')}</h1>
+      <h1 className="text-lg font-semibold text-[var(--color-text-primary)] mb-6">{t('compare.title')}</h1>
 
       {isLoading ? (
         <MatrixSkeleton />
@@ -124,13 +124,13 @@ function CompareEnvironmentsPage() {
         <EmptyState />
       ) : (
         <>
-          <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
+          <div className="overflow-x-auto border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)]">
             <table className="min-w-full text-sm" aria-label={t('compare.matrix_aria')}>
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-elevated)]">
                   <th
                     scope="col"
-                    className="sticky left-0 z-10 bg-gray-50 dark:bg-gray-900 px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide w-64"
+                    className="sticky left-0 z-10 bg-[var(--color-surface-elevated)] px-4 py-2.5 text-left text-xs font-medium text-[var(--color-text-secondary)] font-medium w-64"
                   >
                     {t('compare.flag_header')}
                   </th>
@@ -138,7 +138,7 @@ function CompareEnvironmentsPage() {
                     <th
                       key={env.id}
                       scope="col"
-                      className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap"
+                      className="px-4 py-2.5 text-left text-xs font-medium text-[var(--color-text-secondary)] font-medium whitespace-nowrap"
                     >
                       <div className="flex items-center gap-2">
                         <span className="font-mono">{env.slug}</span>
@@ -154,11 +154,11 @@ function CompareEnvironmentsPage() {
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+              <tbody className="divide-y divide-[var(--color-border)]">
                 {pagedFlags.map((flag) => (
-                  <tr key={flag.id} className="group hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                    <td className="sticky left-0 z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-50 dark:group-hover:bg-gray-700/50 px-4 py-2.5 w-64">
-                      <span className="font-mono text-xs text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-1.5 py-0.5">
+                  <tr key={flag.id} className="group hover:bg-[var(--color-surface)] transition-colors">
+                    <td className="sticky left-0 z-10 bg-[var(--color-surface)] group-hover:bg-[var(--color-surface)] px-4 py-2.5 w-64">
+                      <span className="font-mono text-xs text-[var(--color-text-primary)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1.5 py-0.5">
                         {flag.key}
                       </span>
                     </td>
@@ -169,7 +169,7 @@ function CompareEnvironmentsPage() {
                           {cell ? (
                             <MatrixCell cell={cell} />
                           ) : (
-                            <span className="text-xs text-gray-300 dark:text-gray-600">—</span>
+                            <span className="text-xs text-[var(--color-text-muted)]">—</span>
                           )}
                         </td>
                       )
@@ -210,17 +210,17 @@ function MatrixCell({ cell }: { cell: CellState }) {
       <span
         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border w-fit ${
           cell.enabled
-            ? 'bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800'
-            : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600'
+            ? 'bg-[rgba(16,217,168,0.08)] text-[var(--color-status-enabled)] border-[var(--color-status-enabled)]'
+            : 'bg-[var(--color-surface-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border)]'
         }`}
       >
         <span
-          className={`w-1.5 h-1.5 rounded-full ${cell.enabled ? 'bg-green-500 dark:bg-green-400' : 'bg-gray-400 dark:bg-gray-500'}`}
+          className={`w-1.5 h-1.5 rounded-full ${cell.enabled ? 'bg-[var(--color-status-enabled)]' : 'bg-[var(--color-surface-elevated)]'}`}
           aria-hidden="true"
         />
         {cell.enabled ? t('compare.enabled') : t('compare.disabled')}
       </span>
-      <span className="font-mono text-xs text-gray-500 dark:text-gray-400">{cell.default_variant_key}</span>
+      <span className="font-mono text-xs text-[var(--color-text-secondary)]">{cell.default_variant_key}</span>
     </div>
   )
 }
@@ -236,7 +236,7 @@ function Pagination({
 }) {
   const { t } = useTranslation('projects')
   return (
-    <div className="mt-4 flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
+    <div className="mt-4 flex items-center justify-between text-sm text-[var(--color-text-secondary)]">
       <span>
         {t('compare.page_info', { current: page + 1, total: totalPages })}
       </span>
@@ -244,14 +244,14 @@ function Pagination({
         <button
           onClick={() => onPageChange(page - 1)}
           disabled={page === 0}
-          className="px-3 py-1.5 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+          className="px-3 py-1.5 border border-[var(--color-border)] rounded hover:bg-[var(--color-surface)] disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
         >
           {t('compare.previous')}
         </button>
         <button
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages - 1}
-          className="px-3 py-1.5 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+          className="px-3 py-1.5 border border-[var(--color-border)] rounded hover:bg-[var(--color-surface)] disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
         >
           {t('compare.next')}
         </button>
@@ -263,8 +263,8 @@ function Pagination({
 function EmptyState() {
   const { t } = useTranslation('projects')
   return (
-    <div className="text-center py-16 px-6 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
-      <p className="text-sm text-gray-500 dark:text-gray-400">
+    <div className="text-center py-16 px-6 border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)]">
+      <p className="text-sm text-[var(--color-text-secondary)]">
         {t('compare.empty')}
       </p>
     </div>
@@ -273,23 +273,23 @@ function EmptyState() {
 
 function MatrixSkeleton() {
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 overflow-hidden">
-      <div className="flex gap-4 px-4 py-2.5 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-        <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+    <div className="border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] overflow-hidden">
+      <div className="flex gap-4 px-4 py-2.5 border-b border-[var(--color-border)] bg-[var(--color-surface-elevated)]">
+        <div className="h-4 w-32 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          <div key={i} className="h-4 w-20 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
         ))}
       </div>
       {[1, 2, 3, 4, 5].map((i) => (
         <div
           key={i}
-          className="flex gap-4 px-4 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0"
+          className="flex gap-4 px-4 py-3 border-b border-[var(--color-border)] last:border-0"
         >
-          <div className="h-5 w-36 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+          <div className="h-5 w-36 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
           {[1, 2, 3].map((j) => (
             <div key={j} className="flex flex-col gap-1">
-              <div className="h-5 w-16 bg-gray-100 dark:bg-gray-700 rounded-full animate-pulse" />
-              <div className="h-3 w-10 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+              <div className="h-5 w-16 bg-[var(--color-surface-elevated)] rounded-full animate-pulse" />
+              <div className="h-3 w-10 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
             </div>
           ))}
         </div>
@@ -302,10 +302,10 @@ function MatrixError({ onRetry }: { onRetry: () => void }) {
   const { t } = useTranslation('projects')
   return (
     <div>
-      <span className="text-sm text-red-600 dark:text-red-400">{t('compare.error')} </span>
+      <span className="text-sm text-[var(--color-status-error)]">{t('compare.error')} </span>
       <button
         onClick={onRetry}
-        className="text-sm text-red-600 dark:text-red-400 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
+        className="text-sm text-[var(--color-status-error)] underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-[var(--color-status-error)] rounded"
       >
         {t('actions.retry', { ns: 'common' })}
       </button>

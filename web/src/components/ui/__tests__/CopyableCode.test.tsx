@@ -98,27 +98,17 @@ describe('CopyableCode', () => {
     expect(axeResults).toHaveNoViolations()
   })
 
-  // @edge — dark mode: axe passes with dark: class variants applied
+  // @edge — axe passes; dark is default, no media query needed
   it('passes axe in dark mode', async () => {
-    vi.spyOn(window, 'matchMedia').mockImplementation((query) => ({
-      matches: query === '(prefers-color-scheme: dark)',
-      media: query,
-      onchange: null,
-      addListener: () => {},
-      removeListener: () => {},
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      dispatchEvent: () => false,
-    }))
     const { axeResults } = await renderWithAxe(<CopyableCode value="my-flag-key" />)
     expect(axeResults).toHaveNoViolations()
   })
 
-  // @edge — dark: variant classes are present in the DOM
-  it('has dark: variant classes on the button', () => {
+  // @edge — design token classes are present in the DOM
+  it('has design token classes on the button', () => {
     const { container } = render(<CopyableCode value="my-flag-key" />)
     const btn = container.querySelector('button')
-    expect(btn?.className).toContain('dark:text-gray-200')
-    expect(btn?.className).toContain('dark:bg-gray-800')
+    expect(btn?.className).toContain('text-[var(--color-text-primary)]')
+    expect(btn?.className).toContain('bg-[var(--color-surface-elevated)]')
   })
 })

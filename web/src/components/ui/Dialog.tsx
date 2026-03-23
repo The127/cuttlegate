@@ -33,10 +33,10 @@ interface DialogContentProps {
 export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
   ({ children, className = '' }, ref) => (
     <RadixDialog.Portal>
-      <RadixDialog.Overlay className="fixed inset-0 z-40 bg-black/40 dark:bg-black/60" />
+      <RadixDialog.Overlay className="fixed inset-0 z-40 bg-black/65" />
       <RadixDialog.Content
         ref={ref}
-        className={`fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl p-6 focus:outline-none ${className}`}
+        className={`fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl p-6 focus:outline-none ${className}`}
       >
         {children}
       </RadixDialog.Content>
@@ -64,7 +64,7 @@ export function DialogTitle({
 }) {
   return (
     <RadixDialog.Title
-      className={`text-base font-semibold text-gray-900 dark:text-gray-100 ${className}`}
+      className={`text-base font-semibold text-[var(--color-text-primary)] ${className}`}
     >
       {children}
     </RadixDialog.Title>
@@ -85,7 +85,7 @@ export function DialogDescription({
 }) {
   return (
     <RadixDialog.Description
-      className={`mt-1 text-sm text-gray-500 dark:text-gray-400 ${className}`}
+      className={`mt-1 text-sm text-[var(--color-text-secondary)] ${className}`}
     >
       {children}
     </RadixDialog.Description>
@@ -120,7 +120,7 @@ export function DialogCloseButton() {
   return (
     <RadixDialog.Close
       aria-label={t('actions.close')}
-      className="absolute right-4 top-4 rounded p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+      className="absolute right-4 top-4 rounded p-1 text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
     >
       <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
         <path d="M12.207 3.793a1 1 0 0 0-1.414 0L8 6.586 5.207 3.793a1 1 0 0 0-1.414 1.414L6.586 8l-2.793 2.793a1 1 0 1 0 1.414 1.414L8 9.414l2.793 2.793a1 1 0 0 0 1.414-1.414L9.414 8l2.793-2.793a1 1 0 0 0 0-1.414z" />

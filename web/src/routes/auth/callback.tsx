@@ -32,13 +32,13 @@ function CallbackPage() {
 
   if (error !== null) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-md w-full p-8 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Authentication Error</h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 font-mono">{error}</p>
+      <div className="min-h-screen flex items-center justify-center bg-[var(--color-surface-elevated)]">
+        <div className="max-w-md w-full p-8 bg-[var(--color-surface)] rounded-lg shadow-sm border border-[var(--color-border)]">
+          <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">Authentication Error</h1>
+          <p className="mt-2 text-sm text-[var(--color-text-secondary)] font-mono">{error}</p>
           <a
             href="/"
-            className="mt-4 inline-block text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+            className="mt-4 inline-block text-sm text-[var(--color-accent)] hover:text-[var(--color-accent)]
           >
             Return to home
           </a>
@@ -48,8 +48,8 @@ function CallbackPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <p className="text-sm text-gray-500 dark:text-gray-400">Completing sign-in&hellip;</p>
+    <div className="min-h-screen flex items-center justify-center bg-[var(--color-surface-elevated)]">
+      <p className="text-sm text-[var(--color-text-secondary)]">Completing sign-in&hellip;</p>
     </div>
   )
 }

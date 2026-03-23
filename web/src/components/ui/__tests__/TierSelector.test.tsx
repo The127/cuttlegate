@@ -38,17 +38,17 @@ describe('TierSelector', () => {
     expect(screen.getByText('Allows delete operations — use with caution')).toBeInTheDocument()
   })
 
-  // @happy — amber class applied to destructive button when active
-  it('destructive button has amber active class when selected', () => {
+  // @happy — design token amber active class applied to destructive button when active
+  it('destructive button has design token amber class when selected', () => {
     render(<TierSelector value="destructive" onChange={() => {}} />)
     const destructiveBtn = screen.getByText('Destructive').closest('button')
-    expect(destructiveBtn?.className).toContain('bg-amber-500')
+    expect(destructiveBtn?.className).toContain('rgba(251,191,36,0.25)')
   })
 
-  it('destructive button does not have amber active class when not selected', () => {
+  it('destructive button does not have design token amber class when not selected', () => {
     render(<TierSelector value="read" onChange={() => {}} />)
     const destructiveBtn = screen.getByText('Destructive').closest('button')
-    expect(destructiveBtn?.className).not.toContain('bg-amber-500')
+    expect(destructiveBtn?.className).not.toContain('rgba(251,191,36,0.25)')
   })
 
   // @happy — inline description renders for read and write tiers

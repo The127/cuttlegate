@@ -20,9 +20,9 @@ type Role = 'admin' | 'editor' | 'viewer'
 const ROLES: Role[] = ['admin', 'editor', 'viewer']
 
 const ROLE_STYLES: Record<Role, string> = {
-  admin: 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
-  editor: 'bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800',
-  viewer: 'bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600',
+  admin: 'bg-[rgba(79,124,255,0.1)] text-[var(--color-accent)] border-[rgba(79,124,255,0.3)]',
+  editor: 'bg-[rgba(16,217,168,0.08)] text-[var(--color-status-enabled)] border-[var(--color-status-enabled)]',
+  viewer: 'bg-[var(--color-surface-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border)]',
 }
 
 interface Member {
@@ -108,10 +108,10 @@ function MemberListPage() {
   if (isError)
     return (
       <div className="p-6">
-        <span className="text-sm text-red-600 dark:text-red-400">{t('members.error')} </span>
+        <span className="text-sm text-[var(--color-status-error)]">{t('members.error')} </span>
         <button
           onClick={() => void refetch()}
-          className="text-sm text-red-600 dark:text-red-400 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
+          className="text-sm text-[var(--color-status-error)] underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-[var(--color-status-error)] rounded"
         >
           {t('actions.retry', { ns: 'common' })}
         </button>
@@ -120,28 +120,28 @@ function MemberListPage() {
 
   return (
     <div className="p-6 max-w-4xl">
-      <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">{t('members.title')}</h1>
+      <h1 className="text-xl font-semibold text-[var(--color-text-primary)] mb-6">{t('members.title')}</h1>
 
       {members.length === 0 ? (
         <MemberEmptyState />
       ) : (
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 overflow-hidden">
+        <div className="border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+            <thead className="bg-[var(--color-surface-elevated)] border-b border-[var(--color-border)]">
               <tr>
-                <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide w-full">
+                <th className="text-left px-4 py-2 text-xs font-medium text-[var(--color-text-secondary)] font-medium w-full">
                   {t('members.column_member')}
                 </th>
-                <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">
+                <th className="text-left px-4 py-2 text-xs font-medium text-[var(--color-text-secondary)] font-medium whitespace-nowrap">
                   {t('members.column_role')}
                 </th>
-                <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">
+                <th className="text-left px-4 py-2 text-xs font-medium text-[var(--color-text-secondary)] font-medium whitespace-nowrap">
                   {t('members.column_joined')}
                 </th>
                 {isAdmin && <th className="px-4 py-2" />}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+            <tbody className="divide-y divide-[var(--color-border)]">
               {members.map((m) => (
                 <MemberRow
                   key={m.user_id}
@@ -209,20 +209,20 @@ function MemberRow({
   const { t } = useTranslation('projects')
   const displayName = memberDisplayName(member)
   return (
-    <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+    <tr className="hover:bg-[var(--color-surface)]
       <td className="px-4 py-3">
         <div className="flex flex-col gap-0.5">
-          <span className="text-sm text-gray-900 dark:text-gray-100 font-medium">
+          <span className="text-sm text-[var(--color-text-primary)] font-medium">
             {displayName}
             {isSelf && (
-              <span className="ml-2 text-xs text-gray-400 dark:text-gray-500 font-normal">{t('members.you')}</span>
+              <span className="ml-2 text-xs text-[var(--color-text-muted)] font-normal">{t('members.you')}</span>
             )}
           </span>
           {member.email && (
-            <span className="text-xs text-gray-400 dark:text-gray-500">{member.email}</span>
+            <span className="text-xs text-[var(--color-text-muted)]">{member.email}</span>
           )}
           {!member.name && (
-            <span className="font-mono text-xs text-gray-500 dark:text-gray-400">{member.user_id}</span>
+            <span className="font-mono text-xs text-[var(--color-text-secondary)]">{member.user_id}</span>
           )}
         </div>
       </td>
@@ -234,7 +234,7 @@ function MemberRow({
               disabled={rolePending}
               onChange={(e) => onRoleChange(e.target.value as Role)}
               aria-label={t('members.role_aria', { name: displayName })}
-              className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] disabled:opacity-50 bg-white dark:bg-gray-800 dark:text-gray-100"
+              className="text-xs border border-[var(--color-border)] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] disabled:opacity-50 bg-[var(--color-surface)]"
             >
               {ROLES.map((r) => (
                 <option key={r} value={r}>
@@ -243,7 +243,7 @@ function MemberRow({
               ))}
             </select>
             {roleError && (
-              <p className="mt-1 text-xs text-red-600 dark:text-red-400">{roleError}</p>
+              <p className="mt-1 text-xs text-[var(--color-status-error)]">{roleError}</p>
             )}
           </div>
         ) : (
@@ -253,7 +253,7 @@ function MemberRow({
       <td className="px-4 py-3 whitespace-nowrap">
         <time
           dateTime={member.created_at}
-          className="text-xs text-gray-400 dark:text-gray-500"
+          className="text-xs text-[var(--color-text-muted)]"
           title={new Date(member.created_at).toLocaleString()}
         >
           {formatRelativeDate(member.created_at)}
@@ -264,7 +264,7 @@ function MemberRow({
           <button
             onClick={onRemoveIntent}
             aria-label={t('members.remove_aria', { name: displayName })}
-            className="text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 rounded p-0.5"
+            className="text-[var(--color-text-muted)] hover:text-[var(--color-status-error)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-status-error)] rounded p-0.5"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -330,8 +330,8 @@ function AddMemberForm({ slug }: { slug: string }) {
   }
 
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 p-4">
-      <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{t('members.add_title')}</h2>
+    <div className="border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] p-4">
+      <h2 className="text-sm font-medium text-[var(--color-text-primary)] mb-3">{t('members.add_title')}</h2>
       <form onSubmit={handleSubmit} className="flex items-start gap-3 flex-wrap">
         <div className="flex-1 min-w-48">
           <label htmlFor="member-user-id" className="sr-only">
@@ -348,10 +348,10 @@ function AddMemberForm({ slug }: { slug: string }) {
             placeholder={t('members.user_id_placeholder')}
             aria-invalid={!!error}
             aria-describedby={error ? 'add-member-error' : undefined}
-            className={`w-full font-mono text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border rounded px-2 py-1.5 focus:outline-none focus:ring-2 ${
+            className={`w-full font-mono text-sm bg-[var(--color-surface)] text-[var(--color-text-primary)] border rounded px-2 py-1.5 focus:outline-none focus:ring-2 ${
               error
-                ? 'border-red-300 focus:ring-red-500'
-                : 'border-gray-300 dark:border-gray-600 focus:ring-[var(--color-accent)]'
+                ? 'border-[var(--color-status-error)] focus:ring-[var(--color-status-error)]'
+                : 'border-[var(--color-border)] focus:ring-[var(--color-accent)]'
             }`}
           />
         </div>
@@ -363,7 +363,7 @@ function AddMemberForm({ slug }: { slug: string }) {
             id="member-role"
             value={role}
             onChange={(e) => setRole(e.target.value as Role)}
-            className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] bg-white dark:bg-gray-800 dark:text-gray-100"
+            className="text-sm border border-[var(--color-border)] rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] bg-[var(--color-surface)]"
           >
             {ROLES.map((r) => (
               <option key={r} value={r}>
@@ -382,7 +382,7 @@ function AddMemberForm({ slug }: { slug: string }) {
         </Button>
       </form>
       {error && (
-        <p id="add-member-error" className="mt-2 text-xs text-red-600 dark:text-red-400">
+        <p id="add-member-error" className="mt-2 text-xs text-[var(--color-status-error)]">
           {error}
         </p>
       )}
@@ -421,13 +421,13 @@ function RemoveMemberDialog({
             <DialogDescription>
               {t('members.remove_dialog_body', { name: displayName })}
               {member.email && (
-                <span className="text-gray-500 dark:text-gray-400"> ({member.email})</span>
+                <span className="text-[var(--color-text-secondary)]"> ({member.email})</span>
               )}
             </DialogDescription>
           )}
         </DialogHeader>
         {error && (
-          <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+          <p className="text-xs text-[var(--color-status-error)]">{error}</p>
         )}
         <DialogFooter>
           <Button
@@ -456,8 +456,8 @@ function RemoveMemberDialog({
 function MemberEmptyState() {
   const { t } = useTranslation('projects')
   return (
-    <div className="text-center py-16 px-6 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
-      <p className="text-sm text-gray-500 dark:text-gray-400">
+    <div className="text-center py-16 px-6 border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)]">
+      <p className="text-sm text-[var(--color-text-secondary)]">
         {t('members.empty')}
       </p>
     </div>
@@ -467,18 +467,18 @@ function MemberEmptyState() {
 function MemberListSkeleton() {
   return (
     <div className="p-6 max-w-4xl">
-      <div className="h-6 w-24 bg-gray-100 dark:bg-gray-700 rounded animate-pulse mb-6" />
-      <div className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 overflow-hidden">
-        <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-2 flex gap-8">
-          <div className="h-3 w-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-          <div className="h-3 w-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-          <div className="h-3 w-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+      <div className="h-6 w-24 bg-[var(--color-surface-elevated)] rounded animate-pulse mb-6" />
+      <div className="border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] overflow-hidden">
+        <div className="bg-[var(--color-surface-elevated)] border-b border-[var(--color-border)] px-4 py-2 flex gap-8">
+          <div className="h-3 w-12 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+          <div className="h-3 w-8 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+          <div className="h-3 w-10 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
         </div>
         {[1, 2, 3].map((i) => (
-          <div key={i} className="flex items-center gap-8 px-4 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
-            <div className="h-5 w-72 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
-            <div className="h-5 w-14 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
-            <div className="h-4 w-12 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+          <div key={i} className="flex items-center gap-8 px-4 py-3 border-b border-[var(--color-border)] last:border-0">
+            <div className="h-5 w-72 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+            <div className="h-5 w-14 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+            <div className="h-4 w-12 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
           </div>
         ))}
       </div>

@@ -29,10 +29,10 @@ function ProjectSettingsPage() {
   if (roleQuery.isError)
     return (
       <div className="p-6">
-        <span className="text-sm text-red-600 dark:text-red-400">{t('settings.failed_to_load')} </span>
+        <span className="text-sm text-[var(--color-status-error)]">{t('settings.failed_to_load')} </span>
         <button
           onClick={() => void roleQuery.refetch()}
-          className="text-sm text-red-600 dark:text-red-400 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
+          className="text-sm text-[var(--color-status-error)] underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-[var(--color-status-error)] rounded"
         >
           {t('actions.retry', { ns: 'common' })}
         </button>
@@ -43,13 +43,13 @@ function ProjectSettingsPage() {
 
   return (
     <div className="p-6 max-w-2xl">
-      <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">{t('settings.title')}</h1>
+      <h1 className="text-xl font-semibold text-[var(--color-text-primary)] mb-6">{t('settings.title')}</h1>
 
       <GeneralSection project={project} isAdmin={isAdmin} />
 
       {isAdmin && (
         <>
-          <div className="mt-8 border-t border-gray-200 dark:border-gray-700" />
+          <div className="mt-8 border-t border-[var(--color-border)]" />
           <DangerZone project={project} />
         </>
       )}
@@ -74,8 +74,8 @@ function GeneralSection({
   const { t } = useTranslation('projects')
   return (
     <section>
-      <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">{t('settings.general_section')}</h2>
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg divide-y divide-gray-100 dark:divide-gray-700">
+      <h2 className="text-sm font-medium text-[var(--color-text-secondary)] font-medium mb-4">{t('settings.general_section')}</h2>
+      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg divide-y divide-[var(--color-border)]">
         <NameField project={project} isAdmin={isAdmin} />
         <SlugField slug={project.slug} />
       </div>
@@ -112,7 +112,7 @@ function NameField({ project, isAdmin }: { project: ProjectData; isAdmin: boolea
 
   return (
     <div className="px-4 py-4">
-      <label htmlFor="project-name" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+      <label htmlFor="project-name" className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
         {t('settings.name_label')}
       </label>
       {isAdmin ? (
@@ -126,7 +126,7 @@ function NameField({ project, isAdmin }: { project: ProjectData; isAdmin: boolea
               setServerError(null)
               setSaved(false)
             }}
-            className="flex-1 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            className="flex-1 text-sm bg-[var(--color-surface)] text-[var(--color-text-primary)] border border-[var(--color-border)] rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
           />
           <Button
             type="submit"
@@ -137,9 +137,9 @@ function NameField({ project, isAdmin }: { project: ProjectData; isAdmin: boolea
           </Button>
         </form>
       ) : (
-        <p className="text-sm text-gray-900 dark:text-gray-100">{project.name}</p>
+        <p className="text-sm text-[var(--color-text-primary)]">{project.name}</p>
       )}
-      {serverError && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{serverError}</p>}
+      {serverError && <p className="mt-1 text-xs text-[var(--color-status-error)]">{serverError}</p>}
     </div>
   )
 }
@@ -160,21 +160,21 @@ function SlugField({ slug }: { slug: string }) {
 
   return (
     <div className="px-4 py-4">
-      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('settings.slug_label')}</p>
+      <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-1">{t('settings.slug_label')}</p>
       <div className="flex items-center gap-2">
-        <span className="font-mono text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-2 py-1">
+        <span className="font-mono text-sm text-[var(--color-text-primary)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-2 py-1">
           {slug}
         </span>
         <div className="relative">
           <button
             onClick={copySlug}
-            className="text-xs text-gray-500 dark:text-gray-400 hover:text-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded px-2 py-1 border border-gray-200 dark:border-gray-600 hover:border-[var(--color-accent)] transition-colors"
+            className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded px-2 py-1 border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-colors"
             aria-label={t('settings.copy_slug_aria', { slug })}
           >
             {copied ? t('settings.copied') : t('settings.copy')}
           </button>
         </div>
-        <p className="text-xs text-gray-400 dark:text-gray-500">{t('settings.slug_immutable')}</p>
+        <p className="text-xs text-[var(--color-text-muted)]">{t('settings.slug_immutable')}</p>
       </div>
     </div>
   )
@@ -186,11 +186,11 @@ function DangerZone({ project }: { project: ProjectData }) {
 
   return (
     <section className="mt-8">
-      <h2 className="text-sm font-medium text-red-600 uppercase tracking-wide mb-4">{t('settings.danger_section')}</h2>
-      <div className="bg-white dark:bg-gray-800 border border-red-200 dark:border-red-900 rounded-lg px-4 py-4 flex items-center justify-between">
+      <h2 className="text-sm font-medium text-[var(--color-status-error)] font-medium mb-4">{t('settings.danger_section')}</h2>
+      <div className="bg-[var(--color-surface)] border border-[var(--color-status-error)] rounded-lg px-4 py-4 flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('settings.delete_title')}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('settings.delete_title')}</p>
+          <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
             {t('settings.delete_description')}
           </p>
         </div>
@@ -255,27 +255,27 @@ function DeleteProjectModal({
         <DialogHeader>
           <DialogTitle>{t('delete_project.title')}</DialogTitle>
         </DialogHeader>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
+        <p className="text-sm text-[var(--color-text-secondary)]">
           <Trans
             i18nKey="delete_project.body"
             ns="projects"
             values={{ name: project.name }}
-            components={{ strong: <span className="font-semibold text-gray-900 dark:text-gray-100" /> }}
+            components={{ strong: <span className="font-semibold text-[var(--color-text-primary)]" /> }}
           />
         </p>
-        <ul className="mt-2 text-sm text-gray-600 dark:text-gray-400 list-disc list-inside space-y-0.5">
+        <ul className="mt-2 text-sm text-[var(--color-text-secondary)] list-disc list-inside space-y-0.5">
           <li>{t('delete_project.item_flags')}</li>
           <li>{t('delete_project.item_environments')}</li>
           <li>{t('delete_project.item_members')}</li>
         </ul>
 
-        <div className="mt-4 p-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-300">
+        <div className="mt-4 p-3 bg-[rgba(248,113,113,0.08)] border border-[var(--color-status-error)] rounded text-xs text-[var(--color-status-error)]">
           {t('delete_project.warning')}
         </div>
 
         <form onSubmit={handleDelete} className="mt-4 space-y-3">
           <div>
-            <label htmlFor="confirm-name" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="confirm-name" className="block text-xs font-medium text-[var(--color-text-primary)] mb-1">
               <Trans
                 i18nKey="delete_project.confirm_label"
                 ns="projects"
@@ -293,10 +293,10 @@ function DeleteProjectModal({
               }}
               autoFocus
               placeholder={project.name}
-              className="w-full text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full text-sm bg-[var(--color-surface)] text-[var(--color-text-primary)] border border-[var(--color-border)] rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-status-error)]"
             />
           </div>
-          {serverError && <p className="text-xs text-red-600 dark:text-red-400">{serverError}</p>}
+          {serverError && <p className="text-xs text-[var(--color-status-error)]">{serverError}</p>}
           <DialogFooter>
             <Button
               type="button"
@@ -324,16 +324,16 @@ function DeleteProjectModal({
 function SettingsSkeleton() {
   return (
     <div className="p-6 max-w-2xl">
-      <div className="h-8 w-24 bg-gray-100 dark:bg-gray-700 rounded animate-pulse mb-6" />
-      <div className="h-4 w-16 bg-gray-100 dark:bg-gray-700 rounded animate-pulse mb-4" />
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg divide-y divide-gray-100 dark:divide-gray-700">
+      <div className="h-8 w-24 bg-[var(--color-surface-elevated)] rounded animate-pulse mb-6" />
+      <div className="h-4 w-16 bg-[var(--color-surface-elevated)] rounded animate-pulse mb-4" />
+      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg divide-y divide-[var(--color-border)]">
         <div className="px-4 py-4">
-          <div className="h-3 w-20 bg-gray-100 dark:bg-gray-700 rounded animate-pulse mb-2" />
-          <div className="h-8 w-48 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+          <div className="h-3 w-20 bg-[var(--color-surface-elevated)] rounded animate-pulse mb-2" />
+          <div className="h-8 w-48 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
         </div>
         <div className="px-4 py-4">
-          <div className="h-3 w-20 bg-gray-100 dark:bg-gray-700 rounded animate-pulse mb-2" />
-          <div className="h-7 w-32 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+          <div className="h-3 w-20 bg-[var(--color-surface-elevated)] rounded animate-pulse mb-2" />
+          <div className="h-7 w-32 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
         </div>
       </div>
     </div>

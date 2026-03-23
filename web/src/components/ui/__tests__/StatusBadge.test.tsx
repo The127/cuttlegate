@@ -3,22 +3,6 @@ import { render, screen } from '@testing-library/react'
 import { renderWithAxe } from '../../../test/renderWithAxe'
 import { StatusBadge } from '../StatusBadge'
 
-// Helper: override matchMedia to simulate dark mode preference.
-// jsdom does not apply CSS media queries, so dark: classes are present in the DOM
-// regardless — this ensures the matchMedia API doesn't throw in dark-mode renders.
-function mockDarkMode() {
-  vi.spyOn(window, 'matchMedia').mockImplementation((query) => ({
-    matches: query === '(prefers-color-scheme: dark)',
-    media: query,
-    onchange: null,
-    addListener: () => {},
-    removeListener: () => {},
-    addEventListener: () => {},
-    removeEventListener: () => {},
-    dispatchEvent: () => false,
-  }))
-}
-
 afterEach(() => {
   vi.restoreAllMocks()
 })
@@ -95,60 +79,53 @@ describe('StatusBadge', () => {
     expect(axeResults).toHaveNoViolations()
   })
 
-  // @happy — dark mode: axe passes with dark: class variants applied
-  // Note: jsdom does not apply CSS media queries; dark: classes are present in DOM
-  // but not computed as styles. These tests verify structural accessibility in dark mode
-  // (ARIA, roles, labels) — not computed colour contrast.
+  // @happy — dark is the default theme; axe structural check
   it('passes axe in dark mode — enabled', async () => {
-    mockDarkMode()
     const { axeResults } = await renderWithAxe(<StatusBadge status="enabled" />)
     expect(axeResults).toHaveNoViolations()
   })
 
   it('passes axe in dark mode — disabled', async () => {
-    mockDarkMode()
     const { axeResults } = await renderWithAxe(<StatusBadge status="disabled" />)
     expect(axeResults).toHaveNoViolations()
   })
 
   it('passes axe in dark mode — warning', async () => {
-    mockDarkMode()
     const { axeResults } = await renderWithAxe(<StatusBadge status="warning" />)
     expect(axeResults).toHaveNoViolations()
   })
 
   it('passes axe in dark mode — unknown', async () => {
-    mockDarkMode()
     const { axeResults } = await renderWithAxe(<StatusBadge status="unknown" />)
     expect(axeResults).toHaveNoViolations()
   })
 
-  // @edge — dark: variant classes are present in the DOM for all statuses
-  it('enabled status pill has dark: variant classes', () => {
+  // @edge — M9 design token rgba() pill classes are present in the DOM
+  it('enabled status pill has design token classes', () => {
     const { container } = render(<StatusBadge status="enabled" />)
     const pill = container.querySelector('span')
-    expect(pill?.className).toContain('dark:bg-green-950')
-    expect(pill?.className).toContain('dark:text-green-300')
+    expect(pill?.className).toContain('rgba(16,217,168,0.12)')
+    expect(pill?.className).toContain('color-status-enabled')
   })
 
-  it('disabled status pill has dark: variant classes', () => {
+  it('disabled status pill has design token classes', () => {
     const { container } = render(<StatusBadge status="disabled" />)
     const pill = container.querySelector('span')
-    expect(pill?.className).toContain('dark:bg-red-950')
-    expect(pill?.className).toContain('dark:text-red-300')
+    expect(pill?.className).toContain('rgba(248,113,113,0.12)')
+    expect(pill?.className).toContain('color-status-error')
   })
 
-  it('warning status pill has dark: variant classes', () => {
+  it('warning status pill has design token classes', () => {
     const { container } = render(<StatusBadge status="warning" />)
     const pill = container.querySelector('span')
-    expect(pill?.className).toContain('dark:bg-amber-950')
-    expect(pill?.className).toContain('dark:text-amber-300')
+    expect(pill?.className).toContain('rgba(251,191,36,0.12)')
+    expect(pill?.className).toContain('color-status-warning')
   })
 
-  it('unknown status pill has dark: variant classes', () => {
+  it('unknown status pill has design token classes', () => {
     const { container } = render(<StatusBadge status="unknown" />)
     const pill = container.querySelector('span')
-    expect(pill?.className).toContain('dark:bg-gray-800')
-    expect(pill?.className).toContain('dark:text-gray-400')
+    expect(pill?.className).toContain('color-surface-elevated')
+    expect(pill?.className).toContain('color-text-secondary')
   })
 })

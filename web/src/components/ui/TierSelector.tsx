@@ -19,25 +19,25 @@ const TIERS: TierOption[] = [
     activeClasses:
       'bg-[var(--color-accent)] text-white border-[var(--color-accent)]',
     inactiveClasses:
-      'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700',
+      'bg-[var(--color-surface-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:border-[var(--color-border-hover)]',
   },
   {
     value: 'write',
     labelKey: 'api_keys.tier_write_label',
     descriptionKey: 'api_keys.tier_write_description',
     activeClasses:
-      'bg-blue-600 text-white border-blue-600',
+      'bg-[rgba(79,124,255,0.3)] text-[#818cf8] border-[rgba(79,124,255,0.5)]',
     inactiveClasses:
-      'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700',
+      'bg-[var(--color-surface-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:border-[var(--color-border-hover)]',
   },
   {
     value: 'destructive',
     labelKey: 'api_keys.tier_destructive_label',
     descriptionKey: '',
     activeClasses:
-      'bg-amber-500 text-white border-amber-500',
+      'bg-[rgba(251,191,36,0.25)] text-[#fbbf24] border-[rgba(251,191,36,0.5)]',
     inactiveClasses:
-      'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700',
+      'bg-[var(--color-surface-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:border-[var(--color-border-hover)]',
   },
 ]
 
@@ -83,12 +83,12 @@ export function TierSelector({ value, onChange }: TierSelectorProps) {
         })}
       </div>
       {value === 'destructive' && (
-        <p className="mt-1.5 text-xs text-amber-700 dark:text-amber-400">
+        <p className="mt-1.5 text-xs text-[var(--color-status-warning)]">
           {t('api_keys.tier_destructive_warning')}
         </p>
       )}
       {activeTier?.descriptionKey && (
-        <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+        <p className="mt-1.5 text-xs text-[var(--color-text-secondary)]">
           {t(activeTier.descriptionKey)}
         </p>
       )}

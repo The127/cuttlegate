@@ -60,10 +60,10 @@ function SegmentListPage() {
   if (isError)
     return (
       <div className="p-6">
-        <span className="text-sm text-red-600 dark:text-red-400">{t('error')} </span>
+        <span className="text-sm text-[var(--color-status-error)]">{t('error')} </span>
         <button
           onClick={() => void refetch()}
-          className="text-sm text-red-600 dark:text-red-400 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
+          className="text-sm text-[var(--color-status-error)] underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-[var(--color-status-error)] rounded"
         >
           {t('actions.retry', { ns: 'common' })}
         </button>
@@ -75,7 +75,7 @@ function SegmentListPage() {
   return (
     <div className="p-6 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{t('title')}</h1>
+        <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">{t('title')}</h1>
         <Button onClick={() => setShowCreate(true)}>
           {t('new_segment')}
         </Button>
@@ -84,7 +84,7 @@ function SegmentListPage() {
       {segments.length === 0 ? (
         <SegmentEmptyState onCreateClick={() => setShowCreate(true)} />
       ) : (
-        <ul className="divide-y divide-gray-100 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
+        <ul className="divide-y divide-[var(--color-border)] border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)]">
           {segments.map((seg) => (
             <SegmentRow
               key={seg.id}
@@ -159,18 +159,18 @@ function SegmentRow({
   return (
     <li className="flex items-center justify-between px-4 py-3 gap-4">
       <div className="flex items-center gap-3 min-w-0">
-        <span className="font-mono text-sm text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-2 py-0.5 shrink-0">
+        <span className="font-mono text-sm text-[var(--color-text-primary)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-2 py-0.5 shrink-0">
           {segment.slug}
         </span>
-        <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{segment.name}</span>
-        <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">
+        <span className="text-sm text-[var(--color-text-primary)] truncate">{segment.name}</span>
+        <span className="text-xs text-[var(--color-text-muted)] shrink-0">
           {t('members_count', { count: segment.memberCount })}
         </span>
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <time
           dateTime={segment.createdAt}
-          className="text-xs text-gray-400 dark:text-gray-500"
+          className="text-xs text-[var(--color-text-muted)]"
           title={new Date(segment.createdAt).toLocaleString()}
         >
           {formatRelativeDate(segment.createdAt)}
@@ -185,7 +185,7 @@ function SegmentRow({
         <button
           onClick={onEdit}
           aria-label={t('edit_aria', { slug: segment.slug })}
-          className="text-gray-400 dark:text-gray-500 hover:text-[var(--color-accent)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded p-0.5"
+          className="text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded p-0.5"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -200,7 +200,7 @@ function SegmentRow({
         <button
           onClick={onDeleteIntent}
           aria-label={t('delete_aria', { slug: segment.slug })}
-          className="text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 rounded p-0.5"
+          className="text-[var(--color-text-muted)] hover:text-[var(--color-status-error)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-status-error)] rounded p-0.5"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -225,7 +225,7 @@ function SegmentEmptyState({ onCreateClick }: { onCreateClick: () => void }) {
   const { t } = useTranslation('segments')
   return (
     <div className="text-center py-16 px-6">
-      <p className="text-sm text-gray-500 dark:text-gray-400">
+      <p className="text-sm text-[var(--color-text-secondary)]">
         {t('empty_state')}
       </p>
       <Button size="lg" className="mt-4" onClick={onCreateClick}>
@@ -331,7 +331,7 @@ function CreateSegmentModal({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="seg-name" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+            <label htmlFor="seg-name" className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
               {t('create.name_label')}
             </label>
             <input
@@ -341,11 +341,11 @@ function CreateSegmentModal({
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
               placeholder={t('create.name_placeholder')}
-              className="w-full text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+              className="w-full text-sm bg-[var(--color-surface)] text-[var(--color-text-primary)] border border-[var(--color-border)] rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
             />
           </div>
           <div>
-            <label htmlFor="seg-slug" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+            <label htmlFor="seg-slug" className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
               {t('create.slug_label')}
             </label>
             <input
@@ -358,16 +358,16 @@ function CreateSegmentModal({
               aria-invalid={!!slugError}
               aria-describedby={slugError ? 'seg-slug-error' : undefined}
               className={`w-full font-mono text-sm border rounded px-2 py-1.5 focus:outline-none focus:ring-2 ${
-                slugError ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-[var(--color-accent)]'
+                slugError ? 'border-[var(--color-status-error)] focus:ring-[var(--color-status-error)]' : 'border-[var(--color-border)] focus:ring-[var(--color-accent)]'
               }`}
             />
             {slugError && (
-              <p id="seg-slug-error" className="mt-1 text-xs text-red-600 dark:text-red-400">
+              <p id="seg-slug-error" className="mt-1 text-xs text-[var(--color-status-error)]">
                 {slugError}
               </p>
             )}
           </div>
-          {serverError && <p className="text-xs text-red-600 dark:text-red-400">{serverError}</p>}
+          {serverError && <p className="text-xs text-[var(--color-status-error)]">{serverError}</p>}
           <DialogFooter>
             <Button
               type="button"
@@ -442,7 +442,7 @@ function EditSegmentModal({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="edit-seg-name" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+            <label htmlFor="edit-seg-name" className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
               {t('edit.name_label')}
             </label>
             <input
@@ -451,17 +451,17 @@ function EditSegmentModal({
               autoFocus
               value={name}
               onChange={(e) => { setName(e.target.value); setServerError(null) }}
-              className="w-full text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+              className="w-full text-sm bg-[var(--color-surface)] text-[var(--color-text-primary)] border border-[var(--color-border)] rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('edit.slug_label')}</label>
-            <div className="font-mono text-sm text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 select-none">
+            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">{t('edit.slug_label')}</label>
+            <div className="font-mono text-sm text-[var(--color-text-muted)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-2 py-1.5 select-none">
               {segment?.slug}
             </div>
-            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t('edit.slug_immutable')}</p>
+            <p className="mt-1 text-xs text-[var(--color-text-muted)]">{t('edit.slug_immutable')}</p>
           </div>
-          {serverError && <p className="text-xs text-red-600 dark:text-red-400">{serverError}</p>}
+          {serverError && <p className="text-xs text-[var(--color-status-error)]">{serverError}</p>}
           <DialogFooter>
             <Button
               type="button"
@@ -582,11 +582,11 @@ function ManageMembersModal({
         {isLoading ? (
           <div className="space-y-2">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-8 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+              <div key={i} className="h-8 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
             ))}
           </div>
         ) : isError ? (
-          <p className="text-sm text-red-600 dark:text-red-400">{t('members.failed_to_load')}</p>
+          <p className="text-sm text-[var(--color-status-error)]">{t('members.failed_to_load')}</p>
         ) : (
           <>
             <div className="flex gap-2 mb-3">
@@ -599,7 +599,7 @@ function ManageMembersModal({
                 aria-label={t('members.add_aria')}
                 aria-invalid={!!addError}
                 className={`flex-1 font-mono text-sm border rounded px-2 py-1.5 focus:outline-none focus:ring-2 ${
-                  addError ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-[var(--color-accent)]'
+                  addError ? 'border-[var(--color-status-error)] focus:ring-[var(--color-status-error)]' : 'border-[var(--color-border)] focus:ring-[var(--color-accent)]'
                 }`}
               />
               <Button
@@ -610,21 +610,21 @@ function ManageMembersModal({
                 {t('members.add_button')}
               </Button>
             </div>
-            {addError && <p className="mb-2 text-xs text-red-600 dark:text-red-400">{addError}</p>}
+            {addError && <p className="mb-2 text-xs text-[var(--color-status-error)]">{addError}</p>}
 
-            <div className="overflow-y-auto max-h-48 border border-gray-200 dark:border-gray-700 rounded-lg">
+            <div className="overflow-y-auto max-h-48 border border-[var(--color-border)] rounded-lg">
               {members.length === 0 ? (
-                <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-8">{t('members.no_members')}</p>
+                <p className="text-sm text-[var(--color-text-muted)] text-center py-8">{t('members.no_members')}</p>
               ) : (
-                <ul className="divide-y divide-gray-100 dark:divide-gray-700">
+                <ul className="divide-y divide-[var(--color-border)]">
                   {members.map((key) => (
                     <li key={key} className="flex items-center justify-between px-3 py-2">
-                      <span className="font-mono text-sm text-gray-800 dark:text-gray-200">{key}</span>
+                      <span className="font-mono text-sm text-[var(--color-text-primary)]">{key}</span>
                       <button
                         onClick={() => handleRemoveMember(key)}
                         disabled={saveMutation.isPending}
                         aria-label={t('members.remove_aria', { key })}
-                        className="text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 rounded p-0.5 disabled:opacity-50"
+                        className="text-[var(--color-text-muted)] hover:text-[var(--color-status-error)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-status-error)] rounded p-0.5 disabled:opacity-50"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                           <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -642,7 +642,7 @@ function ManageMembersModal({
                   if (!showBulk) setBulkText(members.join('\n'))
                   setShowBulk((v) => !v)
                 }}
-                className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 rounded"
+                className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-gray-400 rounded"
               >
                 {showBulk ? t('members.bulk_hide') : t('members.bulk_show')}
               </button>
@@ -654,7 +654,7 @@ function ManageMembersModal({
                     rows={5}
                     placeholder={t('members.bulk_placeholder')}
                     aria-label={t('members.bulk_aria')}
-                    className="w-full font-mono text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] resize-none"
+                    className="w-full font-mono text-sm bg-[var(--color-surface)] text-[var(--color-text-primary)] border border-[var(--color-border)] rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] resize-none"
                   />
                   <Button
                     type="button"
@@ -667,7 +667,7 @@ function ManageMembersModal({
               )}
             </div>
 
-            {saveError && <p className="mt-2 text-xs text-red-600 dark:text-red-400">{saveError}</p>}
+            {saveError && <p className="mt-2 text-xs text-[var(--color-status-error)]">{saveError}</p>}
           </>
         )}
       </DialogContent>
@@ -707,16 +707,16 @@ function DeleteSegmentModal({
                 i18nKey="delete.body"
                 ns="segments"
                 values={{ slug: segment.slug }}
-                components={{ mono: <span className="font-mono text-gray-800 dark:text-gray-200" /> }}
+                components={{ mono: <span className="font-mono text-[var(--color-text-primary)]" /> }}
               />
             </DialogDescription>
           )}
         </DialogHeader>
-        <p className="text-sm text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded px-3 py-2">
+        <p className="text-sm text-[var(--color-status-warning)] bg-[rgba(251,191,36,0.08)] border border-[var(--color-status-warning)] rounded px-3 py-2">
           {t('delete.warning')}
         </p>
         {deleteFailed && (
-          <p className="mt-3 text-xs text-red-600 dark:text-red-400">{t('delete.failed')}</p>
+          <p className="mt-3 text-xs text-[var(--color-status-error)]">{t('delete.failed')}</p>
         )}
         <DialogFooter>
           <Button
@@ -746,21 +746,21 @@ function SegmentListSkeleton() {
   return (
     <div className="p-6 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
-        <div className="h-6 w-24 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
-        <div className="h-8 w-32 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+        <div className="h-6 w-24 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+        <div className="h-8 w-32 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
       </div>
-      <ul className="divide-y divide-gray-100 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
+      <ul className="divide-y divide-[var(--color-border)] border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)]">
         {[1, 2, 3].map((i) => (
           <li key={i} className="flex items-center justify-between px-4 py-3 gap-4">
             <div className="flex items-center gap-3">
-              <div className="h-6 w-28 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
-              <div className="h-4 w-40 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+              <div className="h-6 w-28 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+              <div className="h-4 w-40 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
             </div>
             <div className="flex items-center gap-2">
-              <div className="h-4 w-12 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
-              <div className="h-6 w-16 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
-              <div className="h-4 w-4 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
-              <div className="h-4 w-4 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+              <div className="h-4 w-12 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+              <div className="h-6 w-16 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+              <div className="h-4 w-4 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+              <div className="h-4 w-4 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
             </div>
           </li>
         ))}
