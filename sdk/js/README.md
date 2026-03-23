@@ -33,7 +33,7 @@ console.log('variant key:', result.valueKey);
 
 ## Configuration
 
-`createClient` and `connectStream` both accept a `CuttlegateConfig` object:
+`createClient`, `connectStream`, and `createCachedClient` all accept a `CuttlegateConfig` object:
 
 | Field | Type | Required | Default | Description |
 |---|---|---|---|---|
@@ -356,7 +356,7 @@ function Banner() {
 }
 ```
 
-`useFlagVariant(key)` returns `{ value: string | null; loading: boolean }`. `value` is `null` while loading or if the flag is not found.
+`useFlagVariant(key)` returns `{ value: string | null; loading: boolean }`. `value` is the raw variant string from `EvaluationResult.value` — it is `null` while loading, if the flag is not found, or for bool flags. For bool flags, use `useFlag` instead.
 
 Must be used inside a `CuttlegateProvider`.
 
