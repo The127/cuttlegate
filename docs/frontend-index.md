@@ -1,6 +1,6 @@
 # Frontend Index
 
-_Generated 2026-03-23 21:16 UTC. Read this at session start for frontend orientation._
+_Generated 2026-03-23 22:02 UTC. Read this at session start for frontend orientation._
 
 ## Routes (`web/src/routes/`)
 
