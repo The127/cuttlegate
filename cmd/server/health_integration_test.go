@@ -86,7 +86,7 @@ func TestHealthHandler_Healthy(t *testing.T) {
 	handler(rec, req)
 
 	res := rec.Result()
-	defer res.Body.Close()
+	defer res.Body.Close() //nolint:errcheck
 
 	if res.StatusCode != http.StatusOK {
 		t.Errorf("status: got %d, want %d", res.StatusCode, http.StatusOK)

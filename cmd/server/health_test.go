@@ -16,7 +16,7 @@ func TestHealthHandler_Degraded_NilConn(t *testing.T) {
 	handler(rec, req)
 
 	res := rec.Result()
-	defer res.Body.Close()
+	defer res.Body.Close() //nolint:errcheck
 
 	if res.StatusCode != http.StatusServiceUnavailable {
 		t.Errorf("status: got %d, want %d", res.StatusCode, http.StatusServiceUnavailable)
@@ -43,7 +43,7 @@ func TestHealthHandler_NoAuth(t *testing.T) {
 	handler(rec, req)
 
 	res := rec.Result()
-	defer res.Body.Close()
+	defer res.Body.Close() //nolint:errcheck
 
 	if res.StatusCode == http.StatusUnauthorized || res.StatusCode == http.StatusForbidden {
 		t.Errorf("expected no auth gate, got %d", res.StatusCode)
