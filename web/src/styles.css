@@ -12,6 +12,9 @@
   /* Accent colour — indigo-500 */
   --color-accent: #6366f1;
 
+  /* Text hierarchy */
+  --color-text-secondary: #6b7280;  /* gray-500 — labels, descriptions */
+
   /* Status colours */
   --color-status-enabled: #10b981;  /* emerald-500 — flag enabled / healthy */
   --color-status-warning: #fbbf24;  /* amber-400  — partial rollout / caution */
