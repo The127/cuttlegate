@@ -83,8 +83,6 @@ beforeEach(() => {
 describe('APIKeyPage — tier badge display', () => {
   // @happy — tier badge rendered per row with correct tier value
   it('renders TierBadge for each key with correct tier', async () => {
-    const { APIKeyPage } = await loadAPIKeyPage()
-    // Access the component via the route options
     const mod = await loadAPIKeyPage()
     const RouteComponent = mod.apiKeyListRoute.options.component as React.ComponentType
 
