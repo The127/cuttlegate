@@ -37,6 +37,7 @@ just test   # run tests
 just ci     # lint + all tests — mirrors CI exactly (requires Docker for postgres)
 ```
 
+See [CHANGELOG.md](CHANGELOG.md) for the release history.
 
 ## Configuration
 
