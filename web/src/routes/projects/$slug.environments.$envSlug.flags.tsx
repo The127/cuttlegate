@@ -390,7 +390,7 @@ function SdkPrompt({ flagKey }: { flagKey: string }) {
                 'px-3 py-1 text-xs font-medium rounded border transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]',
                 activeTab === tab
                   ? 'border-[var(--color-accent)] text-[var(--color-accent)] bg-[var(--color-surface)]'
-                  : 'border-[var(--color-border)] text-[var(--color-text-secondary)] bg-[var(--color-surface)] hover:border-[var(--color-border)]
+                  : 'border-[var(--color-border)] text-[var(--color-text-secondary)] bg-[var(--color-surface)] hover:border-[var(--color-border)]'
               ].join(' ')}
             >
               {t(`create.sdk_prompt.tab_${tab}`)}

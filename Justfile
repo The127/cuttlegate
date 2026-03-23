@@ -9,6 +9,10 @@ install-hooks:
 lint:
     golangci-lint run ./...
 
+# Type-check the frontend SPA (catches unterminated strings, missing imports, type errors)
+lint-web:
+    cd web && npx tsc --noEmit -p tsconfig.app.json
+
 # Run ESLint over the JS/TS SDK
 lint-sdk:
     cd sdk/js && npm run lint
@@ -43,7 +47,7 @@ build:
     go build -o build/server ./cmd/server
 
 # Run lint and all tests in sequence — mirrors CI exactly
-ci: lint test test-integration test-sdk
+ci: lint lint-web test test-integration test-sdk
 
 # Run E2E tests against the full stack
 # Builds the SPA, embeds it into the server binary, then Playwright starts Postgres, OIDC stub, and server.
