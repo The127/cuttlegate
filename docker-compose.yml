@@ -43,6 +43,11 @@ services:
       OIDC_ROLE_CLAIM: application_roles
       # OIDC_MISSING_ROLE_POLICY: reject  # default: reject tokens missing the role claim; set to "viewer" to grant viewer role instead
       ADDR: ":8080"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     depends_on:
       migrate:
         condition: service_completed_successfully

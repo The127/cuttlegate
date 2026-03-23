@@ -212,6 +212,10 @@ func run() error {
 		w.Write([]byte(`{"status":"ok"}`)) //nolint:errcheck
 	})
 
+	// /health — operator-facing deployment readiness probe. 500ms timeout; structured JSON response.
+	// Distinct from /healthz (liveness, always 200) and /readyz (Kubernetes-style readiness).
+	mux.HandleFunc("GET /health", healthHandler(conn))
+
 	// SPA static files — registered last so /api/v1/* routes take precedence.
 	serveSPA(mux)
 
@@ -250,6 +254,29 @@ type spaClientConfig struct {
 	AppName      string  `json:"app_name"`
 	LogoURL      *string `json:"logo_url"`
 	AccentColour string  `json:"accent_colour"`
+}
+
+// healthHandler returns an http.HandlerFunc for GET /health.
+// Returns 200 {"status":"ok"} when the DB is reachable within 500ms.
+// Returns 503 {"status":"degraded","reason":"database"} when conn is nil or the ping fails.
+func healthHandler(conn *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if conn == nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Write([]byte(`{"status":"degraded","reason":"database"}`)) //nolint:errcheck
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 500*time.Millisecond)
+		defer cancel()
+		if err := conn.PingContext(ctx); err != nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Write([]byte(`{"status":"degraded","reason":"database"}`)) //nolint:errcheck
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"ok"}`)) //nolint:errcheck
+	}
 }
 
 func runMigrations(dsn string) error {

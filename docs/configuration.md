@@ -29,6 +29,7 @@ All server configuration is read from environment variables at startup. No confi
 
 | Endpoint | Auth | Description |
 |---|---|---|
+| `GET /health` | None | Operator probe. Returns `200 {"status":"ok"}` when the database is reachable within 500ms, `503 {"status":"degraded","reason":"database"}` otherwise. Use this for `curl` verification, load balancer checks, and Docker Compose healthchecks. |
 | `GET /healthz` | None | Liveness probe. Always returns `200 {"status":"ok"}`. |
 | `GET /readyz` | None | Readiness probe. Returns `200 {"status":"ok"}` when the database is reachable, `503 {"status":"not_ready","reason":"..."}` otherwise. |
 
