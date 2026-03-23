@@ -1,10 +1,19 @@
 import { createRoute, useLocation, useNavigate } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { projectRoute } from './$slug'
 import { fetchJSON, postJSON, deleteRequest, APIError } from '../../api'
 import { formatRelativeDate } from '../../utils/date'
+import { Button } from '../../components/ui/Button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '../../components/ui/Dialog'
 
 interface Environment {
   id: string
@@ -75,13 +84,10 @@ function EnvironmentSettingsPage() {
   return (
     <div className="p-6 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('environments.title')}</h1>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
-        >
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{t('environments.title')}</h1>
+        <Button onClick={() => setShowCreate(true)}>
           {t('environments.new_button')}
-        </button>
+        </Button>
       </div>
 
       {environments.length === 0 ? (
@@ -98,30 +104,29 @@ function EnvironmentSettingsPage() {
         </ul>
       )}
 
-      {showCreate && (
-        <CreateEnvironmentModal
-          slug={slug}
-          onCreated={() => {
-            setShowCreate(false)
-            void queryClient.invalidateQueries({ queryKey })
-          }}
-          onCancel={() => setShowCreate(false)}
-        />
-      )}
+      <CreateEnvironmentModal
+        open={showCreate}
+        slug={slug}
+        onCreated={() => {
+          setShowCreate(false)
+          void queryClient.invalidateQueries({ queryKey })
+        }}
+        onCancel={() => setShowCreate(false)}
+      />
 
-      {pendingDelete && (
-        <DeleteEnvironmentModal
-          environment={pendingDelete}
-          isDeleting={deleteMutation.isPending}
-          deleteFailed={deleteMutation.isError}
-          onConfirm={() => {
-            deleteMutation.mutate(pendingDelete.slug, {
-              onSuccess: () => setPendingDelete(null),
-            })
-          }}
-          onCancel={() => setPendingDelete(null)}
-        />
-      )}
+      <DeleteEnvironmentModal
+        open={pendingDelete !== null}
+        environment={pendingDelete}
+        isDeleting={deleteMutation.isPending}
+        deleteFailed={deleteMutation.isError}
+        onConfirm={() => {
+          if (!pendingDelete) return
+          deleteMutation.mutate(pendingDelete.slug, {
+            onSuccess: () => setPendingDelete(null),
+          })
+        }}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   )
 }
@@ -181,12 +186,9 @@ function EnvironmentEmptyState({ onCreateClick }: { onCreateClick: () => void })
       <p className="text-sm text-gray-500 dark:text-gray-400">
         {t('environments.empty')}
       </p>
-      <button
-        onClick={onCreateClick}
-        className="mt-4 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
-      >
+      <Button size="lg" className="mt-4" onClick={onCreateClick}>
         {t('environments.new_button')}
-      </button>
+      </Button>
     </div>
   )
 }
@@ -209,44 +211,14 @@ function validateSlug(slug: string, t: (k: string, opts?: Record<string, unknown
   return null
 }
 
-function useEscapeKey(handler: () => void) {
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') handler()
-    }
-    document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [handler])
-}
-
-function Modal({
-  labelledBy,
-  onClose,
-  children,
-}: {
-  labelledBy: string
-  onClose: () => void
-  children: React.ReactNode
-}) {
-  useEscapeKey(onClose)
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={labelledBy}
-    >
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} aria-hidden="true" />
-      {children}
-    </div>
-  )
-}
 
 function CreateEnvironmentModal({
+  open,
   slug,
   onCreated,
   onCancel,
 }: {
+  open: boolean
   slug: string
   onCreated: () => void
   onCancel: () => void
@@ -315,12 +287,16 @@ function CreateEnvironmentModal({
     createMutation.mutate()
   }
 
+  function handleOpenChange(isOpen: boolean) {
+    if (!isOpen) onCancel()
+  }
+
   return (
-    <Modal labelledBy="create-env-title" onClose={onCancel}>
-      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
-        <h2 id="create-env-title" className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          {t('environments.create_title')}
-        </h2>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t('environments.create_title')}</DialogTitle>
+        </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="env-name" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
@@ -362,77 +338,88 @@ function CreateEnvironmentModal({
             )}
           </div>
           {serverError && <p className="text-xs text-red-600 dark:text-red-400">{serverError}</p>}
-          <div className="flex justify-end gap-3 pt-2">
-            <button
+          <DialogFooter>
+            <Button
               type="button"
+              variant="secondary"
               onClick={onCancel}
               disabled={createMutation.isPending}
-              className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
             >
               {t('actions.cancel', { ns: 'common' })}
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              disabled={createMutation.isPending || !!slugError || !name.trim() || !envSlug}
-              className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+              loading={createMutation.isPending}
+              disabled={!!slugError || !name.trim() || !envSlug}
             >
-              {createMutation.isPending ? t('environments.creating') : t('environments.create_button')}
-            </button>
-          </div>
+              {t('environments.create_button')}
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </Modal>
+      </DialogContent>
+    </Dialog>
   )
 }
 
 function DeleteEnvironmentModal({
+  open,
   environment,
   isDeleting,
   deleteFailed,
   onConfirm,
   onCancel,
 }: {
-  environment: Environment
+  open: boolean
+  environment: Environment | null
   isDeleting: boolean
   deleteFailed: boolean
   onConfirm: () => void
   onCancel: () => void
 }) {
   const { t } = useTranslation('projects')
+
+  function handleOpenChange(isOpen: boolean) {
+    if (!isOpen) onCancel()
+  }
+
   return (
-    <Modal labelledBy="delete-env-title" onClose={onCancel}>
-      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-sm w-full mx-4 p-6">
-        <h2 id="delete-env-title" className="text-base font-semibold text-gray-900 dark:text-gray-100">
-          {t('environments.delete_title')}
-        </h2>
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          {t('environments.delete_body', { slug: environment.slug })}
-        </p>
-        <p className="mt-2 text-sm text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded px-3 py-2">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t('environments.delete_title')}</DialogTitle>
+          {environment && (
+            <DialogDescription>
+              {t('environments.delete_body', { slug: environment.slug })}
+            </DialogDescription>
+          )}
+        </DialogHeader>
+        <p className="text-sm text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded px-3 py-2">
           {t('environments.delete_warning')}
         </p>
         {deleteFailed && (
           <p className="mt-3 text-xs text-red-600 dark:text-red-400">{t('environments.delete_failed')}</p>
         )}
-        <div className="mt-5 flex justify-end gap-3">
-          <button
+        <DialogFooter>
+          <Button
             autoFocus
+            type="button"
+            variant="secondary"
             onClick={onCancel}
             disabled={isDeleting}
-            className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
           >
             {t('actions.cancel', { ns: 'common' })}
-          </button>
-          <button
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            loading={isDeleting}
             onClick={onConfirm}
-            disabled={isDeleting}
-            className="px-3 py-1.5 text-sm font-medium bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500"
           >
-            {isDeleting ? t('environments.deleting') : t('environments.delete_button')}
-          </button>
-        </div>
-      </div>
-    </Modal>
+            {t('environments.delete_button')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 

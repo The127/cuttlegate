@@ -1,11 +1,20 @@
 import { createRoute } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { projectRoute } from './$slug'
 import { fetchJSON, patchEmpty, postJSON, deleteRequest, APIError } from '../../api'
 import { getUserManager } from '../../auth'
 import { formatRelativeDate } from '../../utils/date'
+import { Button } from '../../components/ui/Button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '../../components/ui/Dialog'
 
 type Role = 'admin' | 'editor' | 'viewer'
 const ROLES: Role[] = ['admin', 'editor', 'viewer']
@@ -111,7 +120,7 @@ function MemberListPage() {
 
   return (
     <div className="p-6 max-w-4xl">
-      <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">{t('members.title')}</h1>
+      <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">{t('members.title')}</h1>
 
       {members.length === 0 ? (
         <MemberEmptyState />
@@ -161,18 +170,17 @@ function MemberListPage() {
         </div>
       )}
 
-      {pendingRemove && (
-        <RemoveMemberDialog
-          member={pendingRemove}
-          error={removeError}
-          isRemoving={removeMutation.isPending}
-          onConfirm={() => removeMutation.mutate(pendingRemove.user_id)}
-          onCancel={() => {
-            setPendingRemove(null)
-            setRemoveError(null)
-          }}
-        />
-      )}
+      <RemoveMemberDialog
+        open={pendingRemove !== null}
+        member={pendingRemove}
+        error={removeError}
+        isRemoving={removeMutation.isPending}
+        onConfirm={() => pendingRemove && removeMutation.mutate(pendingRemove.user_id)}
+        onCancel={() => {
+          setPendingRemove(null)
+          setRemoveError(null)
+        }}
+      />
     </div>
   )
 }
@@ -364,13 +372,14 @@ function AddMemberForm({ slug }: { slug: string }) {
             ))}
           </select>
         </div>
-        <button
+        <Button
           type="submit"
-          disabled={addMutation.isPending || !userId.trim()}
-          className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] whitespace-nowrap"
+          loading={addMutation.isPending}
+          disabled={!userId.trim()}
+          className="whitespace-nowrap"
         >
-          {addMutation.isPending ? t('members.adding') : t('members.add_button')}
-        </button>
+          {t('members.add_button')}
+        </Button>
       </form>
       {error && (
         <p id="add-member-error" className="mt-2 text-xs text-red-600 dark:text-red-400">
@@ -382,61 +391,65 @@ function AddMemberForm({ slug }: { slug: string }) {
 }
 
 function RemoveMemberDialog({
+  open,
   member,
   error,
   isRemoving,
   onConfirm,
   onCancel,
 }: {
-  member: Member
+  open: boolean
+  member: Member | null
   error: string | null
   isRemoving: boolean
   onConfirm: () => void
   onCancel: () => void
 }) {
   const { t } = useTranslation('projects')
-  useEscapeKey(onCancel)
-  const displayName = memberDisplayName(member)
+  const displayName = member ? memberDisplayName(member) : ''
+
+  function handleOpenChange(isOpen: boolean) {
+    if (!isOpen) onCancel()
+  }
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="remove-member-title"
-    >
-      <div className="absolute inset-0 bg-black/30" onClick={onCancel} aria-hidden="true" />
-      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-sm w-full mx-4 p-6">
-        <h2 id="remove-member-title" className="text-base font-semibold text-gray-900 dark:text-gray-100">
-          {t('members.remove_dialog_title')}
-        </h2>
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          {t('members.remove_dialog_body', { name: displayName })}
-          {member.email && (
-            <span className="text-gray-500 dark:text-gray-400"> ({member.email})</span>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t('members.remove_dialog_title')}</DialogTitle>
+          {member && (
+            <DialogDescription>
+              {t('members.remove_dialog_body', { name: displayName })}
+              {member.email && (
+                <span className="text-gray-500 dark:text-gray-400"> ({member.email})</span>
+              )}
+            </DialogDescription>
           )}
-        </p>
+        </DialogHeader>
         {error && (
-          <p className="mt-3 text-xs text-red-600 dark:text-red-400">{error}</p>
+          <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
         )}
-        <div className="mt-5 flex justify-end gap-3">
-          <button
+        <DialogFooter>
+          <Button
             autoFocus
+            type="button"
+            variant="secondary"
             onClick={onCancel}
             disabled={isRemoving}
-            className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
           >
             {t('actions.cancel', { ns: 'common' })}
-          </button>
-          <button
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            loading={isRemoving}
             onClick={onConfirm}
-            disabled={isRemoving}
-            className="px-3 py-1.5 text-sm font-medium bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500"
           >
-            {isRemoving ? t('members.removing') : t('members.remove')}
-          </button>
-        </div>
-      </div>
-    </div>
+            {t('members.remove')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -473,14 +486,3 @@ function MemberListSkeleton() {
   )
 }
 
-function useEscapeKey(handler: () => void) {
-  const handlerRef = useRef(handler)
-  useEffect(() => { handlerRef.current = handler }, [handler])
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') handlerRef.current()
-    }
-    document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [])
-}

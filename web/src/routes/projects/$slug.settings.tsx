@@ -5,6 +5,14 @@ import { useTranslation, Trans } from 'react-i18next'
 import { projectRoute } from './$slug'
 import { patchJSON, deleteRequest, APIError } from '../../api'
 import { useProjectRole } from '../../hooks/useProjectRole'
+import { Button } from '../../components/ui/Button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '../../components/ui/Dialog'
 
 export const projectSettingsRoute = createRoute({
   getParentRoute: () => projectRoute,
@@ -35,7 +43,7 @@ function ProjectSettingsPage() {
 
   return (
     <div className="p-6 max-w-2xl">
-      <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-6">{t('settings.title')}</h1>
+      <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">{t('settings.title')}</h1>
 
       <GeneralSection project={project} isAdmin={isAdmin} />
 
@@ -120,13 +128,13 @@ function NameField({ project, isAdmin }: { project: ProjectData; isAdmin: boolea
             }}
             className="flex-1 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
           />
-          <button
+          <Button
             type="submit"
-            disabled={updateMutation.isPending || !name.trim() || name === project.name}
-            className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            loading={updateMutation.isPending}
+            disabled={!name.trim() || name === project.name}
           >
-            {updateMutation.isPending ? t('settings.saving') : saved ? t('settings.saved') : t('settings.save')}
-          </button>
+            {saved ? t('settings.saved') : t('settings.save')}
+          </Button>
         </form>
       ) : (
         <p className="text-sm text-gray-900 dark:text-gray-100">{project.name}</p>
@@ -186,25 +194,30 @@ function DangerZone({ project }: { project: ProjectData }) {
             {t('settings.delete_description')}
           </p>
         </div>
-        <button
+        <Button
+          variant="danger-outline"
           onClick={() => setShowDeleteModal(true)}
-          className="px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 border border-red-300 dark:border-red-700 rounded hover:bg-red-50 dark:hover:bg-red-950 focus:outline-none focus:ring-2 focus:ring-red-500 shrink-0"
+          className="shrink-0"
         >
           {t('settings.delete_button')}
-        </button>
+        </Button>
       </div>
 
-      {showDeleteModal && (
-        <DeleteProjectModal project={project} onCancel={() => setShowDeleteModal(false)} />
-      )}
+      <DeleteProjectModal
+        open={showDeleteModal}
+        project={project}
+        onCancel={() => setShowDeleteModal(false)}
+      />
     </section>
   )
 }
 
 function DeleteProjectModal({
+  open,
   project,
   onCancel,
 }: {
+  open: boolean
   project: ProjectData
   onCancel: () => void
 }) {
@@ -232,23 +245,17 @@ function DeleteProjectModal({
     deleteMutation.mutate()
   }
 
+  function handleOpenChange(isOpen: boolean) {
+    if (!isOpen) onCancel()
+  }
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="delete-project-title"
-    >
-      <div
-        className="absolute inset-0 bg-black/30"
-        onClick={onCancel}
-        aria-hidden="true"
-      />
-      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
-        <h2 id="delete-project-title" className="text-base font-semibold text-gray-900 dark:text-gray-100">
-          {t('delete_project.title')}
-        </h2>
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t('delete_project.title')}</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           <Trans
             i18nKey="delete_project.body"
             ns="projects"
@@ -290,26 +297,27 @@ function DeleteProjectModal({
             />
           </div>
           {serverError && <p className="text-xs text-red-600 dark:text-red-400">{serverError}</p>}
-          <div className="flex justify-end gap-3 pt-1">
-            <button
+          <DialogFooter>
+            <Button
               type="button"
+              variant="secondary"
               onClick={onCancel}
               disabled={deleteMutation.isPending}
-              className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
             >
               {t('actions.cancel', { ns: 'common' })}
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              disabled={confirmName !== project.name || deleteMutation.isPending}
-              className="px-3 py-1.5 text-sm font-medium bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500"
+              variant="destructive"
+              loading={deleteMutation.isPending}
+              disabled={confirmName !== project.name}
             >
-              {deleteMutation.isPending ? t('delete_project.deleting') : t('delete_project.delete_button')}
-            </button>
-          </div>
+              {t('delete_project.delete_button')}
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
