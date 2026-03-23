@@ -21,6 +21,11 @@ build-sdk:
 test-sdk:
     cd sdk/js && npm test
 
+# Run the Python SDK tests
+# Requires dev deps: pip install -e '.[dev]' from sdk/python/
+test-sdk-python:
+    cd sdk/python && python -m pytest
+
 # Run frontend component tests (Vitest + Testing Library)
 test-frontend:
     cd web && npx vitest run
