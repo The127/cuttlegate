@@ -202,7 +202,7 @@ Do not add inner padding inconsistently. Standard card padding: `p-4` (16px).
 - Height: `h-14`; background: `var(--color-surface)`; bottom border: `1px solid var(--color-border)`
 - **Left:** logo or text-only wordmark. If text-only (no `logo_url`), render app name in JetBrains Mono (`fontFamily: 'var(--font-mono)'`).
 - **Centre-left:** project switcher (Radix `Select` from `web/src/components/ui/Select.tsx`); environment switcher (same). A separator `/` in `--color-text-muted` divides the two.
-- **Environment nudge:** when a project has zero environments, render a text button "No environments — Create one →" in `--color-accent` that navigates to the project dashboard. Do not render a disabled select.
+- **Environment nudge:** when a project has zero environments, render a text button "No environments — Create one →" in `--color-accent` that navigates to `/projects/$slug/settings/environments`. Do not render a disabled select.
 - **Right:** user avatar — circle, `h-8 w-8`, gradient fill (`--color-accent-start` → `--color-accent-end`), white initials derived from OIDC `profile.name`. Derivation: first letter of first word + first letter of last word, uppercased. Fallback: first letter if single-word name, `?` if absent. No API call — reads from the in-memory OIDC user object via `getUserManager().getUser()`.
 - No `bg-white`, `bg-gray-*`, or `dark:` classes. No `uppercase tracking-wide`.
 
@@ -263,7 +263,7 @@ Each step must have a clear forward action. No dead ends. Environment creation m
 
 ### Context-sensitive navigation
 
-- The environment switcher in the top bar must not show "Select environment..." when the project has no environments. Replace with a nudge: "No environments — Create one →" linking to environment creation.
+- The environment switcher in the top bar must not show "Select environment..." when the project has no environments. Replace with a nudge: "No environments — Create one →" linking to `/projects/$slug/settings/environments`.
 - Navigation items are context-sensitive — only surface actions meaningful to the current project state. "Compare Environments" does not appear when there is one or zero environments.
 
 ### State transitions
@@ -354,5 +354,6 @@ If something is missing soul — it feels assembled rather than designed, or it 
 | 2026-03-23 | Section headings: title case only — uppercase tracking-wide pattern retired project-wide | M9 design session |
 | 2026-03-23 | Destructive confirm button: solid red only, not gradient — red reserved for destructive actions | M9 design session |
 | 2026-03-23 | Top bar specification added: h-14, JetBrains Mono wordmark, Radix Select switchers, gradient user avatar, environment nudge | Sprint 23 #300 |
+| 2026-03-23 | Environment nudge destination corrected: navigates to /projects/$slug/settings/environments (was: project dashboard) | Sprint 24 #289 |
 | 2026-03-23 | Sidebar: fixed w-56, active ::before gradient accent (to bottom), project-route only | Sprint 23 #300 |
 | 2026-03-23 | Breadcrumbs bar removed entirely — sidebar + page heading provides sufficient context | Sprint 23 #300 |
