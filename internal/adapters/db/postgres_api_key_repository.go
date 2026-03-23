@@ -3,6 +3,9 @@ package dbadapter
 import (
 	"context"
 	"database/sql"
+	"errors"
+
+	"github.com/lib/pq"
 
 	"github.com/karo/cuttlegate/internal/domain"
 	"github.com/karo/cuttlegate/internal/domain/ports"
@@ -26,7 +29,14 @@ func (r *PostgresAPIKeyRepository) Create(ctx context.Context, key *domain.APIKe
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
 		key.ID, key.ProjectID, key.EnvironmentID, key.Name, key.KeyHash[:], key.DisplayPrefix, key.CapabilityTier, key.CreatedAt,
 	)
-	return err
+	if err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) && pqErr.Code == pgUniqueViolation {
+			return domain.ErrConflict
+		}
+		return err
+	}
+	return nil
 }
 
 func (r *PostgresAPIKeyRepository) GetByHash(ctx context.Context, hash [32]byte) (*domain.APIKey, error) {
