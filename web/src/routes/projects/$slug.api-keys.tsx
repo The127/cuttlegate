@@ -5,6 +5,15 @@ import { useTranslation } from 'react-i18next'
 import { projectRoute } from './$slug'
 import { fetchJSON, postJSON, deleteRequest, APIError } from '../../api'
 import { formatRelativeDate } from '../../utils/date'
+import { Button } from '../../components/ui/Button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '../../components/ui/Dialog'
 
 interface Environment {
   id: string
@@ -83,14 +92,13 @@ function APIKeyPage() {
   return (
     <div className="p-6 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('api_keys.title')}</h1>
-        <button
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{t('api_keys.title')}</h1>
+        <Button
           onClick={() => setShowCreate(true)}
           disabled={envSlug === null}
-          className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
         >
           {t('api_keys.new_key')}
-        </button>
+        </Button>
       </div>
 
       {envsQuery.isLoading ? (
@@ -152,8 +160,9 @@ function APIKeyPage() {
         </>
       )}
 
-      {showCreate && envSlug && (
+      {envSlug && (
         <CreateAPIKeyModal
+          open={showCreate}
           projectSlug={slug}
           envSlug={envSlug}
           onCreated={() => {
@@ -164,16 +173,15 @@ function APIKeyPage() {
         />
       )}
 
-      {pendingRevoke && (
-        <RevokeAPIKeyModal
-          apiKey={pendingRevoke}
-          isLastKey={isLastKey}
-          isRevoking={revokeMutation.isPending}
-          revokeFailed={revokeMutation.isError}
-          onConfirm={() => revokeMutation.mutate(pendingRevoke.id)}
-          onCancel={() => setPendingRevoke(null)}
-        />
-      )}
+      <RevokeAPIKeyModal
+        open={pendingRevoke !== null}
+        apiKey={pendingRevoke}
+        isLastKey={isLastKey}
+        isRevoking={revokeMutation.isPending}
+        revokeFailed={revokeMutation.isError}
+        onConfirm={() => pendingRevoke && revokeMutation.mutate(pendingRevoke.id)}
+        onCancel={() => setPendingRevoke(null)}
+      />
     </div>
   )
 }
@@ -221,12 +229,9 @@ function APIKeyEmptyState({ onCreateClick }: { onCreateClick: () => void }) {
       <p className="text-sm text-gray-500 dark:text-gray-400">
         {t('api_keys.empty')}
       </p>
-      <button
-        onClick={onCreateClick}
-        className="mt-4 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
-      >
+      <Button size="lg" className="mt-4" onClick={onCreateClick}>
         {t('api_keys.new_key')}
-      </button>
+      </Button>
     </div>
   )
 }
@@ -253,11 +258,13 @@ function APIKeyListSkeleton() {
 type CreatePhase = { type: 'form' } | { type: 'show'; key: string; name: string }
 
 function CreateAPIKeyModal({
+  open,
   projectSlug,
   envSlug,
   onCreated,
   onCancel,
 }: {
+  open: boolean
   projectSlug: string
   envSlug: string
   onCreated: () => void
@@ -296,6 +303,7 @@ function CreateAPIKeyModal({
   if (phase.type === 'show') {
     return (
       <ShowOnceModal
+        open={open}
         projectSlug={projectSlug}
         envSlug={envSlug}
         keyName={phase.name}
@@ -305,12 +313,16 @@ function CreateAPIKeyModal({
     )
   }
 
+  function handleOpenChange(isOpen: boolean) {
+    if (!isOpen) onCancel()
+  }
+
   return (
-    <Modal labelledBy="create-key-title" onClose={onCancel}>
-      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
-        <h2 id="create-key-title" className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          {t('api_keys.create_title')}
-        </h2>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t('api_keys.create_title')}</DialogTitle>
+        </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="key-name" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
@@ -330,36 +342,38 @@ function CreateAPIKeyModal({
             />
           </div>
           {serverError && <p className="text-xs text-red-600 dark:text-red-400">{serverError}</p>}
-          <div className="flex justify-end gap-3 pt-2">
-            <button
+          <DialogFooter>
+            <Button
               type="button"
+              variant="secondary"
               onClick={onCancel}
               disabled={createMutation.isPending}
-              className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
             >
               {t('actions.cancel', { ns: 'common' })}
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              disabled={createMutation.isPending || !name.trim()}
-              className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+              loading={createMutation.isPending}
+              disabled={!name.trim()}
             >
-              {createMutation.isPending ? t('api_keys.creating') : t('api_keys.create_button')}
-            </button>
-          </div>
+              {t('api_keys.create_button')}
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </Modal>
+      </DialogContent>
+    </Dialog>
   )
 }
 
 function ShowOnceModal({
+  open,
   projectSlug,
   envSlug,
   keyName,
   plaintextKey,
   onDone,
 }: {
+  open: boolean
   projectSlug: string
   envSlug: string
   keyName: string
@@ -394,11 +408,11 @@ function ShowOnceModal({
   }
 
   return (
-    <Modal labelledBy="show-key-title" onClose={onDone}>
-      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-lg w-full mx-4 p-6">
-        <h2 id="show-key-title" className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">
-          {t('api_keys.show_once_title', { name: keyName })}
-        </h2>
+    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onDone() }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{t('api_keys.show_once_title', { name: keyName })}</DialogTitle>
+        </DialogHeader>
         <p className="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded px-3 py-2 mb-4">
           {t('api_keys.show_once_warning')}
         </p>
@@ -409,13 +423,15 @@ function ShowOnceModal({
             <code className="flex-1 font-mono text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 break-all select-all">
               {plaintextKey}
             </code>
-            <button
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
               onClick={copyKey}
               aria-label={t('api_keys.copy_aria')}
-              className="shrink-0 px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
             >
               {copied ? t('api_keys.copied') : t('api_keys.copy')}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -428,20 +444,18 @@ function ShowOnceModal({
           </pre>
         </div>
 
-        <div className="flex justify-end">
-          <button
-            onClick={onDone}
-            className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
-          >
+        <DialogFooter>
+          <Button onClick={onDone}>
             {t('api_keys.done')}
-          </button>
-        </div>
-      </div>
-    </Modal>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
 function RevokeAPIKeyModal({
+  open,
   apiKey,
   isLastKey,
   isRevoking,
@@ -449,7 +463,8 @@ function RevokeAPIKeyModal({
   onConfirm,
   onCancel,
 }: {
-  apiKey: APIKey
+  open: boolean
+  apiKey: APIKey | null
   isLastKey: boolean
   isRevoking: boolean
   revokeFailed: boolean
@@ -457,79 +472,54 @@ function RevokeAPIKeyModal({
   onCancel: () => void
 }) {
   const { t } = useTranslation('projects')
+
+  function handleOpenChange(isOpen: boolean) {
+    if (!isOpen) onCancel()
+  }
+
   return (
-    <Modal labelledBy="revoke-key-title" onClose={onCancel}>
-      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-sm w-full mx-4 p-6">
-        <h2 id="revoke-key-title" className="text-base font-semibold text-gray-900 dark:text-gray-100">
-          {t('api_keys.revoke_title')}
-        </h2>
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          {t('api_keys.revoke_body', {
-            prefix: `cg_${apiKey.display_prefix}…`,
-            name: apiKey.name,
-          })}
-        </p>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t('api_keys.revoke_title')}</DialogTitle>
+          {apiKey && (
+            <DialogDescription>
+              {t('api_keys.revoke_body', {
+                prefix: `cg_${apiKey.display_prefix}…`,
+                name: apiKey.name,
+              })}
+            </DialogDescription>
+          )}
+        </DialogHeader>
         {isLastKey && (
-          <p className="mt-3 text-sm text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded px-3 py-2">
+          <p className="text-sm text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded px-3 py-2">
             {t('api_keys.revoke_last_warning')}
           </p>
         )}
         {revokeFailed && (
           <p className="mt-3 text-xs text-red-600 dark:text-red-400">{t('api_keys.revoke_failed')}</p>
         )}
-        <div className="mt-5 flex justify-end gap-3">
-          <button
+        <DialogFooter>
+          <Button
             autoFocus
+            type="button"
+            variant="secondary"
             onClick={onCancel}
             disabled={isRevoking}
-            className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
           >
             {t('actions.cancel', { ns: 'common' })}
-          </button>
-          <button
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            loading={isRevoking}
             onClick={onConfirm}
-            disabled={isRevoking}
-            className="px-3 py-1.5 text-sm font-medium bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500"
           >
-            {isRevoking ? t('api_keys.revoking') : t('api_keys.revoke')}
-          </button>
-        </div>
-      </div>
-    </Modal>
+            {t('api_keys.revoke')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
-function useEscapeKey(handler: () => void) {
-  const handlerRef = useRef(handler)
-  handlerRef.current = handler
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') handlerRef.current()
-    }
-    document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [])
-}
-
-function Modal({
-  labelledBy,
-  onClose,
-  children,
-}: {
-  labelledBy: string
-  onClose: () => void
-  children: React.ReactNode
-}) {
-  useEscapeKey(onClose)
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={labelledBy}
-    >
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} aria-hidden="true" />
-      {children}
-    </div>
-  )
-}
