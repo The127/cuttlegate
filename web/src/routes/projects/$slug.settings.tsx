@@ -294,7 +294,6 @@ function DeleteProjectModal({
               }}
               autoFocus
               placeholder={project.name}
-              hasError={false}
               className="focus:border-[var(--color-status-error)] focus:shadow-[0_0_0_2px_rgba(248,113,113,0.4)]"
             />
           </div>

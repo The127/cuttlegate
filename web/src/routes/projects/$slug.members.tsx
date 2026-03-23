@@ -361,9 +361,6 @@ function AddMemberForm({ slug }: { slug: string }) {
           />
         </div>
         <div>
-          <label htmlFor="member-role" className="sr-only">
-            {t('members.role_label')}
-          </label>
           <Select
             value={role}
             onValueChange={(v) => setRole(v as Role)}
