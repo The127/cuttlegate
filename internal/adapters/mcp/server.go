@@ -131,14 +131,14 @@ func (s *Server) authenticateRequest(w http.ResponseWriter, r *http.Request) *do
 
 // liveKeyCheck performs a per-call live DB lookup to verify the key is still valid
 // and returns its current capability tier. This is the security gate per ADR 0028.
-func (s *Server) liveKeyCheck(ctx context.Context, keyID string, plaintext string) (*domain.APIKey, error) {
+func (s *Server) liveKeyCheck(ctx context.Context, plaintext string) (*domain.APIKey, error) {
 	hash := domain.HashAPIKey(plaintext)
 	key, err := s.keyRepo.GetByHash(ctx, hash)
 	if err != nil {
-		return nil, fmt.Errorf("unauthenticated")
+		return nil, errors.New("unauthenticated")
 	}
 	if key.Revoked() {
-		return nil, fmt.Errorf("unauthenticated")
+		return nil, errors.New("unauthenticated")
 	}
 	return key, nil
 }
@@ -159,10 +159,9 @@ func (s *Server) handleSSE(w http.ResponseWriter, r *http.Request) {
 
 	sessID := newSessionID()
 	sess := &session{
-		id:        sessID,
-		keyID:     key.ID,
-		plaintext: extractBearer(r),
-		tier:      key.CapabilityTier,
+		id:    sessID,
+		keyID: key.ID,
+		tier:  key.CapabilityTier,
 	}
 
 	s.mu.Lock()
@@ -214,7 +213,7 @@ func (s *Server) handleMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Per-call live key lookup — this is the security gate.
-	liveKey, err := s.liveKeyCheck(r.Context(), "", plaintext)
+	liveKey, err := s.liveKeyCheck(r.Context(), plaintext)
 	if err != nil {
 		writeJSON(w, http.StatusOK, rpcResult(req.ID, mcpError{Error: "unauthenticated"}))
 		return

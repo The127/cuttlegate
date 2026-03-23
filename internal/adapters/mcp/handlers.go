@@ -3,6 +3,7 @@ package mcp
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
 	"github.com/karo/cuttlegate/internal/app"
 	"github.com/karo/cuttlegate/internal/domain"
@@ -160,7 +161,7 @@ func (s *Server) callSetEnabled(ctx context.Context, id json.RawMessage, rawArgs
 	})}
 }
 
-// isDomainNotFound reports whether err is domain.ErrNotFound.
+// isDomainNotFound reports whether err wraps domain.ErrNotFound.
 func isDomainNotFound(err error) bool {
-	return err != nil && err.Error() == domain.ErrNotFound.Error()
+	return errors.Is(err, domain.ErrNotFound)
 }

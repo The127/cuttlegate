@@ -9,10 +9,9 @@ import (
 
 // session holds per-connection state for a connected MCP client.
 type session struct {
-	id        string
-	keyID     string
-	plaintext string
-	tier      domain.ToolCapabilityTier
+	id    string
+	keyID string
+	tier  domain.ToolCapabilityTier
 }
 
 // newSessionID generates a cryptographically random session identifier.
