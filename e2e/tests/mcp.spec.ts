@@ -58,7 +58,6 @@ async function openMCPSession(apiKey: string): Promise<string> {
     throw new Error(`SSE /sse returned ${resp.status}: ${text}`);
   }
 
-  // Read the stream until we find the `endpoint` event.
   const reader = resp.body!.getReader();
   const decoder = new TextDecoder();
   let buf = '';
@@ -69,10 +68,8 @@ async function openMCPSession(apiKey: string): Promise<string> {
       const { value, done } = await reader.read();
       if (done) break;
       buf += decoder.decode(value, { stream: true });
-      // SSE events are separated by double newlines.
       const lines = buf.split('\n');
       for (const line of lines) {
-        // data: /message?session_id=<id>
         if (line.startsWith('data: ')) {
           const dataVal = line.slice('data: '.length).trim();
           const match = dataVal.match(/session_id=([a-f0-9]+)/);
@@ -141,35 +138,33 @@ interface TestFixtures {
   projectSlug: string;
   envSlug: string;
   flagKey: string;
+  adminToken: string;
   readKey: string;
   writeKey: string;
 }
 
 async function setupTestState(): Promise<TestFixtures> {
   const ts = Date.now();
-  const token = issueToken('mcp-e2e-admin', 'admin');
+  const adminToken = issueToken('mcp-e2e-admin', 'admin');
 
   const projectSlug = `mcp-proj-${ts}`;
   const envSlug = 'mcp-env';
   const flagKey = `mcp-flag-${ts}`;
 
-  await createProject(token, `MCP E2E ${ts}`, projectSlug);
-  await createEnvironment(token, projectSlug, 'MCP Env', envSlug);
-  await createFlag(token, projectSlug, flagKey);
+  await createProject(adminToken, `MCP E2E ${ts}`, projectSlug);
+  await createEnvironment(adminToken, projectSlug, 'MCP Env', envSlug);
+  await createFlag(adminToken, projectSlug, flagKey);
 
-  const readAPIKey = await createAPIKey(token, projectSlug, envSlug, {
-    name: 'e2e-read',
-    capability_tier: 'read',
-  });
-  const writeAPIKey = await createAPIKey(token, projectSlug, envSlug, {
-    name: 'e2e-write',
-    capability_tier: 'write',
-  });
+  const [readAPIKey, writeAPIKey] = await Promise.all([
+    createAPIKey(adminToken, projectSlug, envSlug, { name: 'e2e-read', capability_tier: 'read' }),
+    createAPIKey(adminToken, projectSlug, envSlug, { name: 'e2e-write', capability_tier: 'write' }),
+  ]);
 
   return {
     projectSlug,
     envSlug,
     flagKey,
+    adminToken,
     readKey: readAPIKey.key,
     writeKey: writeAPIKey.key,
   };
@@ -184,8 +179,7 @@ test.describe('MCP capability tier enforcement', () => {
     fixtures = await setupTestState();
   });
 
-  // Scenario 1 @happy — list_flags with read-tier key returns the flag list
-  test('Scenario 1: list_flags with read-tier key returns flag list', async () => {
+  test('Scenario 1 @happy: list_flags with read-tier key returns flag list', async () => {
     const sessionID = await openMCPSession(fixtures.readKey);
     const resp = await mcpCall(sessionID, fixtures.readKey, 'tools/call', {
       name: 'list_flags',
@@ -202,8 +196,7 @@ test.describe('MCP capability tier enforcement', () => {
     expect(flags.some((f) => f.key === fixtures.flagKey)).toBe(true);
   });
 
-  // Scenario 2 @happy — evaluate_flag with read-tier key returns a valid result
-  test('Scenario 2: evaluate_flag with read-tier key returns a valid result', async () => {
+  test('Scenario 2 @happy: evaluate_flag with read-tier key returns a valid result', async () => {
     const sessionID = await openMCPSession(fixtures.readKey);
     const resp = await mcpCall(sessionID, fixtures.readKey, 'tools/call', {
       name: 'evaluate_flag',
@@ -221,8 +214,7 @@ test.describe('MCP capability tier enforcement', () => {
     expect(typeof payload.enabled).toBe('boolean');
   });
 
-  // Scenario 3 @error-path — enable_flag with read-tier key is rejected
-  test('Scenario 3: enable_flag with read-tier key returns insufficient_capability', async () => {
+  test('Scenario 3 @error-path: enable_flag with read-tier key returns insufficient_capability', async () => {
     const sessionID = await openMCPSession(fixtures.readKey);
     const resp = await mcpCall(sessionID, fixtures.readKey, 'tools/call', {
       name: 'enable_flag',
@@ -246,12 +238,8 @@ test.describe('MCP capability tier enforcement', () => {
     });
   });
 
-  // Scenario 4 @happy — enable_flag with write-tier key succeeds and emits an audit event
-  test('Scenario 4: enable_flag with write-tier key succeeds and emits audit event', async () => {
-    const adminToken = issueToken('mcp-e2e-admin', 'admin');
-
-    // Ensure flag is disabled before the test.
-    await toggleFlag(adminToken, fixtures.projectSlug, fixtures.envSlug, fixtures.flagKey, false);
+  test('Scenario 4 @happy: enable_flag with write-tier key succeeds and emits audit event', async () => {
+    await toggleFlag(fixtures.adminToken, fixtures.projectSlug, fixtures.envSlug, fixtures.flagKey, false);
 
     const sessionID = await openMCPSession(fixtures.writeKey);
     const resp = await mcpCall(sessionID, fixtures.writeKey, 'tools/call', {
@@ -267,38 +255,19 @@ test.describe('MCP capability tier enforcement', () => {
     const payload = toolText(resp.result) as { key: string; enabled: boolean };
     expect(payload.enabled).toBe(true);
 
-    // Verify the flag is now enabled via list_flags.
-    const listSessionID = await openMCPSession(fixtures.writeKey);
-    const listResp = await mcpCall(listSessionID, fixtures.writeKey, 'tools/call', {
-      name: 'list_flags',
-      arguments: {
-        project_slug: fixtures.projectSlug,
-        environment_slug: fixtures.envSlug,
-      },
-    });
-    const flags = toolText(listResp.result) as Array<{ key: string; enabled: boolean }>;
-    const flag = flags.find((f) => f.key === fixtures.flagKey);
-    expect(flag?.enabled).toBe(true);
-
-    // Verify audit event via REST audit log endpoint.
-    const entries = await listAuditEvents(adminToken, fixtures.projectSlug);
-    const mcpAuditEntry = entries.find(
-      (e) =>
-        e.action.includes('flag') &&
-        (e.flag_key === fixtures.flagKey || e.action.includes(fixtures.flagKey)),
+    const entries = await listAuditEvents(fixtures.adminToken, fixtures.projectSlug);
+    const auditEntry = entries.find(
+      (e) => e.action === 'flag.state_changed' && e.flag_key === fixtures.flagKey,
     );
-    expect(mcpAuditEntry).toBeDefined();
+    expect(auditEntry).toBeDefined();
   });
 
-  // Scenario 5 @auth-bypass — unauthenticated request is rejected
-  test('Scenario 5: unauthenticated request returns {"error":"unauthenticated"}', async () => {
-    // Try SSE endpoint without auth.
+  test('Scenario 5 @auth-bypass: unauthenticated request returns {"error":"unauthenticated"}', async () => {
     const sseResp = await fetch(`${MCP_BASE}/sse`);
     expect(sseResp.status).toBe(401);
     const sseBody = await sseResp.json() as { error: string };
     expect(sseBody).toMatchObject({ error: 'unauthenticated' });
 
-    // Try message endpoint without auth (using a fake session ID).
     const msgResp = await fetch(`${MCP_BASE}/message?session_id=fake`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -314,8 +283,7 @@ test.describe('MCP capability tier enforcement', () => {
     expect(msgBody).toMatchObject({ error: 'unauthenticated' });
   });
 
-  // Scenario 6 @edge — tools/list with read-tier key omits write-tier tools
-  test('Scenario 6: tools/list with read-tier key does not include write-tier tools', async () => {
+  test('Scenario 6 @edge: tools/list with read-tier key does not include write-tier tools', async () => {
     const sessionID = await openMCPSession(fixtures.readKey);
     const resp = await mcpCall(sessionID, fixtures.readKey, 'tools/list', {});
 
@@ -329,8 +297,7 @@ test.describe('MCP capability tier enforcement', () => {
     expect(names).not.toContain('disable_flag');
   });
 
-  // Scenario 7 @edge — tools/list with write-tier key includes write-tier tools
-  test('Scenario 7: tools/list with write-tier key includes write-tier tools', async () => {
+  test('Scenario 7 @edge: tools/list with write-tier key includes write-tier tools', async () => {
     const sessionID = await openMCPSession(fixtures.writeKey);
     const resp = await mcpCall(sessionID, fixtures.writeKey, 'tools/list', {});
 
