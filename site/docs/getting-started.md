@@ -225,10 +225,17 @@ You will see the evaluation events from your SDK calls. Each entry shows:
 
 - The flag key and environment
 - Whether the flag was enabled
-- The **reason** — `targeting_rule` for the pro user, `default` for the free user
-- The **matched rule name** — `Pro users get dark mode` — visible for `targeting_rule` evaluations
+- The **reason** — one of:
+  - `targeting_rule` — a targeting rule matched the user's context
+  - `default` — no rule matched; the flag fell through to its default state
+  - `segment_deleted` — a targeting rule referenced a segment that no longer exists; the rule was skipped and evaluation fell through to the next matching rule or the flag's default
+- The **matched rule name** — visible for `targeting_rule` evaluations; not present for `default` or `segment_deleted`
 
 This makes it straightforward to verify that your rules are matching the right users in production.
+
+:::warning Stale rule configuration
+If you see `segment_deleted` in the audit trail, a targeting rule is referencing a segment that no longer exists. The evaluation continued — falling through to the next rule or the flag's default — but the stale rule is doing nothing. Navigate to the flag's rules and update or remove any rule that references the deleted segment.
+:::
 
 ## What's next
 
