@@ -32,12 +32,13 @@ pending database migrations with `just migrate-up` (or the Docker Compose
 
 #### Targeting Rules
 
-- Targeting rules with segment-based evaluation — rules evaluate against a
-  named user segment and resolve to a variant when matched
+- Targeting rules with attribute-based and segment-based conditions — rules
+  evaluate conditions against evaluation context attributes and resolve to a
+  variant when matched
 - Segment CRUD — create segments, manage member lists, and reference them in
-  targeting rules
-- Rule evaluation engine with operator matching (`eq`, `neq`, `contains`,
-  `not_contains`, `matches`)
+  targeting rules via `in_segment` / `not_in_segment` conditions
+- Rule evaluation engine with condition operators: `eq`, `neq`, `contains`,
+  `starts_with`, `ends_with`, `in`, `not_in`, `in_segment`, `not_in_segment`
 - Rule name field carried through evaluation results and audit events
 
 #### Authentication
