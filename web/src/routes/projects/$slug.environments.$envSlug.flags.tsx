@@ -340,12 +340,6 @@ function SdkPrompt({ flagKey }: { flagKey: string }) {
     safeSetDismissed()
   }
 
-  const tabLabels: Record<SdkTab, string> = {
-    go: t('create.sdk_prompt.tab_go'),
-    js: t('create.sdk_prompt.tab_js'),
-    python: t('create.sdk_prompt.tab_python'),
-  }
-
   return (
     <section
       role="region"
@@ -370,7 +364,7 @@ function SdkPrompt({ flagKey }: { flagKey: string }) {
                   : 'border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900 hover:border-gray-400 dark:hover:border-gray-400',
               ].join(' ')}
             >
-              {tabLabels[tab]}
+              {t(`create.sdk_prompt.tab_${tab}`)}
             </button>
           ))}
         </div>
