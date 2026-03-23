@@ -3,6 +3,7 @@
 Public exports:
 
     CuttlegateClient          — synchronous flag evaluation client
+    CachedClient              — in-memory flag cache backed by a single SSE connection
     MockCuttlegateClient      — in-memory test helper; no live server required
     CuttlegateClientProtocol  — PEP 544 protocol for type-safe consumer code
     CuttlegateConfig          — configuration dataclass (api_key suppressed in repr)
@@ -22,6 +23,7 @@ Public exports:
     SDKError                  — base class for all SDK-specific errors
 """
 
+from .cached import CachedClient
 from .client import CuttlegateClient
 from .errors import (
     AuthError,
@@ -37,6 +39,7 @@ from .testing import MockCuttlegateClient
 from .types import CuttlegateClientProtocol, CuttlegateConfig, EvalContext, EvalResult
 
 __all__ = [
+    "CachedClient",
     "CuttlegateClient",
     "MockCuttlegateClient",
     "CuttlegateClientProtocol",
