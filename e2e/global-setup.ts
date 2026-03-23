@@ -20,6 +20,7 @@ const OIDC_STATE_FILE = resolve(E2E_DIR, '.e2e-oidc.json');
 
 const OIDC_STUB_PORT = 8081;
 const SERVER_PORT = 8082;
+const MCP_PORT = 8083;
 const PG_PORT = 5433;
 
 interface State {
@@ -112,6 +113,7 @@ export default async function globalSetup(): Promise<void> {
       OIDC_CLIENT_ID: 'cuttlegate',
       OIDC_REDIRECT_URI: `http://localhost:${SERVER_PORT}/auth/callback`,
       ADDR: `:${SERVER_PORT}`,
+      MCP_ADDR: `:${MCP_PORT}`,
       DATABASE_URL: dbUrl,
       AUTO_MIGRATE: 'true',
     },

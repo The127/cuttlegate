@@ -147,3 +147,59 @@ export async function toggleFlag(
     { enabled },
   );
 }
+
+export interface APIKey {
+  id: string;
+  name: string;
+  display_prefix: string;
+  capability_tier: string;
+  /** Plaintext key — only present in the create response, never in list responses. */
+  key: string;
+}
+
+/**
+ * Creates an API key scoped to a project + environment.
+ *
+ * @param token - OIDC JWT for the admin user
+ * @param projectSlug - project slug
+ * @param envSlug - environment slug
+ * @param opts.name - display name for the key
+ * @param opts.capability_tier - 'read' | 'write' | 'destructive' (default: 'read')
+ */
+export async function createAPIKey(
+  token: string,
+  projectSlug: string,
+  envSlug: string,
+  opts: { name: string; capability_tier?: string },
+): Promise<APIKey> {
+  const resp = await apiRequest(
+    'POST',
+    `/api/v1/projects/${projectSlug}/environments/${envSlug}/api-keys`,
+    token,
+    { name: opts.name, capability_tier: opts.capability_tier ?? 'read' },
+  );
+  return resp.json() as Promise<APIKey>;
+}
+
+export interface AuditEntry {
+  id: string;
+  occurred_at: string;
+  actor_id: string;
+  actor_email: string;
+  action: string;
+  flag_key?: string;
+  environment_slug?: string;
+  project_slug: string;
+}
+
+/**
+ * Fetches the audit log entries for a project (most recent first).
+ */
+export async function listAuditEvents(
+  token: string,
+  projectSlug: string,
+): Promise<AuditEntry[]> {
+  const resp = await apiRequest('GET', `/api/v1/projects/${projectSlug}/audit`, token);
+  const body = await resp.json() as { entries: AuditEntry[] };
+  return body.entries;
+}

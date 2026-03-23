@@ -70,5 +70,14 @@ export default defineConfig({
         storageState: STORAGE_STATE_PATH,
       },
     },
+    // MCP API tests — API-level (no browser), tests MCP tool calls and capability tier enforcement.
+    // The MCP server runs on :8083 (MCP_ADDR set in global-setup to avoid collision with OIDC stub on :8081).
+    {
+      name: 'mcp-api',
+      testMatch: 'mcp.spec.ts',
+      use: {
+        baseURL: 'http://localhost:8083',
+      },
+    },
   ],
 });
