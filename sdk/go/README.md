@@ -70,6 +70,13 @@ func main() {
 
 `NewClient` validates the configuration and returns an error if any required field is missing. No network calls are made at construction time.
 
+### EvalContext fields
+
+| Field | Type | Notes |
+|---|---|---|
+| `UserID` | `string` | User identifier passed to targeting rules. Empty string is valid but will not match user-specific rules. |
+| `Attributes` | `map[string]any` | Arbitrary key-value pairs used in targeting rules. Values must be JSON-serialisable (string, number, bool, nil — not channels or functions). |
+
 ## Evaluation methods
 
 | Method | Returns | Notes |
@@ -111,6 +118,16 @@ func main() {
 | `Value` | `string` | **Deprecated.** Empty for bool flags. Use `Variant`. |
 | `Reason` | `string` | `"not_found"` if the key is absent; otherwise a standard reason string |
 
+### FlagUpdate
+
+`Subscribe` delivers `FlagUpdate` values on state changes:
+
+| Field | Type | Notes |
+|---|---|---|
+| `Key` | `string` | Flag key that changed |
+| `Enabled` | `bool` | New enabled state of the flag |
+| `UpdatedAt` | `time.Time` | When the change occurred. Zero value if the server sent a malformed timestamp — the update is still delivered. |
+
 ### Migration from `Value` to `Variant`
 
 If your code reads `result.Value` today:
@@ -147,17 +164,17 @@ for {
     select {
     case update, ok := <-updates:
         if !ok {
-            return // context cancelled — stream closed
+            return // SDK closed both channels — context was cancelled
         }
         fmt.Printf("flag %s changed: enabled=%v at %s\n",
             update.Key, update.Enabled, update.UpdatedAt)
     case err, ok := <-errs:
         if !ok {
-            return // context cancelled — stream closed
+            return // SDK closed both channels — context was cancelled
         }
         log.Printf("stream error: %v", err)
     case <-ctx.Done():
-        return
+        return // safety net: exits if ctx fires before the channel close propagates
     }
 }
 ```
@@ -233,8 +250,8 @@ func main() {
 **How it works:**
 
 - `NewCachedClient` validates config — no network calls.
-- `Bootstrap(ctx, evalCtx)` calls `EvaluateAll` once to seed the cache, then starts **one** background goroutine managing **one** SSE connection for all flags. The goroutine reconnects with exponential backoff on transient errors (5xx, network); it stops permanently on auth errors (401/403).
-- `Bool`/`String` check the cache first. On a cache miss (key not present after `Bootstrap`), they fall back to a live HTTP evaluation — the result is not stored in cache.
+- `Bootstrap(ctx, evalCtx)` calls `EvaluateAll` once to seed the cache, then starts **one** background goroutine managing **one** SSE connection for all flags. The goroutine reconnects with exponential backoff on transient errors (5xx, network); it stops permanently on auth errors (401/403). The `evalCtx` is used only for this initial seed call — subsequent `Bool`/`String` calls use their own `evalCtx` independently; the cache is not user-specific.
+- `Bool`/`String` check the cache first. On a cache miss (key not present after `Bootstrap`), they fall back to a live HTTP evaluation — the result is not stored in cache. **`Evaluate`, `EvaluateAll`, `EvaluateFlag`, and `Subscribe` always bypass the cache and make live HTTP/SSE calls.**
 - Cancelling `ctx` stops the SSE goroutine cleanly. The cache remains readable after cancel; `Bool`/`String` fall back to live HTTP for any subsequent calls.
 - `Bootstrap` may be called more than once to refresh the full cache. The previous goroutine is stopped before the new one starts.
 - `*CachedClient` satisfies the `Client` interface — inject it wherever a `Client` is expected.
@@ -272,6 +289,8 @@ func TestMyService(t *testing.T) {
 
 Available mock helpers: `Enable`, `Disable`, `SetVariant`, `AssertEvaluated`, `AssertNotEvaluated`, `Reset`.
 
+**`Disable` removes the key from the mock** — `Bool` and `Evaluate` return `NotFoundError`, not `(false, nil)`. If you need the flag to return `false` without an error, call `Enable` and configure a disabled variant, or check for `NotFoundError` in your test.
+
 **`Subscribe` limitation:** `MockClient.Subscribe` returns immediately-closed channels. It satisfies the `Client` interface for type-checking purposes but does not simulate a real-time stream. If your test needs to exercise the `Subscribe` code path, use an `httptest.Server` that serves SSE responses instead.
 
 ## Typed errors
@@ -279,6 +298,8 @@ Available mock helpers: `Enable`, `Disable`, `SetVariant`, `AssertEvaluated`, `A
 All methods return typed errors — no string-only errors.
 
 ```go
+import "errors"
+
 results, err := client.EvaluateAll(ctx, evalCtx)
 if err != nil {
     var authErr *cuttlegate.AuthError
