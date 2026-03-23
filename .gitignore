@@ -32,6 +32,7 @@ tmp/
 # TypeScript build info
 web/tsconfig.app.tsbuildinfo
 
+
 # Editor / OS noise
 .DS_Store
 .idea/
