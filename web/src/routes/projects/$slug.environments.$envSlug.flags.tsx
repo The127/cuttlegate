@@ -126,8 +126,8 @@ function FlagListPage() {
               aria-label={t('list.copy_key_aria', { key: f.key })}
               className="text-[var(--color-accent-start)]"
             />
-            <span className="bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-[var(--color-text-muted)] text-xs rounded px-1.5 py-0.5">
-              {f.type}
+            <span className="font-mono bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-[var(--color-text-muted)] text-xs rounded px-1.5 py-0.5">
+              {t('type_badge.' + f.type, { defaultValue: f.type })}
             </span>
           </div>
         ),
@@ -390,7 +390,7 @@ function SdkPrompt({ flagKey }: { flagKey: string }) {
                 'px-3 py-1 text-xs font-medium rounded border transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]',
                 activeTab === tab
                   ? 'border-[var(--color-accent)] text-[var(--color-accent)] bg-[var(--color-surface)]'
-                  : 'border-[var(--color-border)] text-[var(--color-text-secondary)] bg-[var(--color-surface)] hover:border-[var(--color-border)]
+                  : 'border-[var(--color-border)] text-[var(--color-text-secondary)] bg-[var(--color-surface)] hover:border-[var(--color-border)]'
               ].join(' ')}
             >
               {t(`create.sdk_prompt.tab_${tab}`)}

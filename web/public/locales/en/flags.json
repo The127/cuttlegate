@@ -113,6 +113,12 @@
     "col_status": "Status",
     "col_last_evaluated": "Last evaluated"
   },
+  "type_badge": {
+    "bool": "bool",
+    "string": "str",
+    "number": "num",
+    "json": "json"
+  },
   "stats": {
     "never_evaluated": "Never",
     "last_evaluated_label": "Last evaluated",

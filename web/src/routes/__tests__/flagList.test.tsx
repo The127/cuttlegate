@@ -171,6 +171,61 @@ describe('FlagListPage', () => {
   })
 })
 
+describe('Type badge rendering', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  // @happy: bool flag shows translated "bool" badge
+  it('renders type badge with translated label for bool flag', async () => {
+    mockFetchWithStats()
+
+    const { flagListRoute } = await loadFlagListPage()
+    const FlagListPage = flagListRoute.options.component
+
+    render(<Wrapper><FlagListPage /></Wrapper>)
+
+    await waitFor(() => {
+      expect(screen.getByText('Dark Mode')).toBeInTheDocument()
+    })
+
+    // The type badge should show the translated abbreviation "bool"
+    expect(screen.getByText('bool')).toBeInTheDocument()
+  })
+
+  // @edge: unrecognised type falls back to raw type string
+  it('renders raw type string for unrecognised flag type', async () => {
+    mockFetchJSON.mockImplementation((url: string) => {
+      if (url.endsWith('/stats')) return Promise.resolve(STATS_NEVER)
+      return Promise.resolve({
+        flags: [
+          {
+            id: 'flag-2',
+            key: 'experiment',
+            name: 'Experiment',
+            type: 'unknown_type',
+            variants: [{ key: 'default', name: 'Default' }],
+            default_variant_key: 'default',
+            enabled: false,
+          },
+        ],
+      })
+    })
+
+    const { flagListRoute } = await loadFlagListPage()
+    const FlagListPage = flagListRoute.options.component
+
+    render(<Wrapper><FlagListPage /></Wrapper>)
+
+    await waitFor(() => {
+      expect(screen.getByText('Experiment')).toBeInTheDocument()
+    })
+
+    // Fallback: raw type string when no i18n key exists
+    expect(screen.getByText('unknown_type')).toBeInTheDocument()
+  })
+})
+
 describe('useMemo dep array — toggleMutation primitives', () => {
   beforeEach(() => {
     vi.clearAllMocks()
