@@ -213,6 +213,10 @@ func (s *EvaluationService) EvaluateAll(ctx context.Context, projectID, environm
 
 		result := domain.Evaluate(flag, state, rules, evalCtx, userSegments)
 
+		if id, err := newUUID(); err == nil {
+			s.publishEvent(projectID, environmentID, flag, evalCtx, result, id, evaluatedAt)
+		}
+
 		view := EvalView{
 			Key:      flag.Key,
 			Enabled:  result.Reason != domain.ReasonDisabled,

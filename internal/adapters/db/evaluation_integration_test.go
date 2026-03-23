@@ -11,6 +11,7 @@ import (
 	dbadapter "github.com/karo/cuttlegate/internal/adapters/db"
 	"github.com/karo/cuttlegate/internal/app"
 	"github.com/karo/cuttlegate/internal/domain"
+	"github.com/karo/cuttlegate/internal/domain/ports"
 )
 
 // viewerCtx returns a context carrying a viewer role for EvaluationService calls.
@@ -31,6 +32,20 @@ func newEvalSvcFromDB(db *sql.DB) *app.EvaluationService {
 		dbadapter.NewPostgresSegmentRepository(db),
 		nil,
 	)
+}
+
+// newEvalSvcWithPublisher constructs an EvaluationService with a real
+// PostgresEvaluationEventRepository wired as the publisher.
+func newEvalSvcWithPublisher(db *sql.DB) (*app.EvaluationService, ports.EvaluationEventRepository) {
+	eventRepo := dbadapter.NewPostgresEvaluationEventRepository(db)
+	svc := app.NewEvaluationService(
+		dbadapter.NewPostgresFlagRepository(db),
+		dbadapter.NewPostgresFlagEnvironmentStateRepository(db),
+		dbadapter.NewPostgresRuleRepository(db),
+		dbadapter.NewPostgresSegmentRepository(db),
+		eventRepo,
+	)
+	return svc, eventRepo
 }
 
 // evalFixture holds IDs for the segment evaluation integration test setup.
@@ -311,5 +326,175 @@ func TestEvaluationService_MultiConditionRule_PartialMembership(t *testing.T) {
 	// @edge: user in beta but not alpha — AND condition fails — default returned.
 	if result.Reason != domain.ReasonDefault {
 		t.Errorf("Reason = %q, want %q; partial segment membership should not satisfy multi-condition rule", result.Reason, domain.ReasonDefault)
+	}
+}
+
+// waitForEvent polls until at least wantCount events appear for the given flag, or
+// the deadline is exceeded. Used as a goroutine fence for fire-and-forget publishEvent
+// calls — a short per-iteration sleep is fine; a fixed upfront sleep is not.
+func waitForEvent(t *testing.T, repo ports.EvaluationEventRepository, projectID, environmentID, flagKey string, wantCount int) []*domain.EvaluationEvent {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		events, err := repo.ListByFlagEnvironment(context.Background(), projectID, environmentID, flagKey, ports.EvaluationFilter{Limit: 50})
+		if err != nil {
+			t.Fatalf("ListByFlagEnvironment: %v", err)
+		}
+		if len(events) >= wantCount {
+			return events
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	// Final read for failure reporting.
+	events, _ := repo.ListByFlagEnvironment(context.Background(), projectID, environmentID, flagKey, ports.EvaluationFilter{Limit: 50})
+	t.Fatalf("timed out waiting for %d event(s) for flag %q; got %d", wantCount, flagKey, len(events))
+	return nil
+}
+
+// TestEvaluationService_Evaluate_PublishesEvent covers @happy Scenario 1:
+// a single Evaluate call produces exactly one evaluation event with correct fields.
+func TestEvaluationService_Evaluate_PublishesEvent(t *testing.T) {
+	db := newTestDB(t)
+	ctx := viewerCtx()
+	f := seedEvalFixture(t, db, context.Background(),
+		"pub-single",
+		"b1000000-0000-4000-8000-000000000001",
+		"b1000000-0000-4000-8000-000000000002",
+	)
+
+	// Seed the user into the segment so the rule matches — gives us a deterministic
+	// VariantKey and Reason to assert against.
+	segRepo := dbadapter.NewPostgresSegmentRepository(db)
+	if err := segRepo.SetMembers(context.Background(), f.segID, []string{"pub-user"}); err != nil {
+		t.Fatalf("set members: %v", err)
+	}
+
+	svc, eventRepo := newEvalSvcWithPublisher(db)
+
+	evalCtx := domain.EvalContext{
+		UserID:     "pub-user",
+		Attributes: map[string]string{"plan": "pro"},
+	}
+	result, err := svc.Evaluate(ctx, f.projID, f.envID, f.flagKey, evalCtx)
+	if err != nil {
+		t.Fatalf("Evaluate: %v", err)
+	}
+
+	if result.Reason != domain.ReasonRuleMatch {
+		t.Errorf("Reason = %q, want %q", result.Reason, domain.ReasonRuleMatch)
+	}
+
+	// Wait for the goroutine to persist the event.
+	events := waitForEvent(t, eventRepo, f.projID, f.envID, f.flagKey, 1)
+
+	// @happy Scenario 1: verify all required event fields.
+	e := events[0]
+	if e.FlagKey != f.flagKey {
+		t.Errorf("FlagKey = %q, want %q", e.FlagKey, f.flagKey)
+	}
+	if e.ProjectID != f.projID {
+		t.Errorf("ProjectID = %q, want %q", e.ProjectID, f.projID)
+	}
+	if e.EnvironmentID != f.envID {
+		t.Errorf("EnvironmentID = %q, want %q", e.EnvironmentID, f.envID)
+	}
+	if e.UserID != evalCtx.UserID {
+		t.Errorf("UserID = %q, want %q", e.UserID, evalCtx.UserID)
+	}
+	if e.VariantKey != "variant-a" {
+		t.Errorf("VariantKey = %q, want %q", e.VariantKey, "variant-a")
+	}
+	if e.Reason != domain.ReasonRuleMatch {
+		t.Errorf("Reason = %q, want %q", e.Reason, domain.ReasonRuleMatch)
+	}
+	if e.OccurredAt.IsZero() {
+		t.Error("OccurredAt is zero")
+	}
+	if e.InputContext == "" || e.InputContext == "null" {
+		t.Errorf("InputContext = %q, want non-empty JSON object", e.InputContext)
+	}
+}
+
+// TestEvaluationService_EvaluateAll_PublishesEventPerFlag covers @happy Scenario 2:
+// EvaluateAll produces exactly one event per flag.
+func TestEvaluationService_EvaluateAll_PublishesEventPerFlag(t *testing.T) {
+	db := newTestDB(t)
+	ctx := viewerCtx()
+	now := time.Now().UTC().Truncate(time.Microsecond)
+
+	projID := "ea-pub-proj"
+	envID := "ea-pub-env"
+
+	projRepo := dbadapter.NewPostgresProjectRepository(db)
+	if err := projRepo.Create(context.Background(), domain.Project{
+		ID: projID, Name: "EvalAll Pub Test", Slug: "ea-pub-proj", CreatedAt: now,
+	}); err != nil {
+		t.Fatalf("seed project: %v", err)
+	}
+	envRepo := dbadapter.NewPostgresEnvironmentRepository(db)
+	if err := envRepo.Create(context.Background(), domain.Environment{
+		ID: envID, ProjectID: projID, Name: "Test", Slug: "ea-pub-env", CreatedAt: now,
+	}); err != nil {
+		t.Fatalf("seed environment: %v", err)
+	}
+
+	flagRepo := dbadapter.NewPostgresFlagRepository(db)
+	stateRepo := dbadapter.NewPostgresFlagEnvironmentStateRepository(db)
+	flagKeys := []string{"ea-flag-one", "ea-flag-two"}
+	for i, key := range flagKeys {
+		flagID := "ea-flag-id-" + key
+		if err := flagRepo.Create(context.Background(), &domain.Flag{
+			ID:                flagID,
+			ProjectID:         projID,
+			Key:               key,
+			Name:              "EA Flag " + key,
+			Type:              domain.FlagTypeBool,
+			Variants:          []domain.Variant{{Key: "true", Name: "True"}, {Key: "false", Name: "False"}},
+			DefaultVariantKey: "false",
+			CreatedAt:         now.Add(time.Duration(i) * time.Millisecond),
+		}); err != nil {
+			t.Fatalf("seed flag %s: %v", key, err)
+		}
+		if err := stateRepo.Upsert(context.Background(), &domain.FlagEnvironmentState{
+			FlagID: flagID, EnvironmentID: envID, Enabled: true,
+		}); err != nil {
+			t.Fatalf("seed state %s: %v", key, err)
+		}
+	}
+
+	svc, eventRepo := newEvalSvcWithPublisher(db)
+
+	evalCtx := domain.EvalContext{UserID: "ea-user"}
+	views, _, err := svc.EvaluateAll(ctx, projID, envID, evalCtx)
+	if err != nil {
+		t.Fatalf("EvaluateAll: %v", err)
+	}
+	if len(views) != 2 {
+		t.Fatalf("EvaluateAll returned %d views, want 2", len(views))
+	}
+
+	// @happy Scenario 2: one event per flag — poll until all events land.
+	for _, key := range flagKeys {
+		events := waitForEvent(t, eventRepo, projID, envID, key, 1)
+		if len(events) != 1 {
+			t.Errorf("flag %q: got %d events, want 1", key, len(events))
+			continue
+		}
+		e := events[0]
+		if e.FlagKey != key {
+			t.Errorf("event FlagKey = %q, want %q", e.FlagKey, key)
+		}
+		if e.ProjectID != projID {
+			t.Errorf("event ProjectID = %q, want %q", e.ProjectID, projID)
+		}
+		if e.EnvironmentID != envID {
+			t.Errorf("event EnvironmentID = %q, want %q", e.EnvironmentID, envID)
+		}
+		if e.UserID != evalCtx.UserID {
+			t.Errorf("event UserID = %q, want %q", e.UserID, evalCtx.UserID)
+		}
+		if e.OccurredAt.IsZero() {
+			t.Errorf("flag %q: OccurredAt is zero", key)
+		}
 	}
 }
