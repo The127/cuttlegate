@@ -2,12 +2,47 @@ package app_test
 
 import (
 	"context"
+	"errors"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/karo/cuttlegate/internal/app"
 	"github.com/karo/cuttlegate/internal/domain"
+	"github.com/karo/cuttlegate/internal/domain/ports"
 )
+
+// stubErrorPublisher always returns an error from Publish.
+// It uses a sync.WaitGroup so tests can drain the fire-and-forget goroutine
+// before asserting — no time.Sleep.
+// Usage: wg.Add(1) before Evaluate, stub.Wait() after Evaluate.
+type stubErrorPublisher struct {
+	wg sync.WaitGroup
+}
+
+var _ ports.EvaluationEventPublisher = (*stubErrorPublisher)(nil)
+
+func (s *stubErrorPublisher) Publish(_ context.Context, _ *domain.EvaluationEvent) error {
+	defer s.wg.Done()
+	return errors.New("publish error")
+}
+
+func (s *stubErrorPublisher) Wait() { s.wg.Wait() }
+
+// stubOKPublisher always returns nil from Publish.
+// Same WaitGroup drain pattern as stubErrorPublisher.
+type stubOKPublisher struct {
+	wg sync.WaitGroup
+}
+
+var _ ports.EvaluationEventPublisher = (*stubOKPublisher)(nil)
+
+func (s *stubOKPublisher) Publish(_ context.Context, _ *domain.EvaluationEvent) error {
+	defer s.wg.Done()
+	return nil
+}
+
+func (s *stubOKPublisher) Wait() { s.wg.Wait() }
 
 // countingRuleRepository wraps fakeRuleRepository and counts ListByEnvironment calls.
 type countingRuleRepository struct {
@@ -158,5 +193,126 @@ func TestEvaluateAll_NoFlags_ReturnsEmptySlice(t *testing.T) {
 	// @edge: batch load still called once even with zero flags.
 	if ruleRepo.listByEnvironmentCalls != 1 {
 		t.Errorf("expected ListByEnvironment called once, got %d", ruleRepo.listByEnvironmentCalls)
+	}
+}
+
+// TestEvaluationService_Evaluate_PublisherError_DoesNotFail verifies ADR 0021:
+// a publisher error inside the fire-and-forget goroutine must not affect the
+// EvalView returned to the caller.
+//
+// @happy (Scenario 1 from grooming BDD)
+func TestEvaluationService_Evaluate_PublisherError_DoesNotFail(t *testing.T) {
+	const (
+		projectID = "proj-pub-err"
+		envID     = "env-pub-err"
+	)
+
+	flagRepo := newFakeFlagRepository()
+	stateRepo := newFakeFlagEnvironmentStateRepository()
+	ruleRepo := newCountingRuleRepository()
+
+	flag := seedFlag(t, flagRepo, "flag-pub-err-id", projectID, "my-flag")
+	seedState(t, stateRepo, flag.ID, envID, true)
+
+	stub := &stubErrorPublisher{}
+	svc := app.NewEvaluationService(flagRepo, stateRepo, ruleRepo, newFakeSegmentRepository(), stub)
+
+	ctx := authCtx("viewer-1", domain.RoleViewer)
+
+	// Add(1) before Evaluate so the WaitGroup counter is set before the goroutine runs.
+	stub.wg.Add(1)
+	view, err := svc.Evaluate(ctx, projectID, envID, "my-flag", domain.EvalContext{UserID: "user-1"})
+	stub.Wait() // drain the goroutine before asserting
+
+	if err != nil {
+		t.Fatalf("Evaluate returned error when publisher failed: %v", err)
+	}
+	if view == nil {
+		t.Fatal("Evaluate returned nil EvalView when publisher failed")
+	}
+	if view.Key != "my-flag" {
+		t.Errorf("expected Key=my-flag, got %q", view.Key)
+	}
+	if view.ValueKey == "" {
+		t.Errorf("expected non-empty ValueKey")
+	}
+	if view.Reason == "" {
+		t.Errorf("expected non-empty Reason")
+	}
+}
+
+// TestEvaluationService_Evaluate_NilPublisher_DoesNotFail verifies that the
+// nil-publisher guard in publishEvent is preserved: no goroutine is spawned and
+// Evaluate still returns a valid EvalView.
+//
+// @edge (Scenario 2 from grooming BDD)
+func TestEvaluationService_Evaluate_NilPublisher_DoesNotFail(t *testing.T) {
+	const (
+		projectID = "proj-nil-pub"
+		envID     = "env-nil-pub"
+	)
+
+	flagRepo := newFakeFlagRepository()
+	stateRepo := newFakeFlagEnvironmentStateRepository()
+	ruleRepo := newCountingRuleRepository()
+
+	flag := seedFlag(t, flagRepo, "flag-nil-pub-id", projectID, "my-flag")
+	seedState(t, stateRepo, flag.ID, envID, true)
+
+	// nil publisher — newEvalSvc uses nil already, but we call NewEvaluationService
+	// directly here to make the nil-guard contract explicit.
+	svc := app.NewEvaluationService(flagRepo, stateRepo, ruleRepo, newFakeSegmentRepository(), nil)
+
+	ctx := authCtx("viewer-1", domain.RoleViewer)
+	view, err := svc.Evaluate(ctx, projectID, envID, "my-flag", domain.EvalContext{UserID: "user-1"})
+
+	if err != nil {
+		t.Fatalf("Evaluate returned error with nil publisher: %v", err)
+	}
+	if view == nil {
+		t.Fatal("Evaluate returned nil EvalView with nil publisher")
+	}
+	if view.Key != "my-flag" {
+		t.Errorf("expected Key=my-flag, got %q", view.Key)
+	}
+}
+
+// TestEvaluationService_Evaluate_PublisherOK_DoesNotFail verifies that a
+// successful publish does not corrupt the EvalView returned to the caller.
+//
+// @edge (Scenario 3 from grooming BDD)
+func TestEvaluationService_Evaluate_PublisherOK_DoesNotFail(t *testing.T) {
+	const (
+		projectID = "proj-pub-ok"
+		envID     = "env-pub-ok"
+	)
+
+	flagRepo := newFakeFlagRepository()
+	stateRepo := newFakeFlagEnvironmentStateRepository()
+	ruleRepo := newCountingRuleRepository()
+
+	flag := seedFlag(t, flagRepo, "flag-pub-ok-id", projectID, "my-flag")
+	seedState(t, stateRepo, flag.ID, envID, true)
+
+	stub := &stubOKPublisher{}
+	svc := app.NewEvaluationService(flagRepo, stateRepo, ruleRepo, newFakeSegmentRepository(), stub)
+
+	ctx := authCtx("viewer-1", domain.RoleViewer)
+
+	stub.wg.Add(1)
+	view, err := svc.Evaluate(ctx, projectID, envID, "my-flag", domain.EvalContext{UserID: "user-1"})
+	stub.Wait()
+
+	if err != nil {
+		t.Fatalf("Evaluate returned error when publisher succeeded: %v", err)
+	}
+	if view == nil {
+		t.Fatal("Evaluate returned nil EvalView when publisher succeeded")
+	}
+	if view.Key != "my-flag" {
+		t.Errorf("expected Key=my-flag, got %q", view.Key)
+	}
+	if view.ValueKey == "" {
+		t.Errorf("expected non-empty ValueKey")
 	}
 }
