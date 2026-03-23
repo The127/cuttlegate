@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .errors import NotFoundError
+from .errors import FlagNotFoundError as NotFoundError
 from .types import EvalContext, EvalResult
 
 _MOCK_EVALUATED_AT = "1970-01-01T00:00:00Z"
@@ -55,10 +55,10 @@ class MockCuttlegateClient:
         return result.enabled
 
     def string(self, key: str, ctx: EvalContext) -> str:
-        """Return str(stored_value). Raises NotFoundError for unknown keys."""
+        """Return the flag's variant string. Raises NotFoundError for unknown keys."""
         result = self._require(key)
         self._evaluated.add(key)
-        return result.value
+        return result.variant
 
     def evaluate(self, key: str, ctx: EvalContext) -> EvalResult:
         """Return EvalResult with reason='mock'. Raises NotFoundError for unknown keys."""
@@ -130,14 +130,15 @@ def _to_eval_result(key: str, stored_value: Any) -> EvalResult:
     enabled = stored_value is True or stored_value == "true"
 
     if isinstance(stored_value, bool):
-        value = "true" if stored_value else "false"
+        variant = "true" if stored_value else "false"
     else:
-        value = str(stored_value)
+        variant = str(stored_value)
 
     return EvalResult(
         key=key,
         enabled=enabled,
-        value=value,
+        variant=variant,
         reason="mock",
         evaluated_at=_MOCK_EVALUATED_AT,
+        value=variant,  # deprecated field; set equal to variant for backward compat
     )

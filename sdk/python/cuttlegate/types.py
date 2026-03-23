@@ -38,13 +38,23 @@ class EvalContext:
 
 @dataclass
 class EvalResult:
-    """Result of evaluating a single flag."""
+    """Result of evaluating a single flag.
+
+    ``variant`` is the primary field — maps from the JSON ``value_key``
+    field. For boolean flags it is ``"true"`` or ``"false"``; for string
+    flags it is the variant key string.
+
+    ``value`` is **deprecated** and preserved only for backward compatibility.
+    It is always an empty string for wire responses (JSON ``null`` is coerced
+    to ``""``). Use ``variant`` instead.
+    """
 
     key: str
     enabled: bool
-    value: str        # value_key from the wire — variant key for string flags, "true"/"false" for bool
+    variant: str      # primary — maps from JSON value_key
     reason: str
     evaluated_at: str
+    value: str = ""   # deprecated — use variant; "" for wire responses (null → "")
 
 
 class CuttlegateClientProtocol(Protocol):
@@ -55,17 +65,21 @@ class CuttlegateClientProtocol(Protocol):
     """
 
     def bool(self, key: str, ctx: EvalContext) -> bool:
-        """Return True if the flag variant is 'true'. Raises NotFoundError if absent."""
+        """Return True if the flag variant is 'true'. Raises FlagNotFoundError if absent."""
         ...
 
     def string(self, key: str, ctx: EvalContext) -> str:
-        """Return the flag's string variant value. Raises NotFoundError if absent."""
+        """Return the flag's variant string. Raises FlagNotFoundError if absent."""
         ...
 
     def evaluate(self, key: str, ctx: EvalContext) -> EvalResult:
-        """Evaluate a single flag by key. Raises NotFoundError if absent."""
+        """Evaluate a single flag by key. Raises FlagNotFoundError if absent."""
         ...
 
     def evaluate_all(self, ctx: EvalContext) -> dict[str, EvalResult]:
-        """Evaluate all flags in one HTTP round trip."""
+        """Evaluate all flags in one HTTP round trip.
+
+        Prefer this method when evaluating multiple flags — it makes a
+        single HTTP request regardless of flag count.
+        """
         ...

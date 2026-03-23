@@ -16,7 +16,9 @@ from cuttlegate import (
     CuttlegateClient,
     CuttlegateConfig,
     EvalContext,
+    FlagNotFoundError,
     NotFoundError,
+    SDKError,
     ServerError,
 )
 
@@ -93,7 +95,7 @@ def test_happy_evaluate_all_returns_results_keyed_by_flag():
     assert "dark-mode" in results
     result = results["dark-mode"]
     assert result.enabled is True
-    assert result.value == "true"
+    assert result.variant == "true"
     assert result.reason == "default"
 
 
@@ -282,15 +284,16 @@ def test_edge_api_key_not_in_any_error_message():
 # @edge — timeout is applied to evaluation requests
 # ---------------------------------------------------------------------------
 
-def test_edge_timeout_raises_on_slow_server():
-    """@edge: httpx.TimeoutException from transport is re-raised as TimeoutError."""
+def test_edge_timeout_raises_sdk_error():
+    """@edge: httpx.TimeoutException from transport is re-raised as SDKError."""
     def handler(request: httpx.Request) -> httpx.Response:
         raise httpx.TimeoutException("timeout", request=request)
 
     client = _client_with_transport(httpx.MockTransport(handler), timeout_ms=100)
 
-    with pytest.raises((TimeoutError, httpx.TimeoutException)):
+    with pytest.raises(SDKError) as exc_info:
         client.evaluate_all(EvalContext(user_id="u1"))
+    assert str(exc_info.value).startswith("cuttlegate: request failed:")
 
 
 # ---------------------------------------------------------------------------
