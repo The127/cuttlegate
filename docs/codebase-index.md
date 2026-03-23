@@ -1,6 +1,6 @@
 # Codebase Index
 
-_Generated 2026-03-23 10:52 UTC. Read this at session start for orientation._
+_Generated 2026-03-23 13:12 UTC. Read this at session start for orientation._
 
 ## Packages
 ```
@@ -10,6 +10,7 @@ db
 github.com/karo/cuttlegate
 internal/adapters/db
 internal/adapters/http
+internal/adapters/mcp
 internal/app
 internal/domain
 internal/domain/ports
@@ -48,6 +49,7 @@ type Condition struct {
 type Environment struct {
 type EvalContext struct {
 type EvalResult struct {
+type EvaluationBucket struct {
 type EvaluationEvent struct {
 type FlagEnvironmentState struct {
 type FlagEvaluationStats struct {
@@ -68,8 +70,10 @@ type APIKeyCreateResult struct {
 type APIKeyService struct {
 type APIKeyView struct {
 type AuditService struct {
+type BucketView struct {
 type EnvironmentService struct {
 type EvaluationAuditService struct {
+type EvaluationBucketsView struct {
 type EvaluationEventView struct {
 type EvaluationService struct {
 type EvaluationStatsService struct {
