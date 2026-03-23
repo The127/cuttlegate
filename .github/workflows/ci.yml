@@ -71,6 +71,37 @@ jobs:
       - name: Test
         run: npm test
 
+  sdk-go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: sdk/go/go.mod
+
+      - uses: extractions/setup-just@v2
+
+      - name: Go SDK tests
+        run: just test-sdk-go
+
+  sdk-python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - uses: extractions/setup-just@v2
+
+      - name: Install Python SDK dev dependencies
+        run: pip install -e 'sdk/python/[dev]'
+
+      - name: Python SDK tests
+        run: just test-sdk-python
+
   frontend:
     runs-on: ubuntu-latest
     defaults:
