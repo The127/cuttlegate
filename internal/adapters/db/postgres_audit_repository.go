@@ -21,11 +21,11 @@ var _ ports.AuditRepository = (*PostgresAuditRepository)(nil)
 
 func (r *PostgresAuditRepository) Record(ctx context.Context, event *domain.AuditEvent) error {
 	_, err := r.db.ExecContext(ctx,
-		`INSERT INTO audit_events (id, project_id, actor_id, action, entity_type, entity_id, entity_key, environment_slug, before_state, after_state, occurred_at)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+		`INSERT INTO audit_events (id, project_id, actor_id, action, entity_type, entity_id, entity_key, environment_slug, source, before_state, after_state, occurred_at)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
 		event.ID, event.ProjectID, event.ActorID, event.Action,
 		event.EntityType, event.EntityID, event.EntityKey, event.EnvironmentSlug,
-		event.BeforeState, event.AfterState, event.OccurredAt,
+		event.Source, event.BeforeState, event.AfterState, event.OccurredAt,
 	)
 	return err
 }
@@ -34,7 +34,7 @@ func (r *PostgresAuditRepository) ListByProject(ctx context.Context, projectID s
 	filter = domain.NormalizeAuditFilter(filter)
 
 	query := `SELECT a.id, a.project_id, a.actor_id, COALESCE(u.email, ''), a.action,
-		a.entity_type, a.entity_id, a.entity_key, a.environment_slug, a.before_state, a.after_state, a.occurred_at
+		a.entity_type, a.entity_id, a.entity_key, a.environment_slug, a.source, a.before_state, a.after_state, a.occurred_at
 		FROM audit_events a
 		LEFT JOIN users u ON u.id = a.actor_id
 		WHERE a.project_id = $1`
@@ -67,7 +67,7 @@ func (r *PostgresAuditRepository) ListByProject(ctx context.Context, projectID s
 		if err := rows.Scan(
 			&e.ID, &e.ProjectID, &e.ActorID, &e.ActorEmail, &e.Action,
 			&e.EntityType, &e.EntityID, &e.EntityKey, &e.EnvironmentSlug,
-			&e.BeforeState, &e.AfterState, &e.OccurredAt,
+			&e.Source, &e.BeforeState, &e.AfterState, &e.OccurredAt,
 		); err != nil {
 			return nil, err
 		}

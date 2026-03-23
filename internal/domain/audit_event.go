@@ -14,6 +14,7 @@ type AuditEvent struct {
 	EntityID        string
 	EntityKey       string // human-readable key (e.g. flag key) — stored for queryability after deletion
 	EnvironmentSlug string // slug of the environment affected; empty for project-scoped actions
+	Source          string // originator of the mutation (e.g. "mcp"); empty for standard HTTP API calls
 	BeforeState     string
 	AfterState      string
 	OccurredAt      time.Time

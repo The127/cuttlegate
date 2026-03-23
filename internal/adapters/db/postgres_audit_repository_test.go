@@ -161,6 +161,62 @@ func TestPostgresAuditRepository_FilterAndPagination(t *testing.T) {
 		}
 	})
 
+	t.Run("source field stored and retrieved for MCP-originated events", func(t *testing.T) {
+		mcpEvent := &domain.AuditEvent{
+			ID:              "dddddddd-dddd-4ddd-8ddd-dddddddddd01",
+			ProjectID:       proj.ID,
+			ActorID:         actor.Sub,
+			Action:          "flag.enabled",
+			EntityType:      "flag",
+			EntityID:        "flag-mcp-id",
+			EntityKey:       "flag-mcp",
+			EnvironmentSlug: "production",
+			Source:          "mcp",
+			OccurredAt:      base.Add(40 * time.Second),
+		}
+		if err := auditRepo.Record(ctx, mcpEvent); err != nil {
+			t.Fatalf("record mcp event: %v", err)
+		}
+
+		httpEvent := &domain.AuditEvent{
+			ID:              "dddddddd-dddd-4ddd-8ddd-dddddddddd02",
+			ProjectID:       proj.ID,
+			ActorID:         actor.Sub,
+			Action:          "flag.disabled",
+			EntityType:      "flag",
+			EntityID:        "flag-http-id",
+			EntityKey:       "flag-http",
+			EnvironmentSlug: "production",
+			Source:          "",
+			OccurredAt:      base.Add(41 * time.Second),
+		}
+		if err := auditRepo.Record(ctx, httpEvent); err != nil {
+			t.Fatalf("record http event: %v", err)
+		}
+
+		events, err := auditRepo.ListByProject(ctx, proj.ID, domain.AuditFilter{FlagKey: "flag-mcp", Limit: 10})
+		if err != nil {
+			t.Fatalf("ListByProject: %v", err)
+		}
+		if len(events) != 1 {
+			t.Fatalf("want 1 mcp event, got %d", len(events))
+		}
+		if events[0].Source != "mcp" {
+			t.Errorf("want source=%q, got %q", "mcp", events[0].Source)
+		}
+
+		events, err = auditRepo.ListByProject(ctx, proj.ID, domain.AuditFilter{FlagKey: "flag-http", Limit: 10})
+		if err != nil {
+			t.Fatalf("ListByProject: %v", err)
+		}
+		if len(events) != 1 {
+			t.Fatalf("want 1 http event, got %d", len(events))
+		}
+		if events[0].Source != "" {
+			t.Errorf("want source=%q, got %q", "", events[0].Source)
+		}
+	})
+
 	t.Run("empty project returns empty slice", func(t *testing.T) {
 		emptyProj := domain.Project{
 			ID:        "cccccccc-cccc-4ccc-8ccc-cccccccccccc",

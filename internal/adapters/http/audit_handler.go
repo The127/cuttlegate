@@ -39,6 +39,7 @@ type auditEntryResponse struct {
 	Action          string    `json:"action"`
 	FlagKey         string    `json:"flag_key,omitempty"`
 	EnvironmentSlug string    `json:"environment_slug,omitempty"`
+	Source          string    `json:"source,omitempty"`
 	ProjectSlug     string    `json:"project_slug"`
 }
 
@@ -56,6 +57,7 @@ func toAuditEntryResponse(e *domain.AuditEvent, projectSlug string) auditEntryRe
 		Action:          e.Action,
 		FlagKey:         e.EntityKey,
 		EnvironmentSlug: e.EnvironmentSlug,
+		Source:          e.Source,
 		ProjectSlug:     projectSlug,
 	}
 }
