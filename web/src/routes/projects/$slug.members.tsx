@@ -11,9 +11,9 @@ type Role = 'admin' | 'editor' | 'viewer'
 const ROLES: Role[] = ['admin', 'editor', 'viewer']
 
 const ROLE_STYLES: Record<Role, string> = {
-  admin: 'bg-blue-50 text-blue-700 border-blue-200',
-  editor: 'bg-green-50 text-green-700 border-green-200',
-  viewer: 'bg-gray-50 text-gray-600 border-gray-200',
+  admin: 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+  editor: 'bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800',
+  viewer: 'bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600',
 }
 
 interface Member {
@@ -99,10 +99,10 @@ function MemberListPage() {
   if (isError)
     return (
       <div className="p-6">
-        <span className="text-sm text-red-600">{t('members.error')} </span>
+        <span className="text-sm text-red-600 dark:text-red-400">{t('members.error')} </span>
         <button
           onClick={() => void refetch()}
-          className="text-sm text-red-600 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
+          className="text-sm text-red-600 dark:text-red-400 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
         >
           {t('actions.retry', { ns: 'common' })}
         </button>
@@ -111,28 +111,28 @@ function MemberListPage() {
 
   return (
     <div className="p-6 max-w-4xl">
-      <h1 className="text-lg font-semibold text-gray-900 mb-6">{t('members.title')}</h1>
+      <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">{t('members.title')}</h1>
 
       {members.length === 0 ? (
         <MemberEmptyState />
       ) : (
-        <div className="border border-gray-200 rounded-lg bg-white overflow-hidden">
+        <div className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
               <tr>
-                <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide w-full">
+                <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide w-full">
                   {t('members.column_member')}
                 </th>
-                <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide whitespace-nowrap">
+                <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">
                   {t('members.column_role')}
                 </th>
-                <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide whitespace-nowrap">
+                <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">
                   {t('members.column_joined')}
                 </th>
                 {isAdmin && <th className="px-4 py-2" />}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {members.map((m) => (
                 <MemberRow
                   key={m.user_id}
@@ -201,20 +201,20 @@ function MemberRow({
   const { t } = useTranslation('projects')
   const displayName = memberDisplayName(member)
   return (
-    <tr className="hover:bg-gray-50">
+    <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
       <td className="px-4 py-3">
         <div className="flex flex-col gap-0.5">
-          <span className="text-sm text-gray-900 font-medium">
+          <span className="text-sm text-gray-900 dark:text-gray-100 font-medium">
             {displayName}
             {isSelf && (
-              <span className="ml-2 text-xs text-gray-400 font-normal">{t('members.you')}</span>
+              <span className="ml-2 text-xs text-gray-400 dark:text-gray-500 font-normal">{t('members.you')}</span>
             )}
           </span>
           {member.email && (
-            <span className="text-xs text-gray-400">{member.email}</span>
+            <span className="text-xs text-gray-400 dark:text-gray-500">{member.email}</span>
           )}
           {!member.name && (
-            <span className="font-mono text-xs text-gray-500">{member.user_id}</span>
+            <span className="font-mono text-xs text-gray-500 dark:text-gray-400">{member.user_id}</span>
           )}
         </div>
       </td>
@@ -226,7 +226,7 @@ function MemberRow({
               disabled={rolePending}
               onChange={(e) => onRoleChange(e.target.value as Role)}
               aria-label={t('members.role_aria', { name: displayName })}
-              className="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 bg-white"
+              className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] disabled:opacity-50 bg-white dark:bg-gray-800 dark:text-gray-100"
             >
               {ROLES.map((r) => (
                 <option key={r} value={r}>
@@ -235,7 +235,7 @@ function MemberRow({
               ))}
             </select>
             {roleError && (
-              <p className="mt-1 text-xs text-red-600">{roleError}</p>
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400">{roleError}</p>
             )}
           </div>
         ) : (
@@ -245,7 +245,7 @@ function MemberRow({
       <td className="px-4 py-3 whitespace-nowrap">
         <time
           dateTime={member.created_at}
-          className="text-xs text-gray-400"
+          className="text-xs text-gray-400 dark:text-gray-500"
           title={new Date(member.created_at).toLocaleString()}
         >
           {formatRelativeDate(member.created_at)}
@@ -256,7 +256,7 @@ function MemberRow({
           <button
             onClick={onRemoveIntent}
             aria-label={t('members.remove_aria', { name: displayName })}
-            className="text-gray-400 hover:text-red-600 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 rounded p-0.5"
+            className="text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 rounded p-0.5"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -322,8 +322,8 @@ function AddMemberForm({ slug }: { slug: string }) {
   }
 
   return (
-    <div className="border border-gray-200 rounded-lg bg-white p-4">
-      <h2 className="text-sm font-medium text-gray-700 mb-3">{t('members.add_title')}</h2>
+    <div className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 p-4">
+      <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{t('members.add_title')}</h2>
       <form onSubmit={handleSubmit} className="flex items-start gap-3 flex-wrap">
         <div className="flex-1 min-w-48">
           <label htmlFor="member-user-id" className="sr-only">
@@ -340,10 +340,10 @@ function AddMemberForm({ slug }: { slug: string }) {
             placeholder={t('members.user_id_placeholder')}
             aria-invalid={!!error}
             aria-describedby={error ? 'add-member-error' : undefined}
-            className={`w-full font-mono text-sm border rounded px-2 py-1.5 focus:outline-none focus:ring-2 ${
+            className={`w-full font-mono text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border rounded px-2 py-1.5 focus:outline-none focus:ring-2 ${
               error
                 ? 'border-red-300 focus:ring-red-500'
-                : 'border-gray-300 focus:ring-blue-500'
+                : 'border-gray-300 dark:border-gray-600 focus:ring-[var(--color-accent)]'
             }`}
           />
         </div>
@@ -355,7 +355,7 @@ function AddMemberForm({ slug }: { slug: string }) {
             id="member-role"
             value={role}
             onChange={(e) => setRole(e.target.value as Role)}
-            className="text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] bg-white dark:bg-gray-800 dark:text-gray-100"
           >
             {ROLES.map((r) => (
               <option key={r} value={r}>
@@ -367,13 +367,13 @@ function AddMemberForm({ slug }: { slug: string }) {
         <button
           type="submit"
           disabled={addMutation.isPending || !userId.trim()}
-          className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap"
+          className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] whitespace-nowrap"
         >
           {addMutation.isPending ? t('members.adding') : t('members.add_button')}
         </button>
       </form>
       {error && (
-        <p id="add-member-error" className="mt-2 text-xs text-red-600">
+        <p id="add-member-error" className="mt-2 text-xs text-red-600 dark:text-red-400">
           {error}
         </p>
       )}
@@ -405,25 +405,25 @@ function RemoveMemberDialog({
       aria-labelledby="remove-member-title"
     >
       <div className="absolute inset-0 bg-black/30" onClick={onCancel} aria-hidden="true" />
-      <div className="relative bg-white rounded-lg shadow-lg max-w-sm w-full mx-4 p-6">
-        <h2 id="remove-member-title" className="text-base font-semibold text-gray-900">
+      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-sm w-full mx-4 p-6">
+        <h2 id="remove-member-title" className="text-base font-semibold text-gray-900 dark:text-gray-100">
           {t('members.remove_dialog_title')}
         </h2>
-        <p className="mt-2 text-sm text-gray-600">
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
           {t('members.remove_dialog_body', { name: displayName })}
           {member.email && (
-            <span className="text-gray-500"> ({member.email})</span>
+            <span className="text-gray-500 dark:text-gray-400"> ({member.email})</span>
           )}
         </p>
         {error && (
-          <p className="mt-3 text-xs text-red-600">{error}</p>
+          <p className="mt-3 text-xs text-red-600 dark:text-red-400">{error}</p>
         )}
         <div className="mt-5 flex justify-end gap-3">
           <button
             autoFocus
             onClick={onCancel}
             disabled={isRemoving}
-            className="px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
+            className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
           >
             {t('actions.cancel', { ns: 'common' })}
           </button>
@@ -443,8 +443,8 @@ function RemoveMemberDialog({
 function MemberEmptyState() {
   const { t } = useTranslation('projects')
   return (
-    <div className="text-center py-16 px-6 border border-gray-200 rounded-lg bg-white">
-      <p className="text-sm text-gray-500">
+    <div className="text-center py-16 px-6 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
+      <p className="text-sm text-gray-500 dark:text-gray-400">
         {t('members.empty')}
       </p>
     </div>
@@ -454,18 +454,18 @@ function MemberEmptyState() {
 function MemberListSkeleton() {
   return (
     <div className="p-6 max-w-4xl">
-      <div className="h-6 w-24 bg-gray-100 rounded animate-pulse mb-6" />
-      <div className="border border-gray-200 rounded-lg bg-white overflow-hidden">
-        <div className="bg-gray-50 border-b border-gray-200 px-4 py-2 flex gap-8">
-          <div className="h-3 w-12 bg-gray-200 rounded animate-pulse" />
-          <div className="h-3 w-8 bg-gray-200 rounded animate-pulse" />
-          <div className="h-3 w-10 bg-gray-200 rounded animate-pulse" />
+      <div className="h-6 w-24 bg-gray-100 dark:bg-gray-700 rounded animate-pulse mb-6" />
+      <div className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 overflow-hidden">
+        <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-2 flex gap-8">
+          <div className="h-3 w-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          <div className="h-3 w-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          <div className="h-3 w-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
         </div>
         {[1, 2, 3].map((i) => (
-          <div key={i} className="flex items-center gap-8 px-4 py-3 border-b border-gray-100 last:border-0">
-            <div className="h-5 w-72 bg-gray-100 rounded animate-pulse" />
-            <div className="h-5 w-14 bg-gray-100 rounded animate-pulse" />
-            <div className="h-4 w-12 bg-gray-100 rounded animate-pulse" />
+          <div key={i} className="flex items-center gap-8 px-4 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
+            <div className="h-5 w-72 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+            <div className="h-5 w-14 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+            <div className="h-4 w-12 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
           </div>
         ))}
       </div>

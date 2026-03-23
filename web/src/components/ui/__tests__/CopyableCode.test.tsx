@@ -97,4 +97,28 @@ describe('CopyableCode', () => {
     const { axeResults } = await renderWithAxe(<CopyableCode value="my-flag-key" />)
     expect(axeResults).toHaveNoViolations()
   })
+
+  // @edge — dark mode: axe passes with dark: class variants applied
+  it('passes axe in dark mode', async () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation((query) => ({
+      matches: query === '(prefers-color-scheme: dark)',
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }))
+    const { axeResults } = await renderWithAxe(<CopyableCode value="my-flag-key" />)
+    expect(axeResults).toHaveNoViolations()
+  })
+
+  // @edge — dark: variant classes are present in the DOM
+  it('has dark: variant classes on the button', () => {
+    const { container } = render(<CopyableCode value="my-flag-key" />)
+    const btn = container.querySelector('button')
+    expect(btn?.className).toContain('dark:text-gray-200')
+    expect(btn?.className).toContain('dark:bg-gray-800')
+  })
 })

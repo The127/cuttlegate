@@ -60,10 +60,10 @@ function EnvironmentSettingsPage() {
   if (isError)
     return (
       <div className="p-6">
-        <span className="text-sm text-red-600">{t('environments.error')} </span>
+        <span className="text-sm text-red-600 dark:text-red-400">{t('environments.error')} </span>
         <button
           onClick={() => void refetch()}
-          className="text-sm text-red-600 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
+          className="text-sm text-red-600 dark:text-red-400 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
         >
           {t('actions.retry', { ns: 'common' })}
         </button>
@@ -75,10 +75,10 @@ function EnvironmentSettingsPage() {
   return (
     <div className="p-6 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-lg font-semibold text-gray-900">{t('environments.title')}</h1>
+        <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('environments.title')}</h1>
         <button
           onClick={() => setShowCreate(true)}
-          className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
         >
           {t('environments.new_button')}
         </button>
@@ -87,7 +87,7 @@ function EnvironmentSettingsPage() {
       {environments.length === 0 ? (
         <EnvironmentEmptyState onCreateClick={() => setShowCreate(true)} />
       ) : (
-        <ul className="divide-y divide-gray-100 border border-gray-200 rounded-lg bg-white">
+        <ul className="divide-y divide-gray-100 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
           {environments.map((env) => (
             <EnvironmentRow
               key={env.id}
@@ -137,15 +137,15 @@ function EnvironmentRow({
   return (
     <li className="flex items-center justify-between px-4 py-3 gap-4">
       <div className="flex items-center gap-3 min-w-0">
-        <span className="font-mono text-sm text-gray-800 bg-gray-50 border border-gray-200 rounded px-2 py-0.5 shrink-0">
+        <span className="font-mono text-sm text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-2 py-0.5 shrink-0">
           {environment.slug}
         </span>
-        <span className="text-sm text-gray-700 truncate">{environment.name}</span>
+        <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{environment.name}</span>
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <time
           dateTime={environment.created_at}
-          className="text-xs text-gray-400"
+          className="text-xs text-gray-400 dark:text-gray-500"
           title={new Date(environment.created_at).toLocaleString()}
         >
           {formatRelativeDate(environment.created_at)}
@@ -153,7 +153,7 @@ function EnvironmentRow({
         <button
           onClick={onDeleteIntent}
           aria-label={t('environments.delete_aria', { slug: environment.slug })}
-          className="text-gray-400 hover:text-red-600 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 rounded p-0.5"
+          className="text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 rounded p-0.5"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -178,12 +178,12 @@ function EnvironmentEmptyState({ onCreateClick }: { onCreateClick: () => void })
   const { t } = useTranslation('projects')
   return (
     <div className="text-center py-16 px-6">
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-gray-500 dark:text-gray-400">
         {t('environments.empty')}
       </p>
       <button
         onClick={onCreateClick}
-        className="mt-4 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="mt-4 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
       >
         {t('environments.new_button')}
       </button>
@@ -317,13 +317,13 @@ function CreateEnvironmentModal({
 
   return (
     <Modal labelledBy="create-env-title" onClose={onCancel}>
-      <div className="relative bg-white rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
-        <h2 id="create-env-title" className="text-base font-semibold text-gray-900 mb-4">
+      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
+        <h2 id="create-env-title" className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {t('environments.create_title')}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="env-name" className="block text-xs font-medium text-gray-500 mb-1">
+            <label htmlFor="env-name" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
               {t('environments.name_label')}
             </label>
             <input
@@ -333,11 +333,11 @@ function CreateEnvironmentModal({
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
               placeholder={t('environments.name_placeholder')}
-              className="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
             />
           </div>
           <div>
-            <label htmlFor="env-slug" className="block text-xs font-medium text-gray-500 mb-1">
+            <label htmlFor="env-slug" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
               {t('environments.slug_label')}
             </label>
             <input
@@ -349,32 +349,32 @@ function CreateEnvironmentModal({
               placeholder={t('environments.slug_placeholder')}
               aria-invalid={!!slugError}
               aria-describedby={slugError ? 'env-slug-error' : undefined}
-              className={`w-full font-mono text-sm border rounded px-2 py-1.5 focus:outline-none focus:ring-2 ${
+              className={`w-full font-mono text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border rounded px-2 py-1.5 focus:outline-none focus:ring-2 ${
                 slugError
                   ? 'border-red-300 focus:ring-red-500'
-                  : 'border-gray-300 focus:ring-blue-500'
+                  : 'border-gray-300 dark:border-gray-600 focus:ring-[var(--color-accent)]'
               }`}
             />
             {slugError && (
-              <p id="env-slug-error" className="mt-1 text-xs text-red-600">
+              <p id="env-slug-error" className="mt-1 text-xs text-red-600 dark:text-red-400">
                 {slugError}
               </p>
             )}
           </div>
-          {serverError && <p className="text-xs text-red-600">{serverError}</p>}
+          {serverError && <p className="text-xs text-red-600 dark:text-red-400">{serverError}</p>}
           <div className="flex justify-end gap-3 pt-2">
             <button
               type="button"
               onClick={onCancel}
               disabled={createMutation.isPending}
-              className="px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
             >
               {t('actions.cancel', { ns: 'common' })}
             </button>
             <button
               type="submit"
               disabled={createMutation.isPending || !!slugError || !name.trim() || !envSlug}
-              className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
             >
               {createMutation.isPending ? t('environments.creating') : t('environments.create_button')}
             </button>
@@ -401,25 +401,25 @@ function DeleteEnvironmentModal({
   const { t } = useTranslation('projects')
   return (
     <Modal labelledBy="delete-env-title" onClose={onCancel}>
-      <div className="relative bg-white rounded-lg shadow-lg max-w-sm w-full mx-4 p-6">
-        <h2 id="delete-env-title" className="text-base font-semibold text-gray-900">
+      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-sm w-full mx-4 p-6">
+        <h2 id="delete-env-title" className="text-base font-semibold text-gray-900 dark:text-gray-100">
           {t('environments.delete_title')}
         </h2>
-        <p className="mt-2 text-sm text-gray-600">
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
           {t('environments.delete_body', { slug: environment.slug })}
         </p>
-        <p className="mt-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+        <p className="mt-2 text-sm text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded px-3 py-2">
           {t('environments.delete_warning')}
         </p>
         {deleteFailed && (
-          <p className="mt-3 text-xs text-red-600">{t('environments.delete_failed')}</p>
+          <p className="mt-3 text-xs text-red-600 dark:text-red-400">{t('environments.delete_failed')}</p>
         )}
         <div className="mt-5 flex justify-end gap-3">
           <button
             autoFocus
             onClick={onCancel}
             disabled={isDeleting}
-            className="px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
+            className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
           >
             {t('actions.cancel', { ns: 'common' })}
           </button>
@@ -440,19 +440,19 @@ function EnvironmentListSkeleton() {
   return (
     <div className="p-6 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
-        <div className="h-6 w-32 bg-gray-100 rounded animate-pulse" />
-        <div className="h-8 w-40 bg-gray-100 rounded animate-pulse" />
+        <div className="h-6 w-32 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+        <div className="h-8 w-40 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
       </div>
-      <ul className="divide-y divide-gray-100 border border-gray-200 rounded-lg bg-white">
+      <ul className="divide-y divide-gray-100 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
         {[1, 2, 3].map((i) => (
           <li key={i} className="flex items-center justify-between px-4 py-3 gap-4">
             <div className="flex items-center gap-3">
-              <div className="h-6 w-28 bg-gray-100 rounded animate-pulse" />
-              <div className="h-4 w-40 bg-gray-100 rounded animate-pulse" />
+              <div className="h-6 w-28 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+              <div className="h-4 w-40 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
             </div>
             <div className="flex items-center gap-2">
-              <div className="h-4 w-12 bg-gray-100 rounded animate-pulse" />
-              <div className="h-4 w-4 bg-gray-100 rounded animate-pulse" />
+              <div className="h-4 w-12 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+              <div className="h-4 w-4 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
             </div>
           </li>
         ))}

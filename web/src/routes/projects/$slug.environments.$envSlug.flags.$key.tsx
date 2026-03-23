@@ -103,12 +103,12 @@ function FlagDetailPage() {
     const is404 = error instanceof APIError && error.status === 404
     return (
       <div className="p-6">
-        <p className="text-sm text-red-600">
+        <p className="text-sm text-red-600 dark:text-red-400">
           {is404 ? t('list.not_found') : t('list.failed_to_load')}
         </p>
         <a
           href={`/projects/${slug}/environments/${envSlug}/flags`}
-          className="mt-2 inline-block text-sm text-blue-600 underline hover:no-underline"
+          className="mt-2 inline-block text-sm text-blue-600 dark:text-blue-400 underline hover:no-underline"
         >
           {t('list.back_to_flags')}
         </a>
@@ -137,14 +137,14 @@ function FlagDetailPage() {
         <Link
           to="/projects/$slug/environments/$envSlug/flags/$key/rules"
           params={{ slug, envSlug, key }}
-          className="text-sm text-blue-600 hover:underline"
+          className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
         >
           {t('detail.targeting_rules')}
         </Link>
         <Link
           to="/projects/$slug/environments/$envSlug/flags/$key/evaluations"
           params={{ slug, envSlug, key }}
-          className="text-sm text-blue-600 hover:underline"
+          className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
         >
           {t('audit.tab_title')}
         </Link>
@@ -200,7 +200,7 @@ function FlagStatsPanel({
   })
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg mt-4">
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg mt-4">
       <div className="px-5 py-3 border-b border-gray-100">
         <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
           {t('stats.last_evaluated_label')} &amp; {t('stats.evaluation_count_label')}
@@ -208,24 +208,24 @@ function FlagStatsPanel({
       </div>
       <div className="px-5 py-4">
         {isError ? (
-          <p className="text-sm text-red-600">{t('stats.load_error')}</p>
+          <p className="text-sm text-red-600 dark:text-red-400">{t('stats.load_error')}</p>
         ) : !data ? (
           <div className="flex gap-8">
-            <div className="h-4 w-24 bg-gray-100 rounded animate-pulse" />
-            <div className="h-4 w-16 bg-gray-100 rounded animate-pulse" />
+            <div className="h-4 w-24 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+            <div className="h-4 w-16 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
           </div>
         ) : (
           <div className="flex gap-8">
             <div>
-              <p className="text-xs font-medium text-gray-500 mb-0.5">{t('stats.last_evaluated_label')}</p>
-              <p className="text-sm text-gray-900">
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">{t('stats.last_evaluated_label')}</p>
+              <p className="text-sm text-gray-900 dark:text-gray-100">
                 {!data.last_evaluated_at || data.evaluation_count === 0
                   ? t('stats.never_evaluated')
                   : formatRelativeDate(data.last_evaluated_at)}
               </p>
             </div>
             <div>
-              <p className="text-xs font-medium text-gray-500 mb-0.5">{t('stats.evaluation_count_label')}</p>
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">{t('stats.evaluation_count_label')}</p>
               <p className="text-sm text-gray-900 font-mono">{data.evaluation_count.toLocaleString()}</p>
             </div>
           </div>
@@ -289,14 +289,14 @@ function FlagDetailCard({
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg">
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
       {/* Header */}
-      <div className="flex items-start justify-between px-5 py-4 border-b border-gray-100">
+      <div className="flex items-start justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
         <div>
-          <span className="font-mono text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded px-2 py-0.5">
+          <span className="font-mono text-sm text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-2 py-0.5">
             {flag.key}
           </span>
-          <span className="ml-2 text-xs text-gray-400 bg-gray-100 rounded px-1.5 py-0.5">
+          <span className="ml-2 text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded px-1.5 py-0.5">
             {flag.type}
           </span>
         </div>
@@ -321,7 +321,7 @@ function FlagDetailCard({
       <div className="px-5 py-4 space-y-5">
         {/* Name */}
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">{t('detail.name_label')}</label>
+          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('detail.name_label')}</label>
           {editing ? (
             <Input
               type="text"
@@ -330,17 +330,17 @@ function FlagDetailCard({
               className="py-1.5 px-2"
             />
           ) : (
-            <p className="text-sm text-gray-900">{flag.name}</p>
+            <p className="text-sm text-gray-900 dark:text-gray-100">{flag.name}</p>
           )}
         </div>
 
         {/* Variants */}
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">{t('detail.variants_label')}</label>
+          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('detail.variants_label')}</label>
           <ul className="space-y-1">
             {(editing ? editVariants : flag.variants).map((v: Variant, i: number) => (
               <li key={v.key} className="flex items-center gap-2">
-                <span className="font-mono text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5 w-24 shrink-0">
+                <span className="font-mono text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-1.5 py-0.5 w-24 shrink-0">
                   {v.key}
                 </span>
                 {editing ? (
@@ -357,7 +357,7 @@ function FlagDetailCard({
                     className="py-1 px-2"
                   />
                 ) : (
-                  <span className="text-sm text-gray-700">{v.name}</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-200">{v.name}</span>
                 )}
               </li>
             ))}
@@ -366,7 +366,7 @@ function FlagDetailCard({
 
         {/* Default variant */}
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">{t('detail.default_variant_label')}</label>
+          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('detail.default_variant_label')}</label>
           {editing ? (
             <Select
               value={editDefaultVariantKey}
@@ -380,7 +380,7 @@ function FlagDetailCard({
               ))}
             </Select>
           ) : (
-            <span className="font-mono text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5">
+            <span className="font-mono text-xs text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-1.5 py-0.5">
               {flag.default_variant_key}
             </span>
           )}
@@ -388,7 +388,7 @@ function FlagDetailCard({
 
         {/* Enabled toggle */}
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">
+          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
             {t('detail.status_label', { env: envSlug })}
           </label>
           <button
@@ -398,8 +398,8 @@ function FlagDetailCard({
             aria-label={flag.enabled ? t('toggle.disable') : t('toggle.enable')}
             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-60 ${
               flag.enabled
-                ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 focus:ring-green-500'
-                : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200 focus:ring-gray-400'
+                ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 focus:ring-green-500 dark:bg-green-950 dark:text-green-300 dark:border-green-800 dark:hover:bg-green-900'
+                : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200 focus:ring-gray-400 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600'
             }`}
           >
             <span
@@ -413,7 +413,7 @@ function FlagDetailCard({
 
       {/* Edit actions */}
       {editing && (
-        <div className="px-5 py-3 border-t border-gray-100 flex items-center gap-3">
+        <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-700 flex items-center gap-3">
           <Button
             onClick={() => updateMutation.mutate()}
             disabled={updateMutation.isPending}
@@ -428,7 +428,7 @@ function FlagDetailCard({
             {t('actions.cancel', { ns: 'common' })}
           </Button>
           {saveError && (
-            <p className="text-xs text-red-600">{saveError}</p>
+            <p className="text-xs text-red-600 dark:text-red-400">{saveError}</p>
           )}
         </div>
       )}
@@ -458,20 +458,20 @@ function DeleteConfirmModal({
       aria-labelledby="delete-dialog-title"
     >
       <div className="absolute inset-0 bg-black/30" onClick={onCancel} aria-hidden="true" />
-      <div className="relative bg-white rounded-lg shadow-lg max-w-sm w-full mx-4 p-6">
-        <h2 id="delete-dialog-title" className="text-base font-semibold text-gray-900">
+      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-sm w-full mx-4 p-6">
+        <h2 id="delete-dialog-title" className="text-base font-semibold text-gray-900 dark:text-gray-100">
           {t('delete.title')}
         </h2>
-        <p className="mt-2 text-sm text-gray-600">
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
           <Trans
             i18nKey="delete.body"
             ns="flags"
             values={{ key: flagKey }}
-            components={{ mono: <span className="font-mono text-gray-800" /> }}
+            components={{ mono: <span className="font-mono text-gray-800 dark:text-gray-200" /> }}
           />
         </p>
         {deleteFailed && (
-          <p className="mt-3 text-xs text-red-600">{t('delete.failed')}</p>
+          <p className="mt-3 text-xs text-red-600 dark:text-red-400">{t('delete.failed')}</p>
         )}
         <div className="mt-5 flex justify-end gap-3">
           <Button autoFocus variant="secondary" onClick={onCancel} disabled={isDeleting}>
@@ -496,15 +496,15 @@ function EnvironmentTogglePanel({ slug, flagKey }: { slug: string; flagKey: stri
   })
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg mt-4">
-      <div className="px-5 py-3 border-b border-gray-100">
-        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('detail.environments_section')}</h2>
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg mt-4">
+      <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-700">
+        <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('detail.environments_section')}</h2>
       </div>
       {isLoading ? (
         <EnvToggleSkeleton />
       ) : error ? (
         <div className="px-5 py-4">
-          <p className="text-sm text-red-600">{t('detail.env_error')}</p>
+          <p className="text-sm text-red-600 dark:text-red-400">{t('detail.env_error')}</p>
         </div>
       ) : (
         <ul>
@@ -546,19 +546,19 @@ function EnvironmentToggleRow({
   })
 
   return (
-    <li className="flex items-center justify-between px-5 py-3 border-b border-gray-50 last:border-0">
+    <li className="flex items-center justify-between px-5 py-3 border-b border-gray-50 dark:border-gray-700 last:border-0">
       <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-900">{env.name}</span>
-        <span className="font-mono text-xs text-gray-500">{env.slug}</span>
+        <span className="text-sm text-gray-900 dark:text-gray-100">{env.name}</span>
+        <span className="font-mono text-xs text-gray-500 dark:text-gray-400">{env.slug}</span>
       </div>
       {isLoading ? (
-        <div className="h-6 w-16 bg-gray-100 rounded animate-pulse" aria-label={t('detail.loading_aria')} />
+        <div className="h-6 w-16 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" aria-label={t('detail.loading_aria')} />
       ) : error ? (
         <div className="flex items-center gap-2">
-          <span className="text-xs text-red-600">{t('detail.env_row_error')}</span>
+          <span className="text-xs text-red-600 dark:text-red-400">{t('detail.env_row_error')}</span>
           <button
             onClick={() => void refetch()}
-            className="text-xs text-blue-600 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
+            className="text-xs text-blue-600 dark:text-blue-400 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
           >
             {t('actions.retry', { ns: 'common' })}
           </button>
@@ -571,12 +571,12 @@ function EnvironmentToggleRow({
           aria-label={data!.enabled ? t('toggle.disable_in_env', { env: env.name }) : t('toggle.enable_in_env', { env: env.name })}
           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-60 ${
             data!.enabled
-              ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 focus:ring-green-500'
-              : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200 focus:ring-gray-400'
+              ? 'bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900 focus:ring-green-500'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600 focus:ring-gray-400'
           }`}
         >
           <span
-            className={`w-1.5 h-1.5 rounded-full ${data!.enabled ? 'bg-green-500' : 'bg-gray-400'}`}
+            className={`w-1.5 h-1.5 rounded-full ${data!.enabled ? 'bg-green-500 dark:bg-green-400' : 'bg-gray-400 dark:bg-gray-500'}`}
             aria-hidden="true"
           />
           {data!.enabled ? t('toggle.enabled') : t('toggle.disabled')}
@@ -592,13 +592,13 @@ function EnvToggleSkeleton() {
       {[1, 2, 3].map((i) => (
         <li
           key={i}
-          className="flex items-center justify-between px-5 py-3 border-b border-gray-50 last:border-0"
+          className="flex items-center justify-between px-5 py-3 border-b border-gray-50 dark:border-gray-700 last:border-0"
         >
           <div className="flex items-center gap-2">
-            <div className="h-4 w-24 bg-gray-100 rounded animate-pulse" />
-            <div className="h-3 w-16 bg-gray-100 rounded animate-pulse" />
+            <div className="h-4 w-24 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+            <div className="h-3 w-16 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
           </div>
-          <div className="h-6 w-16 bg-gray-100 rounded animate-pulse" />
+          <div className="h-6 w-16 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
         </li>
       ))}
     </ul>
@@ -659,26 +659,26 @@ function EvaluationPanel({
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg mt-4">
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg mt-4">
       <button
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         className="w-full flex items-center justify-between px-5 py-3 text-left focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--color-accent)]"
       >
-        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
           {t('eval.title')}
         </span>
-        <span className="text-gray-400 text-sm" aria-hidden="true">
+        <span className="text-gray-400 dark:text-gray-500 text-sm" aria-hidden="true">
           {open ? '▲' : '▼'}
         </span>
       </button>
 
       {open && (
-        <div className="px-5 pb-5 border-t border-gray-100 pt-4 space-y-3">
+        <div className="px-5 pb-5 border-t border-gray-100 dark:border-gray-700 pt-4 space-y-3">
           <div>
             <label
               htmlFor="eval-context"
-              className="block text-xs font-medium text-gray-500 mb-1"
+              className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
             >
               {t('eval.context_label')}
             </label>
@@ -688,10 +688,10 @@ function EvaluationPanel({
               onChange={handleInputChange}
               rows={4}
               spellCheck={false}
-              className="w-full font-mono text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] resize-y"
+              className="w-full font-mono text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] resize-y"
             />
             {jsonError && (
-              <p className="mt-1 text-xs text-red-600" role="alert">
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400" role="alert">
                 {jsonError}
               </p>
             )}
@@ -705,7 +705,7 @@ function EvaluationPanel({
           </Button>
 
           {mutation.isError && (
-            <p className="text-xs text-red-600" role="alert">
+            <p className="text-xs text-red-600 dark:text-red-400" role="alert">
               {mutation.error instanceof APIError
                 ? mutation.error.message
                 : t('eval.eval_failed')}
@@ -726,23 +726,23 @@ function EvalResultDisplay({ result }: { result: EvalResponse }) {
   const reasonLabel = REASON_KEY_MAP[result.reason] ? t(REASON_KEY_MAP[result.reason]) : result.reason
 
   return (
-    <div className="rounded border border-gray-200 bg-gray-50 px-4 py-3 space-y-2">
+    <div className="rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3 space-y-2">
       <div className="flex items-center gap-2">
-        <span className="text-xs font-medium text-gray-500">{t('eval.result_label')}</span>
+        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('eval.result_label')}</span>
         {result.value !== null ? (
-          <span className="font-mono text-sm bg-blue-50 text-blue-800 border border-blue-200 rounded px-2 py-0.5">
+          <span className="font-mono text-sm bg-blue-50 dark:bg-blue-950 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded px-2 py-0.5">
             {result.value}
           </span>
         ) : (
           <span
             className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${
               result.enabled
-                ? 'bg-green-50 text-green-700 border-green-200'
-                : 'bg-gray-100 text-gray-600 border-gray-200'
+                ? 'bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'
             }`}
           >
             <span
-              className={`w-1.5 h-1.5 rounded-full ${result.enabled ? 'bg-green-500' : 'bg-gray-400'}`}
+              className={`w-1.5 h-1.5 rounded-full ${result.enabled ? 'bg-green-500 dark:bg-green-400' : 'bg-gray-400 dark:bg-gray-500'}`}
               aria-hidden="true"
             />
             {result.enabled ? t('toggle.enabled') : t('toggle.disabled')}
@@ -750,8 +750,8 @@ function EvalResultDisplay({ result }: { result: EvalResponse }) {
         )}
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-xs font-medium text-gray-500">{t('eval.reason_label')}</span>
-        <span className="text-xs text-gray-700">{reasonLabel}</span>
+        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('eval.reason_label')}</span>
+        <span className="text-xs text-gray-700 dark:text-gray-300">{reasonLabel}</span>
       </div>
     </div>
   )
@@ -760,20 +760,20 @@ function EvalResultDisplay({ result }: { result: EvalResponse }) {
 function FlagDetailSkeleton() {
   return (
     <div className="p-6 max-w-2xl">
-      <div className="h-4 w-16 bg-gray-100 rounded animate-pulse mb-4" />
-      <div className="bg-white border border-gray-200 rounded-lg">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      <div className="h-4 w-16 bg-gray-100 dark:bg-gray-700 rounded animate-pulse mb-4" />
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
           <div className="flex gap-2">
-            <div className="h-6 w-28 bg-gray-100 rounded animate-pulse" />
-            <div className="h-6 w-12 bg-gray-100 rounded animate-pulse" />
+            <div className="h-6 w-28 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+            <div className="h-6 w-12 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
           </div>
-          <div className="h-7 w-16 bg-gray-100 rounded animate-pulse" />
+          <div className="h-7 w-16 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
         </div>
         <div className="px-5 py-4 space-y-5">
           {[1, 2, 3, 4].map((i) => (
             <div key={i}>
-              <div className="h-3 w-16 bg-gray-100 rounded animate-pulse mb-1" />
-              <div className="h-5 w-48 bg-gray-100 rounded animate-pulse" />
+              <div className="h-3 w-16 bg-gray-100 dark:bg-gray-700 rounded animate-pulse mb-1" />
+              <div className="h-5 w-48 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
             </div>
           ))}
         </div>

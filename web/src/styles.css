@@ -12,3 +12,18 @@
   /* Monospace font for keys, slugs, IDs, code */
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
+
+/* Dark mode overrides for CSS custom properties.
+   Tailwind v4 @theme is compile-time only and cannot be wrapped in @media.
+   These overrides adjust token values that components reference via var(). */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Accent — indigo-400 has better contrast on dark surfaces than indigo-500 */
+    --color-accent: #818cf8;
+
+    /* Status dot colours — used via bg-[var(--color-status-*)] in StatusBadge */
+    --color-status-enabled: #34d399;  /* emerald-400 — brighter on dark */
+    --color-status-warning: #fcd34d;  /* amber-300  — brighter on dark */
+    --color-status-error:   #f87171;  /* red-400    — brighter on dark */
+  }
+}

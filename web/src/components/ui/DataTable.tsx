@@ -77,7 +77,7 @@ export function DataTable<T>({
         className="w-full text-sm text-left border-collapse"
       >
         <thead>
-          <tr className="border-b border-gray-200 bg-gray-50">
+          <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
             {columns.map((col) => (
               <th
                 key={col.key}
@@ -91,13 +91,13 @@ export function DataTable<T>({
                       : 'none'
                     : undefined
                 }
-                className="px-4 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wide whitespace-nowrap"
+                className="px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap"
               >
                 {col.sortable ? (
                   <button
                     type="button"
                     onClick={() => toggleSort(col.key)}
-                    className="inline-flex items-center gap-1 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
+                    className="inline-flex items-center gap-1 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
                   >
                     {col.header}
                     <SortIcon active={sort?.key === col.key} dir={sort?.dir} />
@@ -117,7 +117,7 @@ export function DataTable<T>({
             <tr>
               <td colSpan={columns.length} className="px-4 py-8 text-center">
                 {emptyState ?? (
-                  <span className="text-sm text-gray-400">No data</span>
+                  <span className="text-sm text-gray-400 dark:text-gray-500">No data</span>
                 )}
               </td>
             </tr>
@@ -137,9 +137,9 @@ export function DataTable<T>({
                     : undefined
                 }
                 tabIndex={onRowClick ? 0 : undefined}
-                className={`border-b border-gray-100 last:border-0 ${
+                className={`border-b border-gray-100 dark:border-gray-700 last:border-0 ${
                   onRowClick
-                    ? 'cursor-pointer hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--color-accent)]'
+                    ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--color-accent)]'
                     : ''
                 }`}
               >
@@ -166,7 +166,7 @@ function SortIcon({
 }) {
   return (
     <svg
-      className={`w-3 h-3 ${active ? 'text-gray-700' : 'text-gray-400'}`}
+      className={`w-3 h-3 ${active ? 'text-gray-700 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500'}`}
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 16 16"
       fill="currentColor"

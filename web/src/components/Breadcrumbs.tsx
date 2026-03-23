@@ -73,8 +73,8 @@ export function Breadcrumbs() {
   const shouldCollapse = crumbs.length > 3
 
   return (
-    <nav aria-label="Breadcrumb" className="px-4 py-2 bg-gray-50 border-b border-gray-100">
-      <ol className="flex items-center gap-1.5 text-sm text-gray-500 min-w-0">
+    <nav aria-label="Breadcrumb" className="px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
+      <ol className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 min-w-0">
         {crumbs.map((crumb, i) => {
           const isFirst = i === 0
           const isLast = i === crumbs.length - 1
@@ -97,12 +97,12 @@ export function Breadcrumbs() {
                 {crumb.to ? (
                   <Link
                     to={crumb.to}
-                    className="truncate hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                    className="truncate hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
                   >
                     {crumb.label}
                   </Link>
                 ) : (
-                  <span className="truncate text-gray-900 font-medium">{crumb.label}</span>
+                  <span className="truncate text-gray-900 dark:text-gray-100 font-medium">{crumb.label}</span>
                 )}
               </li>
             </Fragment>
@@ -114,5 +114,5 @@ export function Breadcrumbs() {
 }
 
 function Separator() {
-  return <span className="text-gray-300 shrink-0" aria-hidden="true">/</span>
+  return <span className="text-gray-300 dark:text-gray-600 shrink-0" aria-hidden="true">/</span>
 }

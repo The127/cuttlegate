@@ -142,11 +142,11 @@ function CreateProjectDialog({ open, onClose }: CreateProjectDialogProps) {
     <dialog
       ref={dialogRef}
       onClose={handleClose}
-      className="backdrop:bg-black/50 rounded-lg shadow-xl border border-gray-200 p-0 w-full max-w-md"
+      className="backdrop:bg-black/50 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-0 w-full max-w-md"
     >
       <form onSubmit={handleSubmit} className="p-6">
-        <h2 className="text-lg font-semibold text-gray-900">{t('create.title')}</h2>
-        <p className="mt-1 text-sm text-gray-500">{t('create.subtitle')}</p>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('create.title')}</h2>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('create.subtitle')}</p>
 
         <div className="mt-4 space-y-4">
           <div>
@@ -174,7 +174,7 @@ function CreateProjectDialog({ open, onClose }: CreateProjectDialogProps) {
               className="mt-1 font-mono"
             />
             {!slugValid && (
-              <p className="mt-1 text-xs text-red-600">
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400">
                 {t('create.slug_invalid')}
               </p>
             )}
@@ -182,7 +182,7 @@ function CreateProjectDialog({ open, onClose }: CreateProjectDialogProps) {
         </div>
 
         {apiError && (
-          <p role="alert" className="mt-3 text-xs text-red-600">{apiError}</p>
+          <p role="alert" className="mt-3 text-xs text-red-600 dark:text-red-400">{apiError}</p>
         )}
 
         <div className="mt-6 flex justify-end gap-3">

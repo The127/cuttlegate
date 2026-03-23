@@ -110,8 +110,8 @@ export function PromoteDialog({
       aria-labelledby="promote-dialog-title"
     >
       <div className="absolute inset-0 bg-black/30" onClick={onClose} aria-hidden="true" />
-      <div className="relative bg-white rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
-        <h2 id="promote-dialog-title" className="text-base font-semibold text-gray-900 mb-4">
+      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
+        <h2 id="promote-dialog-title" className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {dialogTitle}
         </h2>
 
@@ -155,7 +155,7 @@ function SelectStep({
     <>
       <div className="mb-4">
         <label
-          className="block text-xs font-medium text-gray-500 mb-1"
+          className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
         >
           {t('promote.target_label')}
         </label>
@@ -175,7 +175,7 @@ function SelectStep({
       </div>
 
       {errorMessage && (
-        <p className="mb-3 text-xs text-red-600" role="alert">
+        <p className="mb-3 text-xs text-red-600 dark:text-red-400" role="alert">
           {errorMessage}
         </p>
       )}
@@ -205,7 +205,7 @@ function ResultStep({
   const { t } = useTranslation('flags')
   return (
     <>
-      <p className="text-sm font-medium text-gray-700 mb-3">{t('promote.result_title')}</p>
+      <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">{t('promote.result_title')}</p>
       <ul className="space-y-2 max-h-64 overflow-y-auto mb-4">
         {diffs.map((diff) => (
           <DiffRow key={diff.flag_key} diff={diff} />
@@ -224,17 +224,17 @@ function DiffRow({ diff }: { diff: FlagPromotionDiff }) {
   const rulesChanged = diff.rules_added > 0 || diff.rules_removed > 0
 
   return (
-    <li className="rounded border border-gray-200 bg-gray-50 px-3 py-2 text-xs">
-      <span className="font-mono font-medium text-gray-800">{diff.flag_key}</span>
-      <div className="mt-1 space-y-0.5 text-gray-600">
+    <li className="rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 px-3 py-2 text-xs">
+      <span className="font-mono font-medium text-gray-800 dark:text-gray-100">{diff.flag_key}</span>
+      <div className="mt-1 space-y-0.5 text-gray-600 dark:text-gray-300">
         {enabledChanged && (
           <div>
             {t('promote.result_enabled_label')}:{' '}
-            <span className={diff.enabled_before ? 'text-green-700' : 'text-gray-500'}>
+            <span className={diff.enabled_before ? 'text-green-700 dark:text-green-300' : 'text-gray-500 dark:text-gray-400'}>
               {diff.enabled_before ? t('promote.result_enabled_on') : t('promote.result_enabled_off')}
             </span>
             {' → '}
-            <span className={diff.enabled_after ? 'text-green-700' : 'text-gray-500'}>
+            <span className={diff.enabled_after ? 'text-green-700 dark:text-green-300' : 'text-gray-500 dark:text-gray-400'}>
               {diff.enabled_after ? t('promote.result_enabled_on') : t('promote.result_enabled_off')}
             </span>
           </div>
@@ -246,7 +246,7 @@ function DiffRow({ diff }: { diff: FlagPromotionDiff }) {
           <div>{t('promote.result_rules_removed', { count: diff.rules_removed })}</div>
         )}
         {!enabledChanged && !rulesChanged && (
-          <div className="text-gray-400">{t('promote.result_no_rule_change')}</div>
+          <div className="text-gray-400 dark:text-gray-500">{t('promote.result_no_rule_change')}</div>
         )}
       </div>
     </li>

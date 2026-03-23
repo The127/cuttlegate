@@ -33,7 +33,7 @@ export function FormField({ label, htmlFor, error, children, className = '' }: F
           {children}
         </div>
         {error && (
-          <p id={errorId} className="mt-1 text-xs text-red-600" role="alert">
+          <p id={errorId} className="mt-1 text-xs text-red-600 dark:text-red-400" role="alert">
             {error}
           </p>
         )}

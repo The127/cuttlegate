@@ -64,21 +64,21 @@ export function ProjectSwitcher() {
   }
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2 border-b border-gray-200 bg-white">
+    <div className="flex items-center gap-3 px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
       <div className="flex items-center gap-2 mr-2">
         {logo_url !== null ? (
           <img src={logo_url} alt={app_name} className="h-6 w-auto" />
         ) : (
-          <span className="text-sm font-semibold text-gray-900">{app_name}</span>
+          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{app_name}</span>
         )}
       </div>
-      <div className="w-px h-5 bg-gray-200" aria-hidden="true" />
+      <div className="w-px h-5 bg-gray-200 dark:bg-gray-700" aria-hidden="true" />
       <div className="flex items-center gap-2">
-        <label htmlFor="project-select" className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+        <label htmlFor="project-select" className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
           {t('switcher.project_label')}
         </label>
         {projectsQuery.isLoading ? (
-          <div className="h-8 w-32 bg-gray-100 rounded animate-pulse" />
+          <div className="h-8 w-32 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
         ) : projectsQuery.isError ? (
           <span className="text-xs text-red-600 flex items-center gap-1">
             {t('switcher.failed_to_load')}
@@ -104,7 +104,7 @@ export function ProjectSwitcher() {
             id="project-select"
             value={projectSlug ?? ''}
             onChange={(e) => handleProjectChange(e.target.value)}
-            className="text-sm border border-gray-200 rounded px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="text-sm border border-gray-200 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
           >
             <option value="">{t('switcher.select_project')}</option>
             {projectsQuery.data?.map((p) => (
@@ -119,12 +119,12 @@ export function ProjectSwitcher() {
 
       {projectSlug !== null && (
         <div className="flex items-center gap-2">
-          <span className="text-gray-300">/</span>
-          <label htmlFor="env-select" className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+          <span className="text-gray-300 dark:text-gray-600">/</span>
+          <label htmlFor="env-select" className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
             {t('switcher.environment_label')}
           </label>
           {envsQuery.isLoading ? (
-            <div className="h-8 w-28 bg-gray-100 rounded animate-pulse" />
+            <div className="h-8 w-28 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
           ) : envsQuery.isError ? (
             <span className="text-xs text-red-600 flex items-center gap-1">
               {t('switcher.failed_to_load')}
@@ -147,7 +147,7 @@ export function ProjectSwitcher() {
                   })
                 }
               }}
-              className="text-sm border border-gray-200 rounded px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="text-sm border border-gray-200 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
             >
               <option value="">{t('switcher.select_environment')}</option>
               {envsQuery.data?.map((e) => (

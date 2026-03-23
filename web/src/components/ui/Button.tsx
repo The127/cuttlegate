@@ -16,12 +16,12 @@ const variantClasses: Record<ButtonVariant, string> = {
   primary:
     'bg-[var(--color-accent)] text-white hover:opacity-90 focus:ring-[var(--color-accent)] disabled:opacity-50 disabled:cursor-not-allowed',
   secondary:
-    'text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-gray-400 disabled:opacity-50 disabled:cursor-not-allowed',
+    'text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 focus:ring-gray-400 disabled:opacity-50 disabled:cursor-not-allowed',
   ghost:
-    'text-gray-700 hover:text-gray-900 focus:ring-gray-400 disabled:opacity-50 disabled:cursor-not-allowed',
+    'text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-gray-100 focus:ring-gray-400 disabled:opacity-50 disabled:cursor-not-allowed',
   danger: DANGER_CLASSES,
   'danger-outline':
-    'text-red-600 border border-red-200 hover:bg-red-50 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed',
+    'text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed',
   // destructive is a semantic alias for danger — same visual style
   destructive: DANGER_CLASSES,
 }

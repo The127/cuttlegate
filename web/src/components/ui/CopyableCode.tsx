@@ -44,7 +44,7 @@ export function CopyableCode({ value, 'aria-label': ariaLabel, className = '' }:
       type="button"
       onClick={handleCopy}
       aria-label={ariaLabel ?? `Copy ${value}`}
-      className={`inline-flex items-center gap-1.5 font-mono text-sm text-gray-800 bg-gray-50 border border-gray-200 rounded px-2 py-0.5 hover:text-[var(--color-accent)] hover:border-[var(--color-accent)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] ${className}`}
+      className={`inline-flex items-center gap-1.5 font-mono text-sm text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-2 py-0.5 hover:text-[var(--color-accent)] hover:border-[var(--color-accent)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] ${className}`}
     >
       <span>{value}</span>
       {copied ? <CheckIcon /> : <ClipboardIcon />}
@@ -55,7 +55,7 @@ export function CopyableCode({ value, 'aria-label': ariaLabel, className = '' }:
 function ClipboardIcon() {
   return (
     <svg
-      className="w-3.5 h-3.5 shrink-0 text-gray-400"
+      className="w-3.5 h-3.5 shrink-0 text-gray-400 dark:text-gray-500"
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 20 20"
       fill="currentColor"

@@ -15,7 +15,7 @@ export const SelectItem = forwardRef<HTMLDivElement, SelectItemProps>(
       ref={ref}
       value={value}
       disabled={disabled}
-      className="relative flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 rounded cursor-default select-none data-[highlighted]:bg-gray-100 data-[highlighted]:outline-none data-[disabled]:opacity-50"
+      className="relative flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 rounded cursor-default select-none data-[highlighted]:bg-gray-100 dark:data-[highlighted]:bg-gray-700 data-[highlighted]:outline-none data-[disabled]:opacity-50"
     >
       <RadixSelect.ItemText>{children}</RadixSelect.ItemText>
       <RadixSelect.ItemIndicator className="absolute left-1 text-[var(--color-accent)]">
@@ -56,7 +56,7 @@ export function Select({
       <RadixSelect.Trigger
         aria-label={ariaLabel}
         aria-labelledby={ariaLabelledby}
-        className={`inline-flex items-center justify-between gap-1 text-sm border border-gray-300 rounded px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-[var(--color-accent)] disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+        className={`inline-flex items-center justify-between gap-1 text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-[var(--color-accent)] disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
       >
         <RadixSelect.Value placeholder={placeholder} />
         <RadixSelect.Icon className="text-gray-400 ml-1">
@@ -69,7 +69,7 @@ export function Select({
         <RadixSelect.Content
           position="popper"
           sideOffset={4}
-          className="z-50 min-w-[8rem] overflow-hidden rounded-md border border-gray-200 bg-white shadow-md"
+          className="z-50 min-w-[8rem] overflow-hidden rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md"
         >
           <RadixSelect.Viewport className="p-1">{children}</RadixSelect.Viewport>
         </RadixSelect.Content>

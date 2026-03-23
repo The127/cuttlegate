@@ -114,7 +114,7 @@ function CompareEnvironmentsPage() {
 
   return (
     <div className="p-6">
-      <h1 className="text-lg font-semibold text-gray-900 mb-6">{t('compare.title')}</h1>
+      <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">{t('compare.title')}</h1>
 
       {isLoading ? (
         <MatrixSkeleton />
@@ -124,13 +124,13 @@ function CompareEnvironmentsPage() {
         <EmptyState />
       ) : (
         <>
-          <div className="overflow-x-auto border border-gray-200 rounded-lg bg-white">
+          <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
             <table className="min-w-full text-sm" aria-label={t('compare.matrix_aria')}>
               <thead>
-                <tr className="border-b border-gray-200 bg-gray-50">
+                <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
                   <th
                     scope="col"
-                    className="sticky left-0 z-10 bg-gray-50 px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide w-64"
+                    className="sticky left-0 z-10 bg-gray-50 dark:bg-gray-900 px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide w-64"
                   >
                     {t('compare.flag_header')}
                   </th>
@@ -138,13 +138,13 @@ function CompareEnvironmentsPage() {
                     <th
                       key={env.id}
                       scope="col"
-                      className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide whitespace-nowrap"
+                      className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap"
                     >
                       <div className="flex items-center gap-2">
                         <span className="font-mono">{env.slug}</span>
                         <button
                           onClick={() => setPromoteSourceEnv(env.slug)}
-                          className="text-blue-500 hover:text-blue-700 text-xs font-normal normal-case tracking-normal focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                          className="text-[var(--color-accent)] hover:opacity-75 text-xs font-normal normal-case tracking-normal focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
                           aria-label={tFlags('promote.bulk_button') + ' ' + env.slug}
                         >
                           {tFlags('promote.bulk_button')}
@@ -154,11 +154,11 @@ function CompareEnvironmentsPage() {
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {pagedFlags.map((flag) => (
-                  <tr key={flag.id} className="group hover:bg-gray-50 transition-colors">
-                    <td className="sticky left-0 z-10 bg-white group-hover:bg-gray-50 px-4 py-2.5 w-64">
-                      <span className="font-mono text-xs text-gray-800 bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5">
+                  <tr key={flag.id} className="group hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <td className="sticky left-0 z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-50 dark:group-hover:bg-gray-700/50 px-4 py-2.5 w-64">
+                      <span className="font-mono text-xs text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-1.5 py-0.5">
                         {flag.key}
                       </span>
                     </td>
@@ -169,7 +169,7 @@ function CompareEnvironmentsPage() {
                           {cell ? (
                             <MatrixCell cell={cell} />
                           ) : (
-                            <span className="text-xs text-gray-300">—</span>
+                            <span className="text-xs text-gray-300 dark:text-gray-600">—</span>
                           )}
                         </td>
                       )
@@ -210,17 +210,17 @@ function MatrixCell({ cell }: { cell: CellState }) {
       <span
         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border w-fit ${
           cell.enabled
-            ? 'bg-green-50 text-green-700 border-green-200'
-            : 'bg-gray-100 text-gray-500 border-gray-200'
+            ? 'bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800'
+            : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600'
         }`}
       >
         <span
-          className={`w-1.5 h-1.5 rounded-full ${cell.enabled ? 'bg-green-500' : 'bg-gray-400'}`}
+          className={`w-1.5 h-1.5 rounded-full ${cell.enabled ? 'bg-green-500 dark:bg-green-400' : 'bg-gray-400 dark:bg-gray-500'}`}
           aria-hidden="true"
         />
         {cell.enabled ? t('compare.enabled') : t('compare.disabled')}
       </span>
-      <span className="font-mono text-xs text-gray-500">{cell.default_variant_key}</span>
+      <span className="font-mono text-xs text-gray-500 dark:text-gray-400">{cell.default_variant_key}</span>
     </div>
   )
 }
@@ -236,7 +236,7 @@ function Pagination({
 }) {
   const { t } = useTranslation('projects')
   return (
-    <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
+    <div className="mt-4 flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
       <span>
         {t('compare.page_info', { current: page + 1, total: totalPages })}
       </span>
@@ -244,14 +244,14 @@ function Pagination({
         <button
           onClick={() => onPageChange(page - 1)}
           disabled={page === 0}
-          className="px-3 py-1.5 border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-3 py-1.5 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
         >
           {t('compare.previous')}
         </button>
         <button
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages - 1}
-          className="px-3 py-1.5 border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-3 py-1.5 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
         >
           {t('compare.next')}
         </button>
@@ -263,8 +263,8 @@ function Pagination({
 function EmptyState() {
   const { t } = useTranslation('projects')
   return (
-    <div className="text-center py-16 px-6 border border-gray-200 rounded-lg bg-white">
-      <p className="text-sm text-gray-500">
+    <div className="text-center py-16 px-6 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
+      <p className="text-sm text-gray-500 dark:text-gray-400">
         {t('compare.empty')}
       </p>
     </div>
@@ -273,23 +273,23 @@ function EmptyState() {
 
 function MatrixSkeleton() {
   return (
-    <div className="border border-gray-200 rounded-lg bg-white overflow-hidden">
-      <div className="flex gap-4 px-4 py-2.5 border-b border-gray-200 bg-gray-50">
-        <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
+    <div className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 overflow-hidden">
+      <div className="flex gap-4 px-4 py-2.5 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+        <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+          <div key={i} className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
         ))}
       </div>
       {[1, 2, 3, 4, 5].map((i) => (
         <div
           key={i}
-          className="flex gap-4 px-4 py-3 border-b border-gray-100 last:border-0"
+          className="flex gap-4 px-4 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0"
         >
-          <div className="h-5 w-36 bg-gray-100 rounded animate-pulse" />
+          <div className="h-5 w-36 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
           {[1, 2, 3].map((j) => (
             <div key={j} className="flex flex-col gap-1">
-              <div className="h-5 w-16 bg-gray-100 rounded-full animate-pulse" />
-              <div className="h-3 w-10 bg-gray-100 rounded animate-pulse" />
+              <div className="h-5 w-16 bg-gray-100 dark:bg-gray-700 rounded-full animate-pulse" />
+              <div className="h-3 w-10 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
             </div>
           ))}
         </div>
@@ -302,10 +302,10 @@ function MatrixError({ onRetry }: { onRetry: () => void }) {
   const { t } = useTranslation('projects')
   return (
     <div>
-      <span className="text-sm text-red-600">{t('compare.error')} </span>
+      <span className="text-sm text-red-600 dark:text-red-400">{t('compare.error')} </span>
       <button
         onClick={onRetry}
-        className="text-sm text-red-600 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
+        className="text-sm text-red-600 dark:text-red-400 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
       >
         {t('actions.retry', { ns: 'common' })}
       </button>

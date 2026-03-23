@@ -133,12 +133,12 @@ function RulesPage() {
     const is404 = rulesQuery.error instanceof APIError && rulesQuery.error.status === 404
     return (
       <div className="p-6">
-        <p className="text-sm text-red-600">
+        <p className="text-sm text-red-600 dark:text-red-400">
           {is404 ? t('not_found') : t('error')}
         </p>
         <button
           onClick={() => void rulesQuery.refetch()}
-          className="mt-2 text-sm text-blue-600 underline hover:no-underline"
+          className="mt-2 text-sm text-[var(--color-accent)] underline hover:no-underline"
         >
           {t('actions.retry', { ns: 'common' })}
         </button>
@@ -170,7 +170,7 @@ function RulesPage() {
   return (
     <div className="p-6 max-w-2xl">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t('title')}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('title')}</h2>
         {!addingNew && (
           <Button onClick={() => setAddingNew(true)}>{t('add_rule')}</Button>
         )}
@@ -214,8 +214,8 @@ function RulesPage() {
 function EmptyState({ onAdd }: { onAdd: () => void }) {
   const { t } = useTranslation('rules')
   return (
-    <div className="border border-dashed border-gray-200 rounded-lg px-6 py-10 text-center">
-      <p className="text-sm text-gray-500">
+    <div className="border border-dashed border-gray-200 dark:border-gray-600 rounded-lg px-6 py-10 text-center">
+      <p className="text-sm text-gray-500 dark:text-gray-400">
         {t('empty_state')}
       </p>
       <Button onClick={onAdd} className="mt-3">{t('add_rule')}</Button>
@@ -285,37 +285,37 @@ function RuleRow({
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg">
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
       {/* Summary row */}
       <div className="flex items-start gap-3 px-4 py-3">
         <span
-          className="mt-0.5 shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 text-xs font-mono text-gray-600"
+          className="mt-0.5 shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-xs font-mono text-gray-600 dark:text-gray-300"
           title="Priority"
         >
           {rule.priority}
         </span>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-800 mb-1">
+          <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-1">
             {rule.name ? rule.name : t('fallback_name', { priority: rule.priority })}
           </p>
           {rule.conditions.length === 0 ? (
-            <p className="text-sm text-gray-400 italic">{t('no_conditions_display')}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 italic">{t('no_conditions_display')}</p>
           ) : (
             <ul className="space-y-0.5">
               {rule.conditions.map((c, i) => (
-                <li key={i} className="text-sm text-gray-700">
-                  <span className="font-mono text-gray-800">{c.attribute}</span>{' '}
-                  <span className="text-gray-500">{OPERATOR_KEYS[c.operator] ? t(OPERATOR_KEYS[c.operator]) : c.operator}</span>{' '}
+                <li key={i} className="text-sm text-gray-700 dark:text-gray-300">
+                  <span className="font-mono text-gray-800 dark:text-gray-200">{c.attribute}</span>{' '}
+                  <span className="text-gray-500 dark:text-gray-400">{OPERATOR_KEYS[c.operator] ? t(OPERATOR_KEYS[c.operator]) : c.operator}</span>{' '}
                   {isSegmentOperator(c.operator) ? (
-                    <span className="font-mono text-gray-800">{c.values[0]}</span>
+                    <span className="font-mono text-gray-800 dark:text-gray-200">{c.values[0]}</span>
                   ) : (
-                    <span className="font-mono text-gray-800">{c.values.join(', ')}</span>
+                    <span className="font-mono text-gray-800 dark:text-gray-200">{c.values.join(', ')}</span>
                   )}
                 </li>
               ))}
             </ul>
           )}
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             → <span className="font-mono">{rule.variantKey}</span>
           </p>
         </div>
@@ -338,7 +338,7 @@ function RuleRow({
           )}
           {pendingDelete && (
             <span className="flex items-center gap-2 text-sm">
-              <span className="text-gray-600">{t('delete_confirm')}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('delete_confirm')}</span>
               <Button variant="danger-outline" size="sm" onClick={confirmDelete}>
                 {t('delete_yes')}
               </Button>
@@ -352,7 +352,7 @@ function RuleRow({
 
       {/* Inline editor */}
       {editing && (
-        <div className="border-t border-gray-100 px-4 py-4 space-y-4">
+        <div className="border-t border-gray-100 dark:border-gray-700 px-4 py-4 space-y-4">
           <RuleEditor
             draft={draft}
             segments={segments}
@@ -366,7 +366,7 @@ function RuleRow({
             <Button variant="secondary" onClick={cancelEdit} disabled={isSaving}>
               {t('actions.cancel', { ns: 'common' })}
             </Button>
-            {saveError && <p className="text-xs text-red-600">{saveError}</p>}
+            {saveError && <p className="text-xs text-red-600 dark:text-red-400">{saveError}</p>}
           </div>
         </div>
       )}
@@ -402,8 +402,8 @@ function NewRuleRow({
   const [saveError, setSaveError] = useState<string | null>(null)
 
   return (
-    <div className="bg-white border border-blue-200 rounded-lg px-4 py-4 space-y-4">
-      <p className="text-xs font-medium text-gray-500">{t('new_rule')}</p>
+    <div className="bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-4 space-y-4">
+      <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('new_rule')}</p>
       <RuleEditor draft={draft} segments={segments} variants={variants} onChange={setDraft} />
       <div className="flex items-center gap-3">
         <Button
@@ -469,7 +469,7 @@ function RuleEditor({
     <div className="space-y-3">
       {/* Name */}
       <div>
-        <label className="block text-xs font-medium text-gray-500 mb-1">{t('name_label')}</label>
+        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('name_label')}</label>
         <Input
           type="text"
           value={draft.name}
@@ -482,9 +482,9 @@ function RuleEditor({
 
       {/* Conditions */}
       <div>
-        <p className="text-xs font-medium text-gray-500 mb-2">{t('conditions_label')}</p>
+        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">{t('conditions_label')}</p>
         {draft.conditions.length === 0 && (
-          <p className="text-xs text-gray-400 italic mb-2">{t('no_conditions_editor')}</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 italic mb-2">{t('no_conditions_editor')}</p>
         )}
         <div className="space-y-2">
           {draft.conditions.map((c, i) => (
@@ -542,7 +542,7 @@ function RuleEditor({
               <button
                 onClick={() => removeCondition(i)}
                 aria-label={t('condition_remove_aria', { n: i + 1 })}
-                className="mt-1 text-gray-400 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
+                className="mt-1 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
               >
                 ✕
               </button>
@@ -551,7 +551,7 @@ function RuleEditor({
         </div>
         <button
           onClick={addCondition}
-          className="mt-2 text-xs text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
+          className="mt-2 text-xs text-[var(--color-accent)] hover:underline focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
         >
           {t('add_condition')}
         </button>
@@ -596,16 +596,16 @@ function RulesSkeleton() {
   return (
     <div className="p-6 max-w-2xl space-y-3">
       <div className="flex items-center justify-between mb-4">
-        <div className="h-4 w-32 bg-gray-100 rounded animate-pulse" />
-        <div className="h-8 w-20 bg-gray-100 rounded animate-pulse" />
+        <div className="h-4 w-32 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+        <div className="h-8 w-20 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
       </div>
       {[1, 2, 3].map((i) => (
-        <div key={i} className="bg-white border border-gray-200 rounded-lg px-4 py-3">
+        <div key={i} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="w-6 h-6 bg-gray-100 rounded-full animate-pulse" />
+            <div className="w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded-full animate-pulse" />
             <div className="flex-1 space-y-1.5">
-              <div className="h-3 w-48 bg-gray-100 rounded animate-pulse" />
-              <div className="h-3 w-24 bg-gray-100 rounded animate-pulse" />
+              <div className="h-3 w-48 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+              <div className="h-3 w-24 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
             </div>
           </div>
         </div>

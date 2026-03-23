@@ -36,6 +36,25 @@ if (typeof window !== 'undefined' && !window.ResizeObserver) {
   }
 }
 
+// window.matchMedia — jsdom does not implement matchMedia.
+// Stub it so components and Radix UI primitives that read prefers-color-scheme don't crash.
+// Tests that need to simulate dark mode can override this per-test with vi.spyOn.
+if (typeof window !== 'undefined' && !window.matchMedia) {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: (query: string) => ({
+      matches: false, // default: light mode
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }),
+  })
+}
+
 // Clipboard API — jsdom does not implement navigator.clipboard.
 // Define a stub so components using navigator.clipboard.writeText do not throw.
 // Individual tests that assert clipboard behaviour can spy on navigator.clipboard.writeText.
