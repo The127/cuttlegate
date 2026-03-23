@@ -129,7 +129,7 @@ function FlagDetailPage() {
 
       <EnvironmentTogglePanel slug={slug} flagKey={key} />
 
-      <div className="mt-4 flex gap-4">
+      <div className="mt-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg p-4 flex gap-4">
         <Link
           to="/projects/$slug/environments/$envSlug/flags/$key/rules"
           params={{ slug, envSlug, key }}
@@ -341,7 +341,7 @@ function FlagDetailCard({
             aria-label={flag.enabled ? t('toggle.disable') : t('toggle.enable')}
             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-60 ${
               flag.enabled
-                ? 'bg-[rgba(16,217,168,0.08)] text-[var(--color-status-enabled)] border-[var(--color-status-enabled)] hover:bg-[rgba(16,217,168,0.08)] focus:ring-green-500 dark:bg-[rgba(16,217,168,0.08)]
+                ? 'bg-[rgba(16,217,168,0.08)] text-[var(--color-status-enabled)] border-[var(--color-status-enabled)] hover:bg-[rgba(16,217,168,0.08)] focus:ring-green-500
                 : 'bg-[var(--color-surface)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:bg-[var(--color-surface-elevated)] focus:ring-[var(--color-accent)]
             }`}
           >

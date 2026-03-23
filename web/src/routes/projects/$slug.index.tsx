@@ -71,7 +71,7 @@ function ProjectDashboard() {
       <ProjectHeader name={project.name} slug={project.slug} />
 
       <section className="mt-6">
-        <h2 className="text-sm font-medium text-[var(--color-text-secondary)] font-medium mb-3">
+        <h2 className="text-sm font-medium text-[var(--color-text-secondary)] mb-3">
           {t('dashboard.environments_section')}
         </h2>
         {envsQuery.isLoading ? (
@@ -90,21 +90,7 @@ function ProjectDashboard() {
       </section>
 
       <section className="mt-8">
-        <h2 className="text-sm font-medium text-[var(--color-text-secondary)] font-medium mb-3">
-          {t('dashboard.quick_links_section')}
-        </h2>
-        <div className="flex gap-3 flex-wrap">
-          <QuickLink label={t('dashboard.compare')} to={`/projects/${project.slug}/compare`} />
-          <QuickLink label={t('dashboard.segments')} to={`/projects/${project.slug}/segments`} />
-          <QuickLink label={t('dashboard.settings')} to={`/projects/${project.slug}/settings`} />
-          <QuickLink label={t('dashboard.members')} to={`/projects/${project.slug}/members`} />
-          <QuickLink label={t('dashboard.api_keys')} to={`/projects/${project.slug}/api-keys`} />
-          <QuickLink label={t('dashboard.audit_log')} to={`/projects/${project.slug}/audit`} />
-        </div>
-      </section>
-
-      <section className="mt-8">
-        <h2 className="text-sm font-medium text-[var(--color-text-secondary)] font-medium mb-3">
+        <h2 className="text-sm font-medium text-[var(--color-text-secondary)] mb-3">
           {t('dashboard.recent_flags_section')}
         </h2>
         {flagsQuery.isLoading ? (
@@ -440,7 +426,7 @@ function EnvironmentCard({ env, projectSlug }: { env: Environment; projectSlug: 
     <Link
       to="/projects/$slug/environments/$envSlug/flags"
       params={{ slug: projectSlug, envSlug: env.slug }}
-      className="block border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] p-4 hover:border-[var(--color-accent)] hover:shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+      className="block border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] p-4 hover:border-[var(--color-border-hover)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.3)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
     >
       <h3 className="font-mono text-sm font-medium text-[var(--color-text-primary)]">{env.name}</h3>
       {flagsQuery.isLoading ? (
@@ -459,24 +445,13 @@ function EnvironmentCard({ env, projectSlug }: { env: Environment; projectSlug: 
   )
 }
 
-function QuickLink({ label, to }: { label: string; to: string }) {
-  return (
-    <Link
-      to={to}
-      className="px-3 py-1.5 text-sm font-medium text-[var(--color-text-primary)] border border-[var(--color-border)] rounded hover:bg-[var(--color-surface)] hover:border-[var(--color-border)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
-    >
-      {label}
-    </Link>
-  )
-}
-
 function RecentFlagsList({ flags }: { flags: ProjectFlag[] }) {
   const recent = [...flags]
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 5)
 
   return (
-    <ul className="divide-y divide-[var(--color-border)] border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)]">
+    <ul className="divide-y divide-[var(--color-border)]">
       {recent.map((flag) => (
         <li key={flag.id} className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3 min-w-0">
@@ -513,7 +488,7 @@ function EnvironmentCardsSkeleton() {
 
 function RecentFlagsSkeleton() {
   return (
-    <ul className="divide-y divide-[var(--color-border)] border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)]">
+    <ul className="divide-y divide-[var(--color-border)]">
       {[1, 2, 3].map((i) => (
         <li key={i} className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">

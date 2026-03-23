@@ -100,11 +100,11 @@ function ProjectCard({ project }: { project: Project }) {
     <Link
       to="/projects/$slug"
       params={{ slug: project.slug }}
-      className="block border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] p-4 hover:border-[var(--color-accent)] hover:shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+      className="block border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] p-4 hover:border-[var(--color-border-hover)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.3)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
     >
       <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">{project.name}</h2>
       <p className="mt-0.5 font-mono text-xs text-[var(--color-text-secondary)]">{project.slug}</p>
-      <div className="mt-3 flex items-center gap-4 text-xs text-[var(--color-text-secondary)]">
+      <div className="mt-3 flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
         <CountBadge label={t('list.count_environments')} count={envsCount.data} isLoading={envsCount.isLoading} isError={envsCount.isError} />
         <CountBadge label={t('list.count_flags')} count={flagsCount.data} isLoading={flagsCount.isLoading} isError={flagsCount.isError} />
         <CountBadge label={t('list.count_members')} count={membersCount.data} isLoading={membersCount.isLoading} isError={membersCount.isError} />
@@ -125,7 +125,7 @@ function CountBadge({
   isError: boolean
 }) {
   return (
-    <span className="flex items-center gap-1">
+    <span className="flex items-center gap-1 bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1.5 py-0.5">
       {isLoading ? (
         <span className="inline-block h-3.5 w-4 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
       ) : isError ? (
@@ -151,9 +151,9 @@ function HomePageSkeleton() {
             <div className="h-4 w-32 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
             <div className="mt-1.5 h-3 w-20 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
             <div className="mt-3 flex items-center gap-4">
-              <div className="h-3 w-20 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
-              <div className="h-3 w-12 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
-              <div className="h-3 w-16 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+              <div className="h-5 w-20 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+              <div className="h-5 w-12 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+              <div className="h-5 w-16 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
             </div>
           </div>
         ))}

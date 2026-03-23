@@ -25,6 +25,12 @@ import {
 import type { ColumnDef } from '../../components/ui'
 import { formatRelativeDate } from '../../utils/date'
 
+interface Environment {
+  id: string
+  name: string
+  slug: string
+}
+
 interface Variant {
   key: string
   name: string
@@ -76,6 +82,16 @@ function FlagListPage() {
       ).then((d) => d.flags),
   })
 
+  const { data: environments } = useQuery({
+    queryKey: ['environments', slug],
+    queryFn: () =>
+      fetchJSON<{ environments: Environment[] }>(
+        `/api/v1/projects/${slug}/environments`,
+      ).then((d) => d.environments),
+    staleTime: 5 * 60_000,
+  })
+  const envName = environments?.find((e) => e.slug === envSlug)?.name ?? envSlug
+
   const [toggleErrorKey, setToggleErrorKey] = useState<string | null>(null)
 
   const toggleMutation = useMutation({
@@ -104,10 +120,16 @@ function FlagListPage() {
         sortable: true,
         sortValue: (f) => f.key,
         cell: (f) => (
-          <CopyableCode
-            value={f.key}
-            aria-label={t('list.copy_key_aria', { key: f.key })}
-          />
+          <div className="flex items-center gap-2">
+            <CopyableCode
+              value={f.key}
+              aria-label={t('list.copy_key_aria', { key: f.key })}
+              className="text-[var(--color-accent-start)]"
+            />
+            <span className="bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-[var(--color-text-muted)] text-xs rounded px-1.5 py-0.5">
+              {f.type}
+            </span>
+          </div>
         ),
       },
       {
@@ -201,18 +223,21 @@ function FlagListPage() {
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">{t('list.title')}</h1>
+        <div>
+          <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">{envName}</h1>
+          <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
+            {t('list.flag_count', { count: flags.length })}
+          </p>
+        </div>
         <Button onClick={() => setShowCreate(true)}>{t('list.new_flag')}</Button>
       </div>
 
-      <div className="border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] overflow-hidden">
-        <DataTable
-          columns={columns}
-          data={flags}
-          aria-label={t('list.title')}
-          emptyState={<EmptyState onCreateClick={() => setShowCreate(true)} />}
-        />
-      </div>
+      <DataTable
+        columns={columns}
+        data={flags}
+        aria-label={envName}
+        emptyState={<EmptyState onCreateClick={() => setShowCreate(true)} />}
+      />
 
       {showCreate && (
         <CreateFlagModal
