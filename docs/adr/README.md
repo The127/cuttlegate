@@ -54,3 +54,5 @@ See `template.md`. Status values: `Proposed`, `Accepted`, `Deprecated`, `Superse
 | [0023](0023-in-house-component-library.md) | In-house UI component library over third-party component frameworks | Accepted |
 | [0024](0024-evaluation-event-retention-policy.md) | Evaluation event retention policy — 30-day default with configurable cleanup | Accepted |
 | [0025](0025-cached-client-single-sse-connection.md) | CachedClient uses a single SSE connection for all flags | Accepted |
+| [0026](0026-polling-for-evaluation-stats-not-sse.md) | Polling for evaluation stats refresh, not SSE | Accepted |
+| [0027](0027-python-sdk-sync-first-httpx-pep544.md) | Python SDK — sync-first client, httpx, PEP 544 protocol | Accepted |

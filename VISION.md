@@ -12,12 +12,16 @@ Anyone who has shipped software and wished feature flagging was simpler, more pr
 
 - **One thing done really well** — any proposal that expands scope beyond feature flagging gets challenged before it gets designed. We are not a platform, a workflow tool, or an experimentation framework. We are a feature flag tool.
 - **Documentation parity** — documentation is a first-class deliverable, not an afterthought. No feature is done until it is documented. Getting started must feel effortless. Doc debt is product debt.
+- **Developer experience** — SDK ergonomics, error messages, onboarding time, and API shape matter as much as correctness. A tool that is painful to adopt is a tool nobody recommends.
+- **Operator experience** — the dashboard, audit trail, and configuration surface are the product for the people running Cuttlegate. Clarity and legibility are not polish; they are function. A tool that looks bad and feels bad is a tool no one wants to run.
 - **Clean code and architecture** — the codebase is something contributors are proud to read, not just use. The architecture is honest: the layers mean what they say.
 - **Fun** — if working on this stops being fun, something is wrong with the process, not the people.
 
 ## What "finished" looks like
 
-A developer finds Cuttlegate, reads the getting started guide, and has a flag evaluating in their app in under ten minutes. No account, no sales call, no enterprise tier. Just a tool that works.
+A developer finds Cuttlegate, reads the getting started guide, and has a flag evaluating in their app in under ten minutes. No account, no sales call, no enterprise tier. Just a tool that works. The SDK feels like it was designed by someone who has written production code — not generated from a spec.
+
+An operator opens the dashboard and immediately understands what is happening with their flags: which are enabled, who is affected, what changed and when. The UI is not an afterthought wrapped around an API. It is the product.
 
 The codebase is something you'd show someone learning how to build a Go service — not as an example of clever, as an example of clear. The architecture is honest, the tests are real, the documentation matches the code.
 
