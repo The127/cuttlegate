@@ -43,12 +43,19 @@ func main() {
         },
     }
 
-    // Evaluate a single flag:
-    result, err := client.EvaluateFlag(ctx, "dark-mode", evalCtx)
+    // Evaluate a single bool flag:
+    enabled, err := client.Bool(ctx, "dark-mode", evalCtx)
     if err != nil {
         log.Fatal(err)
     }
-    fmt.Println("dark-mode enabled:", result.Enabled)
+    fmt.Println("dark-mode enabled:", enabled)
+
+    // Evaluate a string flag — use Variant for the raw variant key:
+    result, err := client.Evaluate(ctx, "banner-text", evalCtx)
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Println("banner-text variant:", result.Variant) // e.g. "holiday"
 
     // Evaluate all flags for the environment:
     results, err := client.EvaluateAll(ctx, evalCtx)
@@ -56,9 +63,44 @@ func main() {
         log.Fatal(err)
     }
     for key, r := range results {
-        fmt.Printf("%s: enabled=%v reason=%s\n", key, r.Enabled, r.Reason)
+        fmt.Printf("%s: enabled=%v variant=%s reason=%s\n", key, r.Enabled, r.Variant, r.Reason)
     }
 }
+```
+
+## Result fields
+
+`EvalResult` and `FlagResult` carry the following fields:
+
+| Field | Type | Notes |
+|---|---|---|
+| `Variant` | `string` | **Primary field.** The variant key. `"true"` or `"false"` for bool flags; the variant key string for all other types. |
+| `Enabled` | `bool` | Whether the flag is enabled for this context. |
+| `Reason` | `string` | Why this result was returned: `"targeting_rule"`, `"default"`, `"disabled"`, or `"percentage_rollout"`. |
+| `Value` | `string` | **Deprecated.** Empty for bool flags. Use `Variant` instead. |
+
+**`String()` method note:** `String(ctx, key, evalCtx)` returns `result.Value`, which is **empty for bool flags**. Do not call `String()` on a bool flag — use `Bool()` instead, and use `Variant` if you need the raw `"true"`/`"false"` key.
+
+### Migration from `Value` to `Variant`
+
+If your code reads `result.Value` today:
+
+```go
+// Before (deprecated — empty for bool flags):
+fmt.Println(result.Value)
+
+// After (primary field — always present):
+fmt.Println(result.Variant)
+```
+
+For bool flags, use the typed helper:
+
+```go
+// Before:
+enabled := result.Value == "true" // WRONG — Value is empty for bool flags
+
+// After:
+enabled, err := client.Bool(ctx, "dark-mode", evalCtx)
 ```
 
 ## Production use — CachedClient

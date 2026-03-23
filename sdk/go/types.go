@@ -13,16 +13,20 @@ type EvalContext struct {
 
 // EvalResult is the result of evaluating a single flag.
 //
-// Variant is the variant key; for bool flags it is "true" or "false".
-// Value is the string representation of the variant value; for bool flags
-// it is empty — use Variant or Bool() instead.
+// Variant is the primary field for the variant key. For bool flags it is
+// "true" or "false"; for all other flag types it is the variant key string.
 // Reason describes why this result was produced: "targeting_rule", "default",
 // "disabled", or "percentage_rollout".
 type EvalResult struct {
-	Key         string `json:"key"`
-	Enabled     bool   `json:"enabled"`
-	Value       string `json:"value"`   // string value; empty for bool flags
-	Variant     string `json:"variant"` // variant key; "true"/"false" for bool flags
+	Key     string `json:"key"`
+	Enabled bool   `json:"enabled"`
+
+	// Deprecated: Value is empty for bool flags. Use Variant for the raw
+	// variant key, Bool() for boolean evaluation, or String() for string flags.
+	Value string `json:"value"`
+
+	// Variant is the variant key. For bool flags: "true" or "false".
+	Variant     string `json:"variant"`
 	Reason      string `json:"reason"`
 	EvaluatedAt string `json:"evaluated_at"`
 }
@@ -32,8 +36,14 @@ type EvalResult struct {
 // rather than encoding not-found as a Reason string.
 type FlagResult struct {
 	Enabled bool
-	Value   string // string value; empty for bool flags
-	Variant string // variant key; "true"/"false" for bool flags
+
+	// Deprecated: Value is empty for bool flags. Use Variant for the raw
+	// variant key, or switch to client.Bool() / client.String() / client.Evaluate()
+	// in place of EvaluateFlag.
+	Value string
+
+	// Variant is the variant key. For bool flags: "true" or "false".
+	Variant string
 	Reason  string
 }
 
