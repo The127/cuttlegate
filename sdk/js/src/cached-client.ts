@@ -286,6 +286,8 @@ export function createCachedClient(
     });
   }
 
+  // context is accepted for CuttlegateClient interface compatibility; results are
+  // always served from cache — the cache is not keyed per-user context.
   function evaluate(_context: EvalContext): Promise<EvaluationResult[]> {
     return Promise.resolve(Array.from(cache.values()));
   }
