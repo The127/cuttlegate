@@ -1,6 +1,6 @@
 # Frontend Index
 
-_Generated 2026-03-23 22:02 UTC. Read this at session start for frontend orientation._
+_Generated 2026-03-23 23:29 UTC. Read this at session start for frontend orientation._
 
 ## Routes (`web/src/routes/`)
 
@@ -54,6 +54,7 @@ _Generated 2026-03-23 22:02 UTC. Read this at session start for frontend orienta
 | `SelectItem` | `ui/Select.tsx` | — |
 | `Select` | `ui/Select.tsx` | — |
 | `StatusBadge` | `ui/StatusBadge.tsx` | — |
+| `Textarea` | `ui/Textarea.tsx` | — |
 | `TierBadge` | `ui/TierBadge.tsx` | — |
 | `TierSelector` | `ui/TierSelector.tsx` | — |
 
