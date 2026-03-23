@@ -2,6 +2,7 @@ services:
   db:
     image: postgres:17-alpine
     environment:
+      # dev-only defaults — do not use in production
       POSTGRES_USER: cuttlegate
       POSTGRES_PASSWORD: cuttlegate
       POSTGRES_DB: cuttlegate
@@ -42,6 +43,8 @@ services:
       OIDC_REDIRECT_URI: http://localhost:8080/auth/callback
       OIDC_ROLE_CLAIM: application_roles
       # OIDC_MISSING_ROLE_POLICY: reject  # default: reject tokens missing the role claim; set to "viewer" to grant viewer role instead
+      # OIDC_AUDIENCE is not set here because the Keyline dev tokens do not set an aud claim.
+      # Production deployments using an OIDC provider that issues aud claims MUST set OIDC_AUDIENCE.
       ADDR: ":8080"
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
@@ -57,6 +60,7 @@ services:
   keyline-db:
     image: postgres:17-alpine
     environment:
+      # dev-only defaults — do not use in production
       POSTGRES_USER: keyline
       POSTGRES_PASSWORD: keyline
       POSTGRES_DB: keyline
