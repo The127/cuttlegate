@@ -39,6 +39,7 @@
     "recent_flags_section": "Recently Created Flags",
     "no_environments": "Create your first environment to start managing flags.",
     "create_environment_cta": "Create environment",
+    "create_first_environment_cta": "Create your first environment",
     "no_flags": "Create your first flag to start shipping features.",
     "create_flag_cta": "Create flag",
     "compare": "Compare Environments",

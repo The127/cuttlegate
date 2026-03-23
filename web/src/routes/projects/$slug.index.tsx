@@ -14,6 +14,7 @@ import {
   DialogFooter,
   DialogCloseButton,
 } from '../../components/ui/Dialog'
+import { CreateEnvironmentDialog } from '../../components/CreateEnvironmentDialog'
 
 interface Environment {
   id: string
@@ -117,13 +118,10 @@ function ProjectDashboard() {
         )}
       </section>
 
-      <CreateEnvironmentModal
+      <CreateEnvironmentDialog
         open={showCreateEnv}
-        slug={project.slug}
-        onCreated={() => {
-          setShowCreateEnv(false)
-          void queryClient.invalidateQueries({ queryKey: ['environments', project.slug] })
-        }}
+        projectSlug={project.slug}
+        onCreated={() => setShowCreateEnv(false)}
         onCancel={() => setShowCreateEnv(false)}
       />
 
@@ -150,8 +148,8 @@ function EnvironmentsEmptyState({ onCreateClick }: { onCreateClick: () => void }
       <p className="text-sm text-[var(--color-text-secondary)]">
         {t('dashboard.no_environments')}
       </p>
-      <Button size="lg" className="mt-4" onClick={onCreateClick}>
-        {t('dashboard.create_environment_cta')}
+      <Button size="lg" variant="primary" className="mt-4" onClick={onCreateClick}>
+        {t('dashboard.create_first_environment_cta')}
       </Button>
     </div>
   )
@@ -168,187 +166,6 @@ function FlagsEmptyState({ onCreateClick }: { onCreateClick: () => void }) {
         {t('dashboard.create_flag_cta')}
       </Button>
     </div>
-  )
-}
-
-// --- Create Environment Modal ---
-
-const ENV_SLUG_RE = /^[a-z0-9][a-z0-9-]*$/
-const MAX_ENV_SLUG_LENGTH = 128
-
-function slugify(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '')
-    .replace(/^-+|-+$/g, '')
-}
-
-function validateEnvSlug(
-  slug: string,
-  t: (k: string, opts?: Record<string, unknown>) => string,
-): string | null {
-  if (slug.length === 0) return null
-  if (slug.length > MAX_ENV_SLUG_LENGTH)
-    return t('environments.slug_too_long', { max: MAX_ENV_SLUG_LENGTH })
-  if (!ENV_SLUG_RE.test(slug)) return t('environments.slug_invalid')
-  return null
-}
-
-function CreateEnvironmentModal({
-  open,
-  slug,
-  onCreated,
-  onCancel,
-}: {
-  open: boolean
-  slug: string
-  onCreated: () => void
-  onCancel: () => void
-}) {
-  const { t } = useTranslation('projects')
-  const [name, setName] = useState('')
-  const [envSlug, setEnvSlug] = useState('')
-  const [slugTouched, setSlugTouched] = useState(false)
-  const [slugError, setSlugError] = useState<string | null>(null)
-  const [serverError, setServerError] = useState<string | null>(null)
-
-  const createMutation = useMutation({
-    mutationFn: () =>
-      postJSON(`/api/v1/projects/${slug}/environments`, { name, slug: envSlug }),
-    onSuccess: () => onCreated(),
-    onError: (err) => {
-      if (err instanceof APIError) {
-        if (err.status === 409 || err.code === 'conflict') {
-          setSlugError(t('environments.slug_conflict'))
-          return
-        }
-        if (err.status === 400 && err.code === 'validation_error') {
-          setSlugError(err.message)
-          return
-        }
-      }
-      setServerError(
-        err instanceof APIError ? err.message : t('environments.server_error'),
-      )
-    },
-  })
-
-  function handleNameChange(value: string) {
-    setName(value)
-    if (!slugTouched) {
-      const generated = slugify(value)
-      setEnvSlug(generated)
-      setSlugError(validateEnvSlug(generated, t))
-    }
-  }
-
-  function handleSlugChange(value: string) {
-    setEnvSlug(value)
-    setSlugTouched(true)
-    setSlugError(null)
-    setServerError(null)
-  }
-
-  function handleSlugBlur() {
-    setSlugError(validateEnvSlug(envSlug, t))
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!name.trim()) return
-    const err = validateEnvSlug(envSlug, t)
-    if (err) {
-      setSlugError(err)
-      return
-    }
-    if (!envSlug) {
-      setSlugError(t('environments.slug_required'))
-      return
-    }
-    setServerError(null)
-    createMutation.mutate()
-  }
-
-  function handleOpenChange(isOpen: boolean) {
-    if (!isOpen) onCancel()
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t('environments.create_title')}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label
-              htmlFor="env-name-dashboard"
-              className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
-            >
-              {t('environments.name_label')}
-            </label>
-            <input
-              id="env-name-dashboard"
-              type="text"
-              autoFocus
-              value={name}
-              onChange={(e) => handleNameChange(e.target.value)}
-              placeholder={t('environments.name_placeholder')}
-              className="w-full text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="env-slug-dashboard"
-              className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
-            >
-              {t('environments.slug_label')}
-            </label>
-            <input
-              id="env-slug-dashboard"
-              type="text"
-              value={envSlug}
-              onChange={(e) => handleSlugChange(e.target.value)}
-              onBlur={handleSlugBlur}
-              placeholder={t('environments.slug_placeholder')}
-              aria-invalid={!!slugError}
-              aria-describedby={slugError ? 'env-slug-dashboard-error' : undefined}
-              className={`w-full font-mono text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border rounded px-2 py-1.5 focus:outline-none focus:ring-2 ${
-                slugError
-                  ? 'border-red-300 focus:ring-red-500'
-                  : 'border-gray-300 dark:border-gray-600 focus:ring-[var(--color-accent)]'
-              }`}
-            />
-            {slugError && (
-              <p id="env-slug-dashboard-error" className="mt-1 text-xs text-red-600 dark:text-red-400">
-                {slugError}
-              </p>
-            )}
-          </div>
-          {serverError && (
-            <p className="text-xs text-red-600 dark:text-red-400">{serverError}</p>
-          )}
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onCancel}
-              disabled={createMutation.isPending}
-            >
-              {t('actions.cancel', { ns: 'common' })}
-            </Button>
-            <Button
-              type="submit"
-              loading={createMutation.isPending}
-              disabled={!!slugError || !name.trim() || !envSlug}
-            >
-              {t('environments.create_button')}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
   )
 }
 

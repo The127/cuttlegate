@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { projectRoute } from './$slug'
-import { fetchJSON, postJSON, deleteRequest, APIError } from '../../api'
+import { fetchJSON, deleteRequest } from '../../api'
 import { formatRelativeDate } from '../../utils/date'
 import { Button } from '../../components/ui/Button'
 import {
@@ -14,6 +14,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '../../components/ui/Dialog'
+import { CreateEnvironmentDialog } from '../../components/CreateEnvironmentDialog'
 
 interface Environment {
   id: string
@@ -104,13 +105,10 @@ function EnvironmentSettingsPage() {
         </ul>
       )}
 
-      <CreateEnvironmentModal
+      <CreateEnvironmentDialog
         open={showCreate}
-        slug={slug}
-        onCreated={() => {
-          setShowCreate(false)
-          void queryClient.invalidateQueries({ queryKey })
-        }}
+        projectSlug={slug}
+        onCreated={() => setShowCreate(false)}
         onCancel={() => setShowCreate(false)}
       />
 
@@ -190,174 +188,6 @@ function EnvironmentEmptyState({ onCreateClick }: { onCreateClick: () => void })
         {t('environments.new_button')}
       </Button>
     </div>
-  )
-}
-
-const SLUG_RE = /^[a-z0-9][a-z0-9-]*$/
-const MAX_SLUG_LENGTH = 128
-
-function slugify(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '')
-    .replace(/^-+|-+$/g, '')
-}
-
-function validateSlug(slug: string, t: (k: string, opts?: Record<string, unknown>) => string): string | null {
-  if (slug.length === 0) return null
-  if (slug.length > MAX_SLUG_LENGTH) return t('environments.slug_too_long', { max: MAX_SLUG_LENGTH })
-  if (!SLUG_RE.test(slug)) return t('environments.slug_invalid')
-  return null
-}
-
-
-function CreateEnvironmentModal({
-  open,
-  slug,
-  onCreated,
-  onCancel,
-}: {
-  open: boolean
-  slug: string
-  onCreated: () => void
-  onCancel: () => void
-}) {
-  const { t } = useTranslation('projects')
-  const [name, setName] = useState('')
-  const [envSlug, setEnvSlug] = useState('')
-  const [slugTouched, setSlugTouched] = useState(false)
-  const [slugError, setSlugError] = useState<string | null>(null)
-  const [serverError, setServerError] = useState<string | null>(null)
-
-  const createMutation = useMutation({
-    mutationFn: () =>
-      postJSON(`/api/v1/projects/${slug}/environments`, { name, slug: envSlug }),
-    onSuccess: () => onCreated(),
-    onError: (err) => {
-      if (err instanceof APIError) {
-        if (err.status === 409 || err.code === 'conflict') {
-          setSlugError(t('environments.slug_conflict'))
-          return
-        }
-        if (err.status === 400 && err.code === 'validation_error') {
-          setSlugError(err.message)
-          return
-        }
-      }
-      setServerError(
-        err instanceof APIError ? err.message : t('environments.server_error'),
-      )
-    },
-  })
-
-  function handleNameChange(value: string) {
-    setName(value)
-    if (!slugTouched) {
-      const generated = slugify(value)
-      setEnvSlug(generated)
-      setSlugError(validateSlug(generated, t))
-    }
-  }
-
-  function handleSlugChange(value: string) {
-    setEnvSlug(value)
-    setSlugTouched(true)
-    setSlugError(null)
-    setServerError(null)
-  }
-
-  function handleSlugBlur() {
-    setSlugError(validateSlug(envSlug, t))
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!name.trim()) return
-    const err = validateSlug(envSlug, t)
-    if (err) {
-      setSlugError(err)
-      return
-    }
-    if (!envSlug) {
-      setSlugError(t('environments.slug_required'))
-      return
-    }
-    setServerError(null)
-    createMutation.mutate()
-  }
-
-  function handleOpenChange(isOpen: boolean) {
-    if (!isOpen) onCancel()
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t('environments.create_title')}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="env-name" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-              {t('environments.name_label')}
-            </label>
-            <input
-              id="env-name"
-              type="text"
-              autoFocus
-              value={name}
-              onChange={(e) => handleNameChange(e.target.value)}
-              placeholder={t('environments.name_placeholder')}
-              className="w-full text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
-            />
-          </div>
-          <div>
-            <label htmlFor="env-slug" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-              {t('environments.slug_label')}
-            </label>
-            <input
-              id="env-slug"
-              type="text"
-              value={envSlug}
-              onChange={(e) => handleSlugChange(e.target.value)}
-              onBlur={handleSlugBlur}
-              placeholder={t('environments.slug_placeholder')}
-              aria-invalid={!!slugError}
-              aria-describedby={slugError ? 'env-slug-error' : undefined}
-              className={`w-full font-mono text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border rounded px-2 py-1.5 focus:outline-none focus:ring-2 ${
-                slugError
-                  ? 'border-red-300 focus:ring-red-500'
-                  : 'border-gray-300 dark:border-gray-600 focus:ring-[var(--color-accent)]'
-              }`}
-            />
-            {slugError && (
-              <p id="env-slug-error" className="mt-1 text-xs text-red-600 dark:text-red-400">
-                {slugError}
-              </p>
-            )}
-          </div>
-          {serverError && <p className="text-xs text-red-600 dark:text-red-400">{serverError}</p>}
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onCancel}
-              disabled={createMutation.isPending}
-            >
-              {t('actions.cancel', { ns: 'common' })}
-            </Button>
-            <Button
-              type="submit"
-              loading={createMutation.isPending}
-              disabled={!!slugError || !name.trim() || !envSlug}
-            >
-              {t('environments.create_button')}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
   )
 }
 
