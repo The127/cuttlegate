@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 
@@ -67,7 +68,7 @@ function IconSettings() {
 
 interface NavItemProps {
   to: string
-  icon: React.ReactNode
+  icon: ReactNode
   label: string
   isActive: boolean
 }
