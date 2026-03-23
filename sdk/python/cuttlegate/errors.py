@@ -52,3 +52,19 @@ class ServerError(SDKError):
     def __init__(self, status_code: int) -> None:
         self.status_code = status_code
         super().__init__(f"cuttlegate: server error {status_code}")
+
+
+class InvalidResponseError(SDKError):
+    """Raised when a response body cannot be parsed or has an unexpected shape.
+
+    Used by the streaming client when a ``data:`` line contains malformed JSON
+    or an SSE event cannot be decoded. Non-fatal in streaming context — the
+    stream continues after calling ``on_error``.
+
+    ``message`` describes the parse failure. No request/response body is
+    included to avoid inadvertent logging of sensitive content.
+    """
+
+    def __init__(self, message: str) -> None:
+        self.message = message
+        super().__init__(f"cuttlegate: invalid response: {message}")

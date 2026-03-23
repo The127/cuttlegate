@@ -9,16 +9,30 @@ Public exports:
     EvalContext               — evaluation context (user_id + attributes)
     EvalResult                — single flag evaluation result
 
+    connect_stream            — start SSE flag state stream (background daemon thread)
+    StreamConnection          — handle returned by connect_stream; call close() to stop
+    FlagChangeEvent           — dataclass for flag.state_changed SSE events
+
     ConfigError               — raised at construction for invalid config
     AuthError                 — raised on 401/403 from the server
     FlagNotFoundError         — raised when a flag key is absent from a 200 response
     NotFoundError             — alias for FlagNotFoundError (deprecated name)
     ServerError               — raised on 5xx from the server
+    InvalidResponseError      — raised on malformed JSON or unexpected SSE event shape
     SDKError                  — base class for all SDK-specific errors
 """
 
 from .client import CuttlegateClient
-from .errors import AuthError, ConfigError, FlagNotFoundError, NotFoundError, SDKError, ServerError
+from .errors import (
+    AuthError,
+    ConfigError,
+    FlagNotFoundError,
+    InvalidResponseError,
+    NotFoundError,
+    SDKError,
+    ServerError,
+)
+from .streaming import FlagChangeEvent, StreamConnection, connect_stream
 from .testing import MockCuttlegateClient
 from .types import CuttlegateClientProtocol, CuttlegateConfig, EvalContext, EvalResult
 
@@ -29,10 +43,14 @@ __all__ = [
     "CuttlegateConfig",
     "EvalContext",
     "EvalResult",
+    "connect_stream",
+    "StreamConnection",
+    "FlagChangeEvent",
     "ConfigError",
     "AuthError",
     "FlagNotFoundError",
     "NotFoundError",
     "ServerError",
+    "InvalidResponseError",
     "SDKError",
 ]
