@@ -1,6 +1,6 @@
 # Frontend Index
 
-_Generated 2026-03-23 23:29 UTC. Read this at session start for frontend orientation._
+_Generated 2026-03-23 23:56 UTC. Read this at session start for frontend orientation._
 
 ## Routes (`web/src/routes/`)
 
@@ -62,6 +62,7 @@ _Generated 2026-03-23 23:29 UTC. Read this at session start for frontend orienta
 
 | Hook | File | Description |
 |---|---|---|
+| `useDocumentTitle` | `useDocumentTitle.ts` | — |
 | `useFlagSSE` | `useFlagSSE.ts` | — |
 | `useProjectRole` | `useProjectRole.ts` | — |
 
