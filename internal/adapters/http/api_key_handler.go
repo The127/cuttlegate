@@ -15,6 +15,7 @@ type apiKeyService interface {
 	Create(ctx context.Context, projectID, environmentID, name string, tier domain.ToolCapabilityTier) (*app.APIKeyCreateResult, error)
 	List(ctx context.Context, projectID, environmentID string) ([]app.APIKeyView, error)
 	Revoke(ctx context.Context, id string) error
+	UpdateCapabilityTier(ctx context.Context, id string, tier domain.ToolCapabilityTier) (*app.APIKeyView, error)
 }
 
 // APIKeyHandler handles HTTP requests for API key management.
@@ -37,6 +38,8 @@ func (h *APIKeyHandler) RegisterRoutes(mux *http.ServeMux, auth func(http.Handle
 		auth(http.HandlerFunc(h.list)))
 	mux.Handle("DELETE /api/v1/projects/{slug}/environments/{env_slug}/api-keys/{key_id}",
 		auth(http.HandlerFunc(h.revoke)))
+	mux.Handle("PATCH /api/v1/projects/{slug}/environments/{env_slug}/api-keys/{key_id}",
+		auth(http.HandlerFunc(h.updateTier)))
 }
 
 type apiKeyResponse struct {
@@ -134,4 +137,37 @@ func (h *APIKeyHandler) revoke(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *APIKeyHandler) updateTier(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		CapabilityTier string `json:"capability_tier"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		WriteError(w, newBadRequest("invalid request body"))
+		return
+	}
+
+	tier := domain.ToolCapabilityTier(body.CapabilityTier)
+	if !tier.Valid() {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"invalid_capability_tier","message":"capability_tier must be one of: read, write, destructive"}`))
+		return
+	}
+
+	view, err := h.svc.UpdateCapabilityTier(r.Context(), r.PathValue("key_id"), tier)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, apiKeyResponse{
+		ID:             view.ID,
+		Name:           view.Name,
+		DisplayPrefix:  view.DisplayPrefix,
+		CapabilityTier: view.CapabilityTier,
+		CreatedAt:      view.CreatedAt.UTC(),
+		RevokedAt:      view.RevokedAt,
+	})
 }

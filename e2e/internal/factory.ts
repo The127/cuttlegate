@@ -181,6 +181,31 @@ export async function createAPIKey(
   return resp.json() as Promise<APIKey>;
 }
 
+/**
+ * Updates the capability tier of an existing API key.
+ *
+ * @param token - OIDC JWT for an admin user
+ * @param projectSlug - project slug
+ * @param envSlug - environment slug
+ * @param keyId - API key ID
+ * @param capabilityTier - new tier: 'read' | 'write' | 'destructive'
+ */
+export async function updateAPIKeyTier(
+  token: string,
+  projectSlug: string,
+  envSlug: string,
+  keyId: string,
+  capabilityTier: string,
+): Promise<APIKey> {
+  const resp = await apiRequest(
+    'PATCH',
+    `/api/v1/projects/${projectSlug}/environments/${envSlug}/api-keys/${keyId}`,
+    token,
+    { capability_tier: capabilityTier },
+  );
+  return resp.json() as Promise<APIKey>;
+}
+
 export interface AuditEntry {
   id: string;
   occurred_at: string;

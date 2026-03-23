@@ -56,6 +56,16 @@ func (f *fakeAPIKeyService) List(_ context.Context, projectID, environmentID str
 
 func (f *fakeAPIKeyService) Revoke(_ context.Context, id string) error { return nil }
 
+func (f *fakeAPIKeyService) UpdateCapabilityTier(_ context.Context, id string, tier domain.ToolCapabilityTier) (*app.APIKeyView, error) {
+	return &app.APIKeyView{
+		ID:             id,
+		Name:           "test-key",
+		DisplayPrefix:  "abcd1234",
+		CapabilityTier: string(tier),
+		CreatedAt:      time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC),
+	}, nil
+}
+
 func newAPIKeyMux(svc *fakeAPIKeyService, auth func(http.Handler) http.Handler) *http.ServeMux {
 	resolver := newFakeResolver("acme")
 	envs := &fakeEnvResolver{envs: map[string]*domain.Environment{

@@ -36,3 +36,6 @@ var ErrLastVariant = errors.New("cannot remove the last variant")
 
 // ErrPriorityConflict is returned when a rule's priority collides with an existing rule in the same flag+environment.
 var ErrPriorityConflict = errors.New("a rule with this priority already exists")
+
+// ErrKeyRevoked is returned when an operation is attempted on a revoked API key.
+var ErrKeyRevoked = errors.New("key revoked")

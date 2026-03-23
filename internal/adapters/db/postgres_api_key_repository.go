@@ -39,6 +39,24 @@ func (r *PostgresAPIKeyRepository) Create(ctx context.Context, key *domain.APIKe
 	return nil
 }
 
+func (r *PostgresAPIKeyRepository) GetByID(ctx context.Context, id string) (*domain.APIKey, error) {
+	var key domain.APIKey
+	var hashBytes []byte
+	err := r.db.QueryRowContext(ctx,
+		`SELECT id, project_id, environment_id, name, key_hash, display_prefix, capability_tier, created_at, revoked_at
+		 FROM api_keys WHERE id = $1`,
+		id,
+	).Scan(&key.ID, &key.ProjectID, &key.EnvironmentID, &key.Name, &hashBytes, &key.DisplayPrefix, &key.CapabilityTier, &key.CreatedAt, &key.RevokedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, domain.ErrNotFound
+		}
+		return nil, err
+	}
+	copy(key.KeyHash[:], hashBytes)
+	return &key, nil
+}
+
 func (r *PostgresAPIKeyRepository) GetByHash(ctx context.Context, hash [32]byte) (*domain.APIKey, error) {
 	var key domain.APIKey
 	var hashBytes []byte
@@ -85,6 +103,24 @@ func (r *PostgresAPIKeyRepository) Revoke(ctx context.Context, id string) error 
 	res, err := r.db.ExecContext(ctx,
 		`UPDATE api_keys SET revoked_at = now() WHERE id = $1 AND revoked_at IS NULL`,
 		id,
+	)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return domain.ErrNotFound
+	}
+	return nil
+}
+
+func (r *PostgresAPIKeyRepository) UpdateCapabilityTier(ctx context.Context, id string, tier domain.ToolCapabilityTier) error {
+	res, err := r.db.ExecContext(ctx,
+		`UPDATE api_keys SET capability_tier = $1 WHERE id = $2 AND revoked_at IS NULL`,
+		tier, id,
 	)
 	if err != nil {
 		return err

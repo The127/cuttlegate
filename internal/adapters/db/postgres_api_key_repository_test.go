@@ -299,6 +299,85 @@ func TestPostgresAPIKeyRepository(t *testing.T) {
 		}
 	})
 
+	t.Run("GetByID returns key by primary key", func(t *testing.T) {
+		key := makeKey("key-getid-01", "getid-key", "cg_getbyidplaintext01xxxxxxxxxxx", domain.TierWrite)
+		if err := keyRepo.Create(ctx, key); err != nil {
+			t.Fatalf("Create: %v", err)
+		}
+		got, err := keyRepo.GetByID(ctx, key.ID)
+		if err != nil {
+			t.Fatalf("GetByID: %v", err)
+		}
+		if got.ID != key.ID {
+			t.Errorf("ID: got %q, want %q", got.ID, key.ID)
+		}
+		if got.CapabilityTier != domain.TierWrite {
+			t.Errorf("CapabilityTier: got %q, want %q", got.CapabilityTier, domain.TierWrite)
+		}
+	})
+
+	t.Run("GetByID returns ErrNotFound for unknown ID", func(t *testing.T) {
+		_, err := keyRepo.GetByID(ctx, "00000000-0000-0000-0000-nonexistent1")
+		if !errors.Is(err, domain.ErrNotFound) {
+			t.Errorf("expected ErrNotFound, got %v", err)
+		}
+	})
+
+	t.Run("UpdateCapabilityTier changes tier on active key", func(t *testing.T) {
+		key := makeKey("key-uptier-01", "uptier-key", "cg_uptierplaintext01xxxxxxxxxxx", domain.TierRead)
+		if err := keyRepo.Create(ctx, key); err != nil {
+			t.Fatalf("Create: %v", err)
+		}
+		if err := keyRepo.UpdateCapabilityTier(ctx, key.ID, domain.TierDestructive); err != nil {
+			t.Fatalf("UpdateCapabilityTier: %v", err)
+		}
+		got, err := keyRepo.GetByID(ctx, key.ID)
+		if err != nil {
+			t.Fatalf("GetByID: %v", err)
+		}
+		if got.CapabilityTier != domain.TierDestructive {
+			t.Errorf("CapabilityTier: got %q, want %q", got.CapabilityTier, domain.TierDestructive)
+		}
+	})
+
+	t.Run("UpdateCapabilityTier returns ErrNotFound for revoked key", func(t *testing.T) {
+		key := makeKey("key-uptier-02", "uptier-revoked", "cg_uptierplaintext02xxxxxxxxxxx", domain.TierWrite)
+		if err := keyRepo.Create(ctx, key); err != nil {
+			t.Fatalf("Create: %v", err)
+		}
+		if err := keyRepo.Revoke(ctx, key.ID); err != nil {
+			t.Fatalf("Revoke: %v", err)
+		}
+		err := keyRepo.UpdateCapabilityTier(ctx, key.ID, domain.TierRead)
+		if !errors.Is(err, domain.ErrNotFound) {
+			t.Errorf("expected ErrNotFound for revoked key, got %v", err)
+		}
+	})
+
+	t.Run("UpdateCapabilityTier returns ErrNotFound for unknown ID", func(t *testing.T) {
+		err := keyRepo.UpdateCapabilityTier(ctx, "00000000-0000-0000-0000-nonexistent2", domain.TierRead)
+		if !errors.Is(err, domain.ErrNotFound) {
+			t.Errorf("expected ErrNotFound, got %v", err)
+		}
+	})
+
+	t.Run("UpdateCapabilityTier idempotent — same tier", func(t *testing.T) {
+		key := makeKey("key-uptier-03", "uptier-idem", "cg_uptierplaintext03xxxxxxxxxxx", domain.TierWrite)
+		if err := keyRepo.Create(ctx, key); err != nil {
+			t.Fatalf("Create: %v", err)
+		}
+		if err := keyRepo.UpdateCapabilityTier(ctx, key.ID, domain.TierWrite); err != nil {
+			t.Fatalf("UpdateCapabilityTier same tier: %v", err)
+		}
+		got, err := keyRepo.GetByID(ctx, key.ID)
+		if err != nil {
+			t.Fatalf("GetByID: %v", err)
+		}
+		if got.CapabilityTier != domain.TierWrite {
+			t.Errorf("CapabilityTier: got %q, want %q", got.CapabilityTier, domain.TierWrite)
+		}
+	})
+
 	t.Run("capability_tier defaults to read when column default applies", func(t *testing.T) {
 		// Insert directly via SQL omitting capability_tier — validates the DEFAULT 'read' clause.
 		defaultHash := sha256.Sum256([]byte("cg_defaulttiertestxxxxxxxxxxxxxxxxx"))
