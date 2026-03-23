@@ -6,9 +6,11 @@ This guide walks through connecting an AI agent (Claude Desktop, Cursor, or any 
 
 ## Prerequisites
 
-- A running Cuttlegate instance with a database configured (`DATABASE_URL` set)
+- A running Cuttlegate instance with a database configured (`DATABASE_URL` set). Build the server binary with `just build` (output: `build/server`), or use the Docker Compose stack.
 - An API key scoped to a project and environment — created via the Cuttlegate API or UI (see section 2)
 - An MCP host (Claude Desktop, Cursor, or any client supporting MCP HTTP+SSE transport)
+
+See `docs/configuration.md` for a full reference of environment variables including `MCP_ADDR`.
 
 ---
 
