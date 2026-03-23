@@ -137,7 +137,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Build linux/amd64 server binary
-        run: GOOS=linux GOARCH=amd64 go build -o build/server ./cmd/server
+        run: mkdir -p build && GOOS=linux GOARCH=amd64 go build -o build/server ./cmd/server
 
       - name: Log in to GHCR
         if: startsWith(github.ref, 'refs/tags/')
