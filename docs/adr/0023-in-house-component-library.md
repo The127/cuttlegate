@@ -31,5 +31,5 @@ The library currently includes: `Button`, `StatusBadge`, `DataTable`, `CopyableC
 - New UI primitives are written in-house. Before writing a new component, check `web/src/components/ui/` — the primitive may already exist.
 - For components with non-trivial keyboard/focus behaviour (combobox, dialog, tooltip, popover), prefer a Radix primitive as the unstyled base rather than implementing ARIA patterns from scratch.
 - No shadcn/ui, MUI, Ant Design, or Chakra UI. If a PR introduces one of these as a dependency, it requires a new ADR.
-- Design tokens (`web/src/tokens.css` or equivalent) are the single source of truth for colour, spacing, and typography. Components must use tokens, not hardcoded values.
+- Design tokens (`web/src/styles.css` — the `@theme {}` block) are the single source of truth for colour, spacing, and typography. Components must use tokens, not hardcoded values.
 - Accessibility (WCAG 2.1 AA) is the component author's responsibility. The axe-core integration in the frontend test harness (#137) is the gate.
