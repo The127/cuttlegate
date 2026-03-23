@@ -1,6 +1,6 @@
 # Frontend Index
 
-_Generated 2026-03-23 20:06 UTC. Read this at session start for frontend orientation._
+_Generated 2026-03-23 21:16 UTC. Read this at session start for frontend orientation._
 
 ## Routes (`web/src/routes/`)
 
@@ -27,12 +27,13 @@ _Generated 2026-03-23 20:06 UTC. Read this at session start for frontend orienta
 
 | Component | File | Description |
 |---|---|---|
-| `Breadcrumbs` | `Breadcrumbs.tsx` | — |
+| `CreateEnvironmentDialog` | `CreateEnvironmentDialog.tsx` | — |
 | `useOpenCreateProjectDialog` | `CreateProjectDialog.tsx` | — |
 | `CreateProjectDialogProvider` | `CreateProjectDialog.tsx` | — |
 | `FlagAnalyticsPanel` | `FlagAnalyticsPanel.tsx` | — |
 | `ProjectSwitcher` | `ProjectSwitcher.tsx` | — |
 | `PromoteDialog` | `PromoteDialog.tsx` | — |
+| `Sidebar` | `Sidebar.tsx` | — |
 | `Button` | `ui/Button.tsx` | — |
 | `CopyableCode` | `ui/CopyableCode.tsx` | — |
 | `DataTable` | `ui/DataTable.tsx` | — |
