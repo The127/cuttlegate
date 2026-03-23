@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { postJSON, APIError } from '../api'
-import { Button, Select, SelectItem } from './ui'
+import { Button, Select, SelectItem, Dialog, DialogContent, DialogTitle } from './ui'
 
 export interface FlagPromotionDiff {
   flag_key: string
@@ -29,6 +29,12 @@ interface PromoteDialogProps {
   flagKey?: string
   /** All environments in the project, used to populate the target dropdown. */
   environments: Environment[]
+  /**
+   * Controls whether the dialog is open. Defaults to true so callers that use
+   * conditional rendering (`{condition && <PromoteDialog />}`) continue to work
+   * without changes.
+   */
+  open?: boolean
   onClose: () => void
   /** Called after a successful promotion so the caller can invalidate queries. */
   onSuccess: () => void
@@ -42,6 +48,7 @@ export function PromoteDialog({
   sourceEnvSlug,
   flagKey,
   environments,
+  open = true,
   onClose,
   onSuccess,
 }: PromoteDialogProps) {
@@ -103,17 +110,9 @@ export function PromoteDialog({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="promote-dialog-title"
-    >
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} aria-hidden="true" />
-      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
-        <h2 id="promote-dialog-title" className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          {dialogTitle}
-        </h2>
+    <Dialog open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose() }}>
+      <DialogContent>
+        <DialogTitle>{dialogTitle}</DialogTitle>
 
         {step === 'select' ? (
           <SelectStep
@@ -128,8 +127,8 @@ export function PromoteDialog({
         ) : (
           <ResultStep diffs={diffs} onClose={onClose} />
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -153,7 +152,7 @@ function SelectStep({
   const { t } = useTranslation('flags')
   return (
     <>
-      <div className="mb-4">
+      <div className="mb-4 mt-4">
         <label
           className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
         >
@@ -205,7 +204,7 @@ function ResultStep({
   const { t } = useTranslation('flags')
   return (
     <>
-      <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">{t('promote.result_title')}</p>
+      <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3 mt-4">{t('promote.result_title')}</p>
       <ul className="space-y-2 max-h-64 overflow-y-auto mb-4">
         {diffs.map((diff) => (
           <DiffRow key={diff.flag_key} diff={diff} />
@@ -233,7 +232,7 @@ function DiffRow({ diff }: { diff: FlagPromotionDiff }) {
             <span className={diff.enabled_before ? 'text-green-700 dark:text-green-300' : 'text-gray-500 dark:text-gray-400'}>
               {diff.enabled_before ? t('promote.result_enabled_on') : t('promote.result_enabled_off')}
             </span>
-            {' → '}
+            {' \u2192 '}
             <span className={diff.enabled_after ? 'text-green-700 dark:text-green-300' : 'text-gray-500 dark:text-gray-400'}>
               {diff.enabled_after ? t('promote.result_enabled_on') : t('promote.result_enabled_off')}
             </span>

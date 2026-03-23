@@ -14,3 +14,14 @@ export { DataTable } from './DataTable'
 export type { DataTableProps, ColumnDef } from './DataTable'
 export { CopyableCode } from './CopyableCode'
 export type { CopyableCodeProps } from './CopyableCode'
+export {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+  DialogCloseButton,
+} from './Dialog'

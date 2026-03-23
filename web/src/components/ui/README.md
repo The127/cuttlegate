@@ -63,3 +63,7 @@ Native select is acceptable and preferred in that context.
 
 See `docs/adr/0015-radix-select-as-only-radix-primitive.md` for the decision record on why
 `@radix-ui/react-select` is the only Radix package used.
+
+| Modal / dialog | `<Dialog>` + `<DialogContent>` + `<DialogTitle>` (and optional sub-parts) |
+
+`Dialog` is backed by `@radix-ui/react-dialog` (added Sprint 15, #242) — it provides focus trapping, Escape-to-close, overlay-click-to-close, and correct ARIA roles without custom event listeners. `PromoteDialog` and `CreateProjectDialog` use it internally. ADR 0015 anticipated this addition.

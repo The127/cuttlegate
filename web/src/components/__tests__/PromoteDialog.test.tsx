@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { APIError } from '../../api'
@@ -230,11 +230,11 @@ describe('PromoteDialog', () => {
     })
   })
 
-  // @edge: clicking backdrop calls onClose
-  it('calls onClose when backdrop is clicked', async () => {
+  // @edge: Escape key calls onClose (backdrop dismiss is handled by Radix internally)
+  it('calls onClose when Escape is pressed', () => {
     render(<Wrapper><PromoteDialog {...defaultProps} /></Wrapper>)
-    const backdrop = document.querySelector('[aria-hidden="true"]') as HTMLElement
-    await userEvent.click(backdrop)
+    const dialog = screen.getByRole('dialog')
+    fireEvent.keyDown(dialog, { key: 'Escape', bubbles: true })
     expect(defaultProps.onClose).toHaveBeenCalled()
   })
 
