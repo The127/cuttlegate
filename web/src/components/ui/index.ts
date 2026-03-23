@@ -14,6 +14,8 @@ export { DataTable } from './DataTable'
 export type { DataTableProps, ColumnDef } from './DataTable'
 export { CopyableCode } from './CopyableCode'
 export type { CopyableCodeProps } from './CopyableCode'
+export { Textarea } from './Textarea'
+export type { TextareaProps } from './Textarea'
 export {
   Dialog,
   DialogTrigger,

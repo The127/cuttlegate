@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react'
 import { renderWithAxe } from '../../../test/renderWithAxe'
 import { FormField } from '../FormField'
 import { Input } from '../Input'
+import { Textarea } from '../Textarea'
 
 describe('FormField', () => {
   // @happy: auto-wire label to Input without explicit ids
@@ -80,11 +81,11 @@ describe('FormField', () => {
     expect(axeResults).toHaveNoViolations()
   })
 
-  // @edge: FormField wrapping a native textarea — manual wiring still required for non-Input children
-  it('passes axe check — native textarea with manual id wiring', async () => {
+  // @happy: FormField wrapping Textarea — auto-wiring works the same as Input
+  it('passes axe check — Textarea auto-wired via FormField context', async () => {
     const { axeResults } = await renderWithAxe(
-      <FormField label="Notes" htmlFor="notes">
-        <textarea id="notes" />
+      <FormField label="Notes">
+        <Textarea />
       </FormField>,
     )
     expect(axeResults).toHaveNoViolations()
