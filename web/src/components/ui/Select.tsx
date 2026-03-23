@@ -15,7 +15,7 @@ export const SelectItem = forwardRef<HTMLDivElement, SelectItemProps>(
       ref={ref}
       value={value}
       disabled={disabled}
-      className="relative flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-primary)] rounded cursor-default select-none data-[highlighted]:bg-[var(--color-surface)] data-[highlighted]:outline-none data-[disabled]:opacity-50"
+      className="relative flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-primary)] rounded cursor-default select-none data-[highlighted]:bg-[var(--color-surface-elevated)] data-[highlighted]:outline-none data-[disabled]:opacity-50"
     >
       <RadixSelect.ItemText>{children}</RadixSelect.ItemText>
       <RadixSelect.ItemIndicator className="absolute left-1 text-[var(--color-accent)]">
@@ -56,7 +56,7 @@ export function Select({
       <RadixSelect.Trigger
         aria-label={ariaLabel}
         aria-labelledby={ariaLabelledby}
-        className={`inline-flex items-center justify-between gap-1 text-sm border border-[var(--color-border)] rounded px-2 py-1.5 bg-[var(--color-surface)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-[var(--color-accent)] disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+        className={`inline-flex items-center justify-between gap-1 text-sm border border-[var(--color-border)] rounded-[var(--radius-md)] px-2 py-1.5 bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)] focus:shadow-[0_0_0_2px_rgba(79,124,255,0.4)] disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
       >
         <RadixSelect.Value placeholder={placeholder} />
         <RadixSelect.Icon className="text-[var(--color-text-muted)] ml-1">
@@ -69,7 +69,7 @@ export function Select({
         <RadixSelect.Content
           position="popper"
           sideOffset={4}
-          className="z-50 min-w-[8rem] overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] shadow-md"
+          className="z-50 min-w-[8rem] overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-md"
         >
           <RadixSelect.Viewport className="p-1">{children}</RadixSelect.Viewport>
         </RadixSelect.Content>

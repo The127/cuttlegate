@@ -15,14 +15,14 @@ const DANGER_CLASSES =
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    'bg-[var(--color-accent)] text-white hover:opacity-90 focus:ring-[var(--color-accent)] disabled:opacity-50 disabled:cursor-not-allowed',
+    'bg-[linear-gradient(135deg,var(--color-accent-start),var(--color-accent-end))] text-white hover:shadow-[0_0_16px_rgba(0,212,170,0.25)] focus:ring-[var(--color-accent)] disabled:opacity-50 disabled:cursor-not-allowed',
   secondary:
     'bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] border border-[var(--color-border)] hover:border-[var(--color-border-hover)] focus:ring-[var(--color-accent)] disabled:opacity-50 disabled:cursor-not-allowed',
   ghost:
-    'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] focus:ring-[var(--color-accent)] disabled:opacity-50 disabled:cursor-not-allowed',
+    'bg-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-elevated)] hover:text-[var(--color-text-primary)] focus:ring-[var(--color-accent)] disabled:opacity-50 disabled:cursor-not-allowed',
   danger: DANGER_CLASSES,
   'danger-outline':
-    'text-[var(--color-status-error)] border border-[var(--color-border)] hover:border-[var(--color-status-error)] focus:ring-[var(--color-status-error)] disabled:opacity-50 disabled:cursor-not-allowed',
+    'bg-transparent text-[#f87171] border border-[var(--color-border)] hover:border-[#f87171] focus:ring-[var(--color-status-error)] disabled:opacity-50 disabled:cursor-not-allowed',
   // destructive is a semantic alias for danger — same visual style
   destructive: DANGER_CLASSES,
 }
@@ -50,7 +50,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       ref={ref}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={`inline-flex items-center justify-center gap-1.5 font-medium rounded focus:outline-none focus:ring-2 ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      className={`inline-flex items-center justify-center gap-1.5 font-medium rounded-[var(--radius-md)] focus:outline-none focus:ring-2 ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
       {...props}
     >
       {loading && (

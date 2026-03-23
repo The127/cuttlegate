@@ -31,8 +31,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         id={id}
         aria-invalid={invalid || undefined}
         aria-describedby={ariaDescribedBy}
-        className={`block w-full rounded border px-3 py-2 text-sm bg-[var(--color-surface)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-[var(--color-accent)] ${
-          invalid ? 'border-[var(--color-status-error)]' : 'border-[var(--color-border)]'
+        className={`block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)] focus:shadow-[0_0_0_2px_rgba(79,124,255,0.4)] ${
+          invalid
+            ? 'border-[#f87171] focus:shadow-[0_0_0_2px_rgba(248,113,113,0.4)]'
+            : 'border-[var(--color-border)]'
         } ${className}`}
         {...props}
       />

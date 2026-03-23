@@ -91,13 +91,15 @@ export function DataTable<T>({
                       : 'none'
                     : undefined
                 }
-                className="px-4 py-2.5 text-xs font-medium text-[var(--color-text-secondary)] font-medium whitespace-nowrap"
+                className={`px-4 py-2.5 text-xs font-medium text-[var(--color-text-secondary)] whitespace-nowrap ${
+                  sort?.key === col.key ? 'bg-[rgba(79,124,255,0.08)]' : ''
+                }`}
               >
                 {col.sortable ? (
                   <button
                     type="button"
                     onClick={() => toggleSort(col.key)}
-                    className="inline-flex items-center gap-1 hover:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
+                    className="inline-flex items-center gap-1 hover:text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
                   >
                     {col.header}
                     <SortIcon active={sort?.key === col.key} dir={sort?.dir} />
@@ -137,9 +139,9 @@ export function DataTable<T>({
                     : undefined
                 }
                 tabIndex={onRowClick ? 0 : undefined}
-                className={`border-b border-[var(--color-border)] last:border-0 ${
+                className={`bg-[var(--color-surface)] border-b border-[var(--color-border)] last:border-0 ${
                   onRowClick
-                    ? 'cursor-pointer hover:bg-[var(--color-surface)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--color-accent)]'
+                    ? 'cursor-pointer hover:bg-[var(--color-surface-elevated)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--color-accent)]'
                     : ''
                 }`}
               >

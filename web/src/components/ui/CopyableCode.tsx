@@ -55,7 +55,7 @@ export function CopyableCode({ value, 'aria-label': ariaLabel, className = '' }:
 function ClipboardIcon() {
   return (
     <svg
-      className="w-3.5 h-3.5 shrink-0 text-[var(--color-text-muted)]"
+      className="w-3.5 h-3.5 shrink-0"
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 20 20"
       fill="currentColor"

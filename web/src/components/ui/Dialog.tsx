@@ -33,10 +33,10 @@ interface DialogContentProps {
 export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
   ({ children, className = '' }, ref) => (
     <RadixDialog.Portal>
-      <RadixDialog.Overlay className="fixed inset-0 z-40 bg-black/65" />
+      <RadixDialog.Overlay className="fixed inset-0 z-40 bg-[rgba(0,0,0,0.65)]" />
       <RadixDialog.Content
         ref={ref}
-        className={`fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl p-6 focus:outline-none ${className}`}
+        className={`fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-lg)] border border-[var(--color-border-hover)] bg-[var(--color-surface)] backdrop-blur-md shadow-[0_24px_48px_rgba(0,0,0,0.5)] p-6 focus:outline-none ${className}`}
       >
         {children}
       </RadixDialog.Content>
