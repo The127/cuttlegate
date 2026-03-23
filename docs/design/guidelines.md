@@ -253,9 +253,6 @@ For rule and condition empty states: use a dashed border variant:
 <div className="border border-dashed border-gray-200 dark:border-gray-600 rounded-lg px-6 py-10 text-center">
 ```
 
-**BDD edge case:** if a screen has no findings, the audit explicitly records "no findings" —
-the empty state itself counts as a finding of "verified clean". Do not omit screens.
-
 ---
 
 ## 5. Status Badge Rules
