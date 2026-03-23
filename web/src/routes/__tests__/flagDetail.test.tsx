@@ -89,9 +89,17 @@ const MULTI_ENV_HISTORY = {
   next_cursor: null,
 }
 
+const EMPTY_BUCKETS_FIXTURE = {
+  flag_key: 'dark-mode',
+  environment: 'production',
+  window: '7d',
+  bucket_size: 'day',
+  buckets: [],
+}
+
 function mockFetchBase(path: string) {
   if (path.match(/\/environments$/)) return Promise.resolve(ENVS_FIXTURE)
-  if (path.endsWith('/stats')) return Promise.resolve({ last_evaluated_at: null, evaluation_count: 0 })
+  if (path.includes('/stats/buckets')) return Promise.resolve(EMPTY_BUCKETS_FIXTURE)
   if (path.includes('/audit')) return Promise.resolve(EMPTY_HISTORY)
   return Promise.resolve(FLAG_FIXTURE)
 }
@@ -136,8 +144,8 @@ describe('FlagDetailPage', () => {
     expect(results).toHaveNoViolations()
   })
 
-  // @edge: never-evaluated flag shows "Never" not blank in stats section.
-  it('shows Never in stats panel for flag with no evaluations', async () => {
+  // @edge: flag with no evaluations shows analytics empty state.
+  it('shows empty state in analytics panel when flag has no evaluations', async () => {
     const { flagDetailRoute } = await loadFlagDetailPage()
     const FlagDetailPage = flagDetailRoute.options.component
 
@@ -148,15 +156,24 @@ describe('FlagDetailPage', () => {
     })
 
     await waitFor(() => {
-      expect(screen.getAllByText('Never').length).toBeGreaterThan(0)
+      expect(screen.getByText('No evaluations recorded yet')).toBeInTheDocument()
     })
   })
 
-  // @happy: stats section shows count when flag has evaluations.
-  it('shows evaluation count in stats panel', async () => {
+  // @happy: analytics panel renders chart when flag has bucket data.
+  it('renders SVG chart when analytics buckets endpoint returns data', async () => {
+    const BUCKETS_WITH_DATA = {
+      flag_key: 'dark-mode',
+      environment: 'production',
+      window: '7d',
+      bucket_size: 'day',
+      buckets: [
+        { ts: '2026-03-21T00:00:00Z', total: 42, variants: { 'true': 30, 'false': 12 } },
+      ],
+    }
     mockFetchJSON.mockImplementation((path: string) => {
       if (path.match(/\/environments$/)) return Promise.resolve(ENVS_FIXTURE)
-      if (path.endsWith('/stats')) return Promise.resolve({ last_evaluated_at: '2026-03-21T14:00:00Z', evaluation_count: 42 })
+      if (path.includes('/stats/buckets')) return Promise.resolve(BUCKETS_WITH_DATA)
       if (path.includes('/audit')) return Promise.resolve(EMPTY_HISTORY)
       return Promise.resolve(FLAG_FIXTURE)
     })
@@ -171,8 +188,41 @@ describe('FlagDetailPage', () => {
     })
 
     await waitFor(() => {
-      expect(screen.getByText('42')).toBeInTheDocument()
+      expect(screen.getByTestId('analytics-chart')).toBeInTheDocument()
     })
+
+    // aria-label on chart container
+    expect(screen.getByRole('img', { name: /Evaluation chart/i })).toBeInTheDocument()
+    // summary line contains count
+    expect(screen.getByText(/42 evaluations in the last 7d/)).toBeInTheDocument()
+  })
+
+  // @error-path: analytics API error shows error message, no redirect.
+  it('shows error message when analytics buckets endpoint fails', async () => {
+    mockFetchJSON.mockImplementation((path: string) => {
+      if (path.match(/\/environments$/)) return Promise.resolve(ENVS_FIXTURE)
+      if (path.includes('/stats/buckets')) return Promise.reject(new Error('internal_error'))
+      if (path.includes('/audit')) return Promise.resolve(EMPTY_HISTORY)
+      return Promise.resolve(FLAG_FIXTURE)
+    })
+
+    const { flagDetailRoute } = await loadFlagDetailPage()
+    const FlagDetailPage = flagDetailRoute.options.component
+
+    render(<Wrapper><FlagDetailPage /></Wrapper>)
+
+    await waitFor(() => {
+      expect(screen.getByText('Dark Mode')).toBeInTheDocument()
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to load analytics.')).toBeInTheDocument()
+    })
+
+    // No chart rendered
+    expect(screen.queryByTestId('analytics-chart')).not.toBeInTheDocument()
+    // Page remains intact — no redirect
+    expect(screen.getByText('Dark Mode')).toBeInTheDocument()
   })
 })
 
@@ -186,7 +236,7 @@ describe('FlagChangeHistoryPanel', () => {
   it('renders change history table with entries when opened', async () => {
     await renderAndOpenHistory((path: string) => {
       if (path.match(/\/environments$/)) return Promise.resolve(ENVS_FIXTURE)
-      if (path.endsWith('/stats')) return Promise.resolve({ last_evaluated_at: null, evaluation_count: 0 })
+      if (path.includes('/stats/buckets')) return Promise.resolve(EMPTY_BUCKETS_FIXTURE)
       if (path.includes('/audit')) return Promise.resolve(MULTI_ENV_HISTORY)
       return Promise.resolve(FLAG_FIXTURE)
     })
@@ -209,7 +259,7 @@ describe('FlagChangeHistoryPanel', () => {
   it('shows env filter dropdown when 2+ distinct environment values exist', async () => {
     await renderAndOpenHistory((path: string) => {
       if (path.match(/\/environments$/)) return Promise.resolve(ENVS_FIXTURE)
-      if (path.endsWith('/stats')) return Promise.resolve({ last_evaluated_at: null, evaluation_count: 0 })
+      if (path.includes('/stats/buckets')) return Promise.resolve(EMPTY_BUCKETS_FIXTURE)
       if (path.includes('/audit')) return Promise.resolve(MULTI_ENV_HISTORY)
       return Promise.resolve(FLAG_FIXTURE)
     })
@@ -233,7 +283,7 @@ describe('FlagChangeHistoryPanel', () => {
     }
     await renderAndOpenHistory((path: string) => {
       if (path.match(/\/environments$/)) return Promise.resolve(ENVS_FIXTURE)
-      if (path.endsWith('/stats')) return Promise.resolve({ last_evaluated_at: null, evaluation_count: 0 })
+      if (path.includes('/stats/buckets')) return Promise.resolve(EMPTY_BUCKETS_FIXTURE)
       if (path.includes('/audit')) return Promise.resolve(projectScopedHistory)
       return Promise.resolve(FLAG_FIXTURE)
     })
@@ -273,7 +323,7 @@ describe('FlagChangeHistoryPanel', () => {
     let capturedAuditPath = ''
     await renderAndOpenHistory((path: string) => {
       if (path.match(/\/environments$/)) return Promise.resolve(ENVS_FIXTURE)
-      if (path.endsWith('/stats')) return Promise.resolve({ last_evaluated_at: null, evaluation_count: 0 })
+      if (path.includes('/stats/buckets')) return Promise.resolve(EMPTY_BUCKETS_FIXTURE)
       if (path.includes('/audit')) {
         capturedAuditPath = path
         return Promise.resolve({ entries: twentyEntries, next_cursor: null })
@@ -302,7 +352,7 @@ describe('FlagChangeHistoryPanel', () => {
     }
     await renderAndOpenHistory((path: string) => {
       if (path.match(/\/environments$/)) return Promise.resolve(ENVS_FIXTURE)
-      if (path.endsWith('/stats')) return Promise.resolve({ last_evaluated_at: null, evaluation_count: 0 })
+      if (path.includes('/stats/buckets')) return Promise.resolve(EMPTY_BUCKETS_FIXTURE)
       if (path.includes('/audit')) return Promise.resolve(singleEnvHistory)
       return Promise.resolve(FLAG_FIXTURE)
     })
@@ -324,7 +374,7 @@ describe('FlagChangeHistoryPanel', () => {
     }
     await renderAndOpenHistory((path: string) => {
       if (path.match(/\/environments$/)) return Promise.resolve(ENVS_FIXTURE)
-      if (path.endsWith('/stats')) return Promise.resolve({ last_evaluated_at: null, evaluation_count: 0 })
+      if (path.includes('/stats/buckets')) return Promise.resolve(EMPTY_BUCKETS_FIXTURE)
       if (path.includes('/audit')) return Promise.resolve(unknownActionHistory)
       return Promise.resolve(FLAG_FIXTURE)
     })
@@ -341,7 +391,7 @@ describe('FlagChangeHistoryPanel', () => {
   it('shows error state when audit API fails and leaves rest of page intact', async () => {
     await renderAndOpenHistory((path: string) => {
       if (path.match(/\/environments$/)) return Promise.resolve(ENVS_FIXTURE)
-      if (path.endsWith('/stats')) return Promise.resolve({ last_evaluated_at: null, evaluation_count: 0 })
+      if (path.includes('/stats/buckets')) return Promise.resolve(EMPTY_BUCKETS_FIXTURE)
       if (path.includes('/audit')) return Promise.reject(new Error('internal_error'))
       return Promise.resolve(FLAG_FIXTURE)
     })

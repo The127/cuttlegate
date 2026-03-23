@@ -138,6 +138,18 @@
     "action_flag_deleted": "Deleted",
     "action_flag_promoted": "Promoted"
   },
+  "analytics": {
+    "panel_title": "Analytics",
+    "window_7d": "7d",
+    "window_30d": "30d",
+    "empty_state": "No evaluations recorded yet",
+    "load_error": "Failed to load analytics.",
+    "chart_aria_label": "Evaluation chart",
+    "total_evaluations": "{{count}} evaluations in the last {{window}}",
+    "true_label": "True",
+    "false_label": "False",
+    "variant_label": "{{key}}"
+  },
   "promote": {
     "button": "Promote to…",
     "bulk_button": "Promote all →",
