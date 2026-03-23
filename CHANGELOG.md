@@ -61,10 +61,10 @@ pending database migrations with `just migrate-up` (or the Docker Compose
 - **JavaScript/TypeScript SDK** (`sdk/js`) — `CuttlegateClient` with typed
   evaluation methods; `CachedClient` with SSE-backed cache; `useCachedFlag`
   React hook for subscribe-based reactivity; full TypeScript types
-- **Python SDK** (`sdk/python`) — `CuttlegateClient` with `bool_flag`,
-  `string_flag`, `evaluate`, and `evaluate_all` methods; `CachedClient` with
-  SSE-backed cache and daemon thread; `MockCuttlegateClient` for in-process
-  testing; supports Python 3.11+
+- **Python SDK** (`sdk/python`) — `CuttlegateClient` with `bool`, `string`,
+  `evaluate`, and `evaluate_all` methods; `CachedClient` with SSE-backed cache
+  and daemon thread; `MockCuttlegateClient` for in-process testing; supports
+  Python 3.11+
 
 #### MCP Server
 
@@ -126,7 +126,7 @@ pending database migrations with `just migrate-up` (or the Docker Compose
 - Python SDK README with API reference
 - Architecture Decision Records in `docs/adr/` (ADRs 0001–0030)
 
-### Infrastructure
+#### Architecture and Developer Tooling
 
 - Ports and adapters (hexagonal) architecture — `domain`, `app`, `adapters`,
   and `cmd` layers with enforced import direction via `arch_test.go`
