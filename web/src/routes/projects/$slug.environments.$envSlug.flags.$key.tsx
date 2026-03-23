@@ -850,7 +850,7 @@ function HistoryEntryRow({ entry }: { entry: HistoryEntry }) {
   const relative = formatRelativeDate(entry.occurred_at)
 
   return (
-    <tr className="hover:bg-[var(--color-surface)]
+    <tr className="hover:bg-[var(--color-surface)]">
       <td className="px-4 py-3 whitespace-nowrap">
         <time
           dateTime={entry.occurred_at}
