@@ -2,6 +2,7 @@ package app_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -51,6 +52,21 @@ func (r *fakeStatsRepository) GetByFlagEnvironment(_ context.Context, flagID, en
 		return s, nil
 	}
 	return &domain.FlagEvaluationStats{FlagID: flagID, EnvironmentID: environmentID}, nil
+}
+
+// bucketsResult holds the canned result for GetBuckets in tests.
+type fakeStatsRepositoryWithBuckets struct {
+	*fakeStatsRepository
+	buckets []domain.EvaluationBucket
+	bucketErr error
+}
+
+func (r *fakeStatsRepositoryWithBuckets) GetBuckets(_ context.Context, _, _, _ string, _ time.Time, _ string) ([]domain.EvaluationBucket, error) {
+	return r.buckets, r.bucketErr
+}
+
+func (r *fakeStatsRepository) GetBuckets(_ context.Context, _, _, _ string, _ time.Time, _ string) ([]domain.EvaluationBucket, error) {
+	return nil, nil
 }
 
 func newStatsSvc(flagRepo *fakeFlagRepository, statsRepo *fakeStatsRepository) *app.EvaluationStatsService {
@@ -116,5 +132,100 @@ func TestEvaluationStatsService_GetStats_FlagNotFound(t *testing.T) {
 	_, err := svc.GetStats(ctx, "proj-1", "env-1", "no-such-flag")
 	if err == nil {
 		t.Fatal("expected error, got nil")
+	}
+}
+
+// @happy: GetBuckets returns populated view for valid parameters.
+func TestEvaluationStatsService_GetBuckets_Happy(t *testing.T) {
+	ctx := authCtx("viewer-1", domain.RoleViewer)
+	flagRepo := newFakeFlagRepository()
+	seedFlag(t, flagRepo, "flag-id-1", "proj-1", "my-flag")
+
+	now := time.Now().UTC().Truncate(24 * time.Hour)
+	fakeBuckets := []domain.EvaluationBucket{
+		{Timestamp: now.Add(-6 * 24 * time.Hour), Total: 0, Variants: map[string]int64{}},
+		{Timestamp: now.Add(-5 * 24 * time.Hour), Total: 142, Variants: map[string]int64{"enabled": 98, "disabled": 44}},
+		{Timestamp: now.Add(-4 * 24 * time.Hour), Total: 0, Variants: map[string]int64{}},
+		{Timestamp: now.Add(-3 * 24 * time.Hour), Total: 0, Variants: map[string]int64{}},
+		{Timestamp: now.Add(-2 * 24 * time.Hour), Total: 0, Variants: map[string]int64{}},
+		{Timestamp: now.Add(-1 * 24 * time.Hour), Total: 0, Variants: map[string]int64{}},
+		{Timestamp: now, Total: 0, Variants: map[string]int64{}},
+	}
+	statsRepo := &fakeStatsRepositoryWithBuckets{
+		fakeStatsRepository: newFakeStatsRepository(),
+		buckets:             fakeBuckets,
+	}
+
+	svc := app.NewEvaluationStatsService(statsRepo, flagRepo)
+	view, err := svc.GetBuckets(ctx, "proj-1", "env-1", "production", "my-flag", "7d", "day")
+	if err != nil {
+		t.Fatalf("GetBuckets: %v", err)
+	}
+	if view.FlagKey != "my-flag" {
+		t.Errorf("FlagKey: want my-flag, got %q", view.FlagKey)
+	}
+	if view.Window != "7d" {
+		t.Errorf("Window: want 7d, got %q", view.Window)
+	}
+	if view.BucketSize != "day" {
+		t.Errorf("BucketSize: want day, got %q", view.BucketSize)
+	}
+	if len(view.Buckets) != 7 {
+		t.Errorf("Buckets: want 7, got %d", len(view.Buckets))
+	}
+}
+
+// @error-path: invalid window — GetBuckets returns ErrInvalidParameter.
+func TestEvaluationStatsService_GetBuckets_InvalidWindow(t *testing.T) {
+	ctx := authCtx("viewer-1", domain.RoleViewer)
+	flagRepo := newFakeFlagRepository()
+	seedFlag(t, flagRepo, "flag-id-1", "proj-1", "my-flag")
+	statsRepo := newFakeStatsRepository()
+
+	svc := app.NewEvaluationStatsService(statsRepo, flagRepo)
+	_, err := svc.GetBuckets(ctx, "proj-1", "env-1", "production", "my-flag", "45d", "day")
+	if !errors.Is(err, app.ErrInvalidParameter) {
+		t.Errorf("want ErrInvalidParameter, got %v", err)
+	}
+}
+
+// @error-path: hour bucket with window > 7d — returns ErrInvalidParameter.
+func TestEvaluationStatsService_GetBuckets_HourBucketInvalidWindow(t *testing.T) {
+	ctx := authCtx("viewer-1", domain.RoleViewer)
+	flagRepo := newFakeFlagRepository()
+	seedFlag(t, flagRepo, "flag-id-1", "proj-1", "my-flag")
+	statsRepo := newFakeStatsRepository()
+
+	svc := app.NewEvaluationStatsService(statsRepo, flagRepo)
+	_, err := svc.GetBuckets(ctx, "proj-1", "env-1", "production", "my-flag", "30d", "hour")
+	if !errors.Is(err, app.ErrInvalidParameter) {
+		t.Errorf("want ErrInvalidParameter, got %v", err)
+	}
+}
+
+// @error-path: invalid bucket size — returns ErrInvalidParameter.
+func TestEvaluationStatsService_GetBuckets_InvalidBucketSize(t *testing.T) {
+	ctx := authCtx("viewer-1", domain.RoleViewer)
+	flagRepo := newFakeFlagRepository()
+	seedFlag(t, flagRepo, "flag-id-1", "proj-1", "my-flag")
+	statsRepo := newFakeStatsRepository()
+
+	svc := app.NewEvaluationStatsService(statsRepo, flagRepo)
+	_, err := svc.GetBuckets(ctx, "proj-1", "env-1", "production", "my-flag", "7d", "week")
+	if !errors.Is(err, app.ErrInvalidParameter) {
+		t.Errorf("want ErrInvalidParameter, got %v", err)
+	}
+}
+
+// @error-path: unknown flag — GetBuckets returns ErrNotFound.
+func TestEvaluationStatsService_GetBuckets_FlagNotFound(t *testing.T) {
+	ctx := authCtx("viewer-1", domain.RoleViewer)
+	flagRepo := newFakeFlagRepository()
+	statsRepo := newFakeStatsRepository()
+
+	svc := app.NewEvaluationStatsService(statsRepo, flagRepo)
+	_, err := svc.GetBuckets(ctx, "proj-1", "env-1", "production", "no-such-flag", "7d", "day")
+	if !errors.Is(err, domain.ErrNotFound) {
+		t.Errorf("want ErrNotFound, got %v", err)
 	}
 }

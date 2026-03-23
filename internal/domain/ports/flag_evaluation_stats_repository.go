@@ -18,4 +18,9 @@ type FlagEvaluationStatsRepository interface {
 	// environment. Returns a zero-count stats struct if no evaluations have
 	// been recorded — never returns ErrNotFound.
 	GetByFlagEnvironment(ctx context.Context, flagID, environmentID string) (*domain.FlagEvaluationStats, error)
+
+	// GetBuckets returns time-bucketed evaluation counts for the given flag in a
+	// project+environment, starting from since. bucketSize must be "day" or "hour".
+	// Every time slot from since to now is present in the result (zero-filled).
+	GetBuckets(ctx context.Context, projectID, environmentID, flagKey string, since time.Time, bucketSize string) ([]domain.EvaluationBucket, error)
 }
