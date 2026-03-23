@@ -52,4 +52,5 @@ See `template.md`. Status values: `Proposed`, `Accepted`, `Deprecated`, `Superse
 | [0021](0021-fire-and-forget-evaluation-event-publish.md) | Fire-and-forget goroutine for evaluation event publish | Accepted |
 | [0022](0022-evaluation-event-multi-subscriber-fanout.md) | Evaluation event fanout to multiple independent subscribers | Accepted |
 | [0023](0023-in-house-component-library.md) | In-house UI component library over third-party component frameworks | Accepted |
+| [0024](0024-evaluation-event-retention-policy.md) | Evaluation event retention policy — 30-day default with configurable cleanup | Accepted |
 | [0025](0025-cached-client-single-sse-connection.md) | CachedClient uses a single SSE connection for all flags | Accepted |
