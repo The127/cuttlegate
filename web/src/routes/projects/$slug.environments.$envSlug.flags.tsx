@@ -273,6 +273,125 @@ function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
   )
 }
 
+// --- SDK prompt helpers ---
+
+const SDK_TABS = ['go', 'js', 'python'] as const
+type SdkTab = (typeof SDK_TABS)[number]
+
+function safeGetTab(): SdkTab {
+  try {
+    const stored = localStorage.getItem('cg:sdk_tab')
+    if (stored === 'go' || stored === 'js' || stored === 'python') return stored
+  } catch {
+    // localStorage unavailable — fall back to default
+  }
+  return 'go'
+}
+
+function safeSetTab(tab: SdkTab): void {
+  try {
+    localStorage.setItem('cg:sdk_tab', tab)
+  } catch {
+    // QuotaExceededError or security policy — UI state already updated, ignore
+  }
+}
+
+function safeGetDismissed(): boolean {
+  try {
+    return localStorage.getItem('cg:sdk_prompt_dismissed') === 'true'
+  } catch {
+    return false
+  }
+}
+
+function safeSetDismissed(): void {
+  try {
+    localStorage.setItem('cg:sdk_prompt_dismissed', 'true')
+  } catch {
+    // QuotaExceededError or security policy — UI state already updated, ignore
+  }
+}
+
+function buildSnippet(tab: SdkTab, flagKey: string): string {
+  if (tab === 'go') {
+    return `result, err := client.CachedClient(ctx, "${flagKey}")\nif err != nil {\n    // handle error\n}`
+  }
+  if (tab === 'js') {
+    return `const result = await client.cachedClient(ctx, '${flagKey}');\n`
+  }
+  // python
+  return `result = client.get_flag("${flagKey}", context)\n`
+}
+
+function SdkPrompt({ flagKey }: { flagKey: string }) {
+  const { t } = useTranslation('flags')
+  const [activeTab, setActiveTab] = useState<SdkTab>(safeGetTab)
+  const [dismissed, setDismissed] = useState<boolean>(safeGetDismissed)
+
+  if (dismissed) return null
+
+  function handleTabClick(tab: SdkTab) {
+    setActiveTab(tab)
+    safeSetTab(tab)
+  }
+
+  function handleDismiss() {
+    setDismissed(true)
+    safeSetDismissed()
+  }
+
+  const tabLabels: Record<SdkTab, string> = {
+    go: t('create.sdk_prompt.tab_go'),
+    js: t('create.sdk_prompt.tab_js'),
+    python: t('create.sdk_prompt.tab_python'),
+  }
+
+  return (
+    <section
+      role="region"
+      aria-label={t('create.sdk_prompt.region_aria')}
+      className="mt-5 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+    >
+      <div className="px-4 pt-4 pb-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
+          {t('create.sdk_prompt.heading')}
+        </p>
+        <div className="mt-2 flex gap-1" role="tablist">
+          {SDK_TABS.map((tab) => (
+            <button
+              key={tab}
+              role="tab"
+              aria-selected={activeTab === tab}
+              onClick={() => handleTabClick(tab)}
+              className={[
+                'px-3 py-1 text-xs font-medium rounded border transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]',
+                activeTab === tab
+                  ? 'border-[var(--color-accent)] text-[var(--color-accent)] bg-white dark:bg-gray-900'
+                  : 'border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900 hover:border-gray-400 dark:hover:border-gray-400',
+              ].join(' ')}
+            >
+              {tabLabels[tab]}
+            </button>
+          ))}
+        </div>
+      </div>
+      <pre className="p-4 text-xs font-mono overflow-x-auto bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 leading-relaxed">
+        {buildSnippet(activeTab, flagKey)}
+      </pre>
+      <div className="flex justify-end px-4 pb-3 bg-white dark:bg-gray-900">
+        <button
+          onClick={handleDismiss}
+          className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
+        >
+          {t('create.sdk_prompt.dismiss')}
+        </button>
+      </div>
+    </section>
+  )
+}
+
+// --- Flag key validation ---
+
 const FLAG_KEY_RE = /^[a-z0-9][a-z0-9-]*$/
 const MAX_KEY_LENGTH = 128
 
@@ -380,6 +499,7 @@ function CreateFlagModal({
               aria-label={t('create.success_copy_aria', { key: createdKey })}
               className="w-full justify-between"
             />
+            <SdkPrompt flagKey={createdKey} />
             <DialogFooter>
               <Button variant="primary" onClick={onCreated}>
                 {t('create.success_done')}

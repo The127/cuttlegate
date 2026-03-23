@@ -44,7 +44,15 @@
     "success_title": "Flag created",
     "success_body": "Copy your flag key and use it in your SDK to start evaluating.",
     "success_copy_aria": "Copy flag key {{key}}",
-    "success_done": "Done"
+    "success_done": "Done",
+    "sdk_prompt": {
+      "heading": "You're ready. Pick your SDK.",
+      "tab_go": "Go",
+      "tab_js": "JS",
+      "tab_python": "Python",
+      "dismiss": "Dismiss",
+      "region_aria": "SDK setup guide"
+    }
   },
   "detail": {
     "name_label": "Name",
