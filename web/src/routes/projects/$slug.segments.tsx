@@ -6,6 +6,7 @@ import { projectRoute } from './$slug'
 import { fetchJSON, postJSON, patchJSON, putJSON, deleteRequest, APIError } from '../../api'
 import { formatRelativeDate } from '../../utils/date'
 import { Button } from '../../components/ui/Button'
+import { Textarea } from '../../components/ui/Textarea'
 import {
   Dialog,
   DialogContent,
@@ -648,13 +649,13 @@ function ManageMembersModal({
               </button>
               {showBulk && (
                 <div className="mt-2 space-y-2">
-                  <textarea
+                  <Textarea
                     value={bulkText}
                     onChange={(e) => setBulkText(e.target.value)}
                     rows={5}
                     placeholder={t('members.bulk_placeholder')}
                     aria-label={t('members.bulk_aria')}
-                    className="w-full font-mono text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] resize-none"
+                    className="font-mono resize-none"
                   />
                   <Button
                     type="button"

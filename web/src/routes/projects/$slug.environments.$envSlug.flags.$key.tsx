@@ -5,7 +5,7 @@ import { useTranslation, Trans } from 'react-i18next'
 import { projectEnvRoute } from './$slug.environments.$envSlug'
 import { fetchJSON, patchJSON, postJSON, deleteRequest, APIError } from '../../api'
 import { useFlagSSE } from '../../hooks/useFlagSSE'
-import { Button, Input, Select, SelectItem, CopyableCode } from '../../components/ui'
+import { Button, Input, Select, SelectItem, CopyableCode, Textarea } from '../../components/ui'
 import { PromoteDialog } from '../../components/PromoteDialog'
 import { FlagAnalyticsPanel } from '../../components/FlagAnalyticsPanel'
 import { formatAbsoluteDate, formatRelativeDate } from '../../utils/date'
@@ -625,13 +625,13 @@ function EvaluationPanel({
             >
               {t('eval.context_label')}
             </label>
-            <textarea
+            <Textarea
               id="eval-context"
               value={contextInput}
               onChange={handleInputChange}
               rows={4}
               spellCheck={false}
-              className="w-full font-mono text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] resize-y"
+              className="font-mono"
             />
             {jsonError && (
               <p className="mt-1 text-xs text-red-600 dark:text-red-400" role="alert">

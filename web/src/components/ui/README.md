@@ -8,6 +8,7 @@ Shared interactive element components for the Cuttlegate SPA.
 |---|---|
 | Button, submit, or action element | `<Button>` |
 | Text, number, or similar input | `<Input>` |
+| Multiline text input | `<Textarea>` |
 | Form field label | `<Label>` |
 | Dropdown / option selector (non-navigation) | `<Select>` + `<SelectItem>` |
 | Label + input + optional error as a unit | `<FormField>` |
@@ -15,7 +16,6 @@ Shared interactive element components for the Cuttlegate SPA.
 
 **Do not** add raw `<button>`, `<input>`, `<label>`, or `<select>` elements in feature code except:
 - Navigation context selects (e.g. `ProjectSwitcher` — native `<select>` is acceptable there)
-- Textarea elements (not extracted — use native `<textarea>` with Tailwind directly)
 - Read-only display elements that happen to use a tag name (e.g. `<span>`)
 - Inline text-link style triggers that are not form action buttons (e.g. `+ Add condition` in rule editors — these are micro-interactions, not submit/save/delete actions)
 
@@ -39,11 +39,11 @@ handled automatically — no `htmlFor` or `id` props are needed:
 `FormField` passes a generated `fieldId` and `errorId` via React context. `Input` reads the
 context and applies `id` and `aria-describedby` only when not already supplied by the caller.
 
-For non-`Input` children (e.g. `<textarea>`), manual wiring is still required:
+`Textarea` supports the same auto-wiring:
 
 ```tsx
-<FormField label="Notes" htmlFor="notes">
-  <textarea id="notes" />
+<FormField label="Notes">
+  <Textarea />
 </FormField>
 ```
 
