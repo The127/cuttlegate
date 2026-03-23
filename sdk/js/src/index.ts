@@ -16,3 +16,6 @@ export type { CuttlegateClient, EvaluationResult, FlagResult } from './client.js
 
 export { connectStream } from './streaming.js';
 export type { StreamOptions, StreamConnection, FlagStateChangedEvent } from './streaming.js';
+
+export { createCachedClient } from './cached-client.js';
+export type { CachedClient, CachedClientOptions } from './cached-client.js';

@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-23
 **Status:** Accepted
-**Issue:** #231
+**Issues:** #231 (Go), #245 (JS)
 
 ## Context
 
@@ -55,6 +55,8 @@ access without additional complexity.
 
 ## Consequences
 
+### Go SDK
+
 - `CachedClient.Bootstrap` starts exactly one goroutine. The goroutine stops when
   the context passed to `Bootstrap` is cancelled.
 - SSE events for flag keys not present in the cache (i.e. flags added after
@@ -67,3 +69,24 @@ access without additional complexity.
 - If a new flag is deployed after `Bootstrap`, the only way to add it to the cache
   is to call `Bootstrap` again. A follow-up issue could introduce a TTL-based
   re-bootstrap if this becomes a production pain point.
+
+### JS SDK (#245)
+
+The JS `createCachedClient` follows the same single-connection principle with
+these JS-specific characteristics:
+
+- One `connectStream` call manages the single SSE connection. The connection loop
+  is already built into `connectStream` with exponential backoff — `CachedClient`
+  does not add its own retry logic.
+- **SSE-first ordering**: `connectStream` is called before the HTTP hydration
+  `evaluate()` call. SSE events received during hydration are buffered and applied
+  on top of the hydration result to close the missed-event gap.
+- The JS SSE event (`FlagStateChangedEvent`) carries only `flagKey` and `enabled`.
+  SSE updates preserve `valueKey` and `reason` from hydration; `reason` is set to
+  `"default"` after an SSE update (same behaviour as `CuttlegateProvider`).
+- No HTTP fallback on cache miss: unknown keys return `reason: "not_found"`. The
+  JS CachedClient is browser-first; fallback HTTP would re-expose the token path.
+- `ready: Promise<void>` resolves when HTTP hydration completes. Rejects with
+  `CuttlegateError` on auth failure (401/403) or timeout during hydration.
+- Terminal SSE auth errors (401/403) are surfaced via `onError` in
+  `CachedClientOptions`; the cache retains its last-known values.
