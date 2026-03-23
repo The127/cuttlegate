@@ -153,7 +153,7 @@ function BarChart({ buckets, flagType, variantKeys, ariaLabel }: BarChartProps) 
           y={CHART_HEIGHT - 2}
           width={barWidth}
           height={2}
-          fill="#e5e7eb"
+          fill="#1c1f35"
           role="presentation"
         />
       )
@@ -210,7 +210,7 @@ function Legend({ flagType, variantKeys }: LegendProps) {
 
 function LegendItem({ color, label }: { color: string; label: string }) {
   return (
-    <span className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+    <span className="flex items-center gap-1.5 text-xs text-[var(--color-text-secondary)]">
       <span
         style={{ backgroundColor: color }}
         className="inline-block w-3 h-3 rounded-sm shrink-0"
@@ -248,8 +248,8 @@ function WindowSelector({ active, onChange }: WindowSelectorProps) {
           aria-pressed={active === w}
           className={`px-2 py-0.5 text-xs rounded border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 ${
             active === w
-              ? 'bg-blue-600 text-white border-blue-600'
-              : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+              ? 'bg-[var(--color-accent)] text-white border-[var(--color-accent)]'
+              : 'bg-[var(--color-surface)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:bg-[var(--color-surface)]
           }`}
         >
           {t(labelKey[w])}
@@ -299,9 +299,9 @@ export function FlagAnalyticsPanel({ slug, envSlug, flagKey, flagType }: FlagAna
   const isEmpty = !isLoading && !isError && totalCount === 0
 
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg mt-4">
-      <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-        <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+    <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg mt-4">
+      <div className="px-5 py-3 border-b border-[var(--color-border)] flex items-center justify-between">
+        <h2 className="text-xs font-semibold text-[var(--color-text-secondary)] font-medium">
           {t('analytics.panel_title')}
         </h2>
         <WindowSelector active={selectedWindow} onChange={setSelectedWindow} />
@@ -309,15 +309,15 @@ export function FlagAnalyticsPanel({ slug, envSlug, flagKey, flagType }: FlagAna
 
       <div className="px-5 py-4">
         {isError ? (
-          <p className="text-sm text-red-600 dark:text-red-400" role="status">
+          <p className="text-sm text-[var(--color-status-error)]" role="status">
             {t('analytics.load_error')}
           </p>
         ) : isLoading ? (
           <div className="h-20 flex items-center">
-            <div className="h-4 w-48 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+            <div className="h-4 w-48 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
           </div>
         ) : isEmpty ? (
-          <p className="text-sm text-gray-500 dark:text-gray-400" data-testid="analytics-empty">
+          <p className="text-sm text-[var(--color-text-secondary)]" data-testid="analytics-empty">
             {t('analytics.empty_state')}
           </p>
         ) : (
@@ -329,7 +329,7 @@ export function FlagAnalyticsPanel({ slug, envSlug, flagKey, flagType }: FlagAna
               ariaLabel={t('analytics.chart_aria_label')}
             />
             <Legend flagType={flagType} variantKeys={variantKeys} />
-            <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+            <p className="mt-3 text-xs text-[var(--color-text-secondary)]">
               {t('analytics.total_evaluations', { count: totalCount, window: selectedWindow })}
             </p>
           </>

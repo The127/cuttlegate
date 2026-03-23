@@ -62,10 +62,10 @@ function AuditLogPage() {
   if (isError) {
     return (
       <div className="p-6">
-        <span className="text-sm text-red-600 dark:text-red-400">{t('audit.error')} </span>
+        <span className="text-sm text-[var(--color-status-error)]">{t('audit.error')} </span>
         <button
           onClick={() => void refetch()}
-          className="text-sm text-red-600 dark:text-red-400 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
+          className="text-sm text-[var(--color-status-error)] underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-[var(--color-status-error)] rounded"
         >
           {t('actions.retry', { ns: 'common' })}
         </button>
@@ -75,7 +75,7 @@ function AuditLogPage() {
 
   return (
     <div className="p-6 max-w-5xl">
-      <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('audit.title')}</h1>
+      <h1 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">{t('audit.title')}</h1>
 
       <div className="mb-4">
         <label htmlFor="audit-flag-filter" className="sr-only">
@@ -87,37 +87,37 @@ function AuditLogPage() {
           value={flagKey}
           onChange={(e) => setFlagKey(e.target.value)}
           placeholder={t('audit.filter_placeholder')}
-          className="w-full max-w-sm font-mono text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+          className="w-full max-w-sm font-mono text-sm bg-[var(--color-surface)] text-[var(--color-text-primary)] border border-[var(--color-border)] rounded px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
         />
       </div>
 
       {allEntries.length === 0 ? (
-        <div className="text-center py-16 px-6 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
-          <p className="text-sm text-gray-500 dark:text-gray-400">{t('audit.empty')}</p>
+        <div className="text-center py-16 px-6 border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)]">
+          <p className="text-sm text-[var(--color-text-secondary)]">{t('audit.empty')}</p>
         </div>
       ) : (
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 overflow-hidden">
+        <div className="border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+            <thead className="bg-[var(--color-surface-elevated)] border-b border-[var(--color-border)]">
               <tr>
-                <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">
+                <th className="text-left px-4 py-2 text-xs font-medium text-[var(--color-text-secondary)] font-medium whitespace-nowrap">
                   {t('audit.column_timestamp')}
                 </th>
-                <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">
+                <th className="text-left px-4 py-2 text-xs font-medium text-[var(--color-text-secondary)] font-medium whitespace-nowrap">
                   {t('audit.column_actor')}
                 </th>
-                <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">
+                <th className="text-left px-4 py-2 text-xs font-medium text-[var(--color-text-secondary)] font-medium whitespace-nowrap">
                   {t('audit.column_action')}
                 </th>
-                <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">
+                <th className="text-left px-4 py-2 text-xs font-medium text-[var(--color-text-secondary)] font-medium whitespace-nowrap">
                   {t('audit.column_flag')}
                 </th>
-                <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">
+                <th className="text-left px-4 py-2 text-xs font-medium text-[var(--color-text-secondary)] font-medium whitespace-nowrap">
                   {t('audit.column_environment')}
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+            <tbody className="divide-y divide-[var(--color-border)]">
               {allEntries.map((entry) => (
                 <AuditEntryRow key={entry.id} entry={entry} />
               ))}
@@ -131,7 +131,7 @@ function AuditLogPage() {
           <button
             onClick={() => void fetchNextPage()}
             disabled={isFetchingNextPage}
-            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            className="px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] border border-[var(--color-border)] rounded hover:bg-[var(--color-surface)] disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
           >
             {isFetchingNextPage ? t('audit.loading_more') : t('audit.load_more')}
           </button>
@@ -145,40 +145,40 @@ function AuditEntryRow({ entry }: { entry: AuditEntry }) {
   const absolute = formatAbsoluteDate(entry.occurred_at)
   const relative = formatRelativeDate(entry.occurred_at)
   return (
-    <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+    <tr className="hover:bg-[var(--color-surface)]
       <td className="px-4 py-3 whitespace-nowrap">
         <time
           dateTime={entry.occurred_at}
           title={relative}
-          className="text-xs text-gray-600 dark:text-gray-400 tabular-nums"
+          className="text-xs text-[var(--color-text-secondary)] tabular-nums"
         >
           {absolute}
         </time>
       </td>
       <td className="px-4 py-3 whitespace-nowrap">
-        <span className="text-sm text-gray-800 dark:text-gray-200">{entry.actor_email}</span>
+        <span className="text-sm text-[var(--color-text-primary)]">{entry.actor_email}</span>
       </td>
       <td className="px-4 py-3 whitespace-nowrap">
-        <span className="font-mono text-xs text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-2 py-0.5">
+        <span className="font-mono text-xs text-[var(--color-text-primary)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-2 py-0.5">
           {entry.action}
         </span>
       </td>
       <td className="px-4 py-3 whitespace-nowrap">
         {entry.flag_key ? (
-          <span className="font-mono text-xs text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-2 py-0.5">
+          <span className="font-mono text-xs text-[var(--color-text-primary)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-2 py-0.5">
             {entry.flag_key}
           </span>
         ) : (
-          <span className="text-xs text-gray-400 dark:text-gray-500">—</span>
+          <span className="text-xs text-[var(--color-text-muted)]">—</span>
         )}
       </td>
       <td className="px-4 py-3 whitespace-nowrap">
         {entry.environment_slug ? (
-          <span className="font-mono text-xs text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-2 py-0.5">
+          <span className="font-mono text-xs text-[var(--color-text-primary)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-2 py-0.5">
             {entry.environment_slug}
           </span>
         ) : (
-          <span className="text-xs text-gray-400 dark:text-gray-500">—</span>
+          <span className="text-xs text-[var(--color-text-muted)]">—</span>
         )}
       </td>
     </tr>
@@ -188,23 +188,23 @@ function AuditEntryRow({ entry }: { entry: AuditEntry }) {
 function AuditLogSkeleton() {
   return (
     <div className="p-6 max-w-5xl">
-      <div className="h-6 w-24 bg-gray-100 dark:bg-gray-700 rounded animate-pulse mb-4" />
-      <div className="h-8 w-64 bg-gray-100 dark:bg-gray-700 rounded animate-pulse mb-4" />
-      <div className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 overflow-hidden">
-        <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-2 flex gap-8">
-          <div className="h-3 w-28 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-          <div className="h-3 w-40 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-          <div className="h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-          <div className="h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-          <div className="h-3 w-28 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+      <div className="h-6 w-24 bg-[var(--color-surface-elevated)] rounded animate-pulse mb-4" />
+      <div className="h-8 w-64 bg-[var(--color-surface-elevated)] rounded animate-pulse mb-4" />
+      <div className="border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] overflow-hidden">
+        <div className="bg-[var(--color-surface-elevated)] border-b border-[var(--color-border)] px-4 py-2 flex gap-8">
+          <div className="h-3 w-28 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+          <div className="h-3 w-40 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+          <div className="h-3 w-20 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+          <div className="h-3 w-24 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+          <div className="h-3 w-28 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
         </div>
         {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="flex items-center gap-8 px-4 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
-            <div className="h-4 w-28 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
-            <div className="h-4 w-40 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
-            <div className="h-4 w-20 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
-            <div className="h-4 w-24 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
-            <div className="h-4 w-20 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+          <div key={i} className="flex items-center gap-8 px-4 py-3 border-b border-[var(--color-border)] last:border-0">
+            <div className="h-4 w-28 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+            <div className="h-4 w-40 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+            <div className="h-4 w-20 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+            <div className="h-4 w-24 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+            <div className="h-4 w-20 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
           </div>
         ))}
       </div>

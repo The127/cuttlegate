@@ -164,7 +164,7 @@ function CreateProjectDialog({ open, onClose }: CreateProjectDialogProps) {
                 className="mt-1 font-mono"
               />
               {!slugValid && (
-                <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                <p className="mt-1 text-xs text-[var(--color-status-error)]">
                   {t('create.slug_invalid')}
                 </p>
               )}
@@ -172,7 +172,7 @@ function CreateProjectDialog({ open, onClose }: CreateProjectDialogProps) {
           </div>
 
           {apiError && (
-            <p role="alert" className="mt-3 text-xs text-red-600 dark:text-red-400">{apiError}</p>
+            <p role="alert" className="mt-3 text-xs text-[var(--color-status-error)]">{apiError}</p>
           )}
 
           <div className="mt-6 flex justify-end gap-3">

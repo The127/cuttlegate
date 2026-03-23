@@ -30,13 +30,13 @@ function RouteError({ error }: { error: unknown }) {
   const { t } = useTranslation('common')
   if (error instanceof APIError && error.status === 403) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-md w-full p-8 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('errors.access_denied_title')}</h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--color-surface-elevated)]">
+        <div className="max-w-md w-full p-8 bg-[var(--color-surface)] rounded-lg shadow-sm border border-[var(--color-border)]">
+          <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">{t('errors.access_denied_title')}</h1>
+          <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
             {t('errors.access_denied_body')}
           </p>
-          <a href="/" className="mt-4 inline-block text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
+          <a href="/" className="mt-4 inline-block text-sm text-[var(--color-accent)] hover:text-[var(--color-accent)]
             {t('errors.return_to_home')}
           </a>
         </div>
@@ -45,10 +45,10 @@ function RouteError({ error }: { error: unknown }) {
   }
   const message = error instanceof Error ? error.message : t('errors.unexpected')
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-md w-full p-8 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('errors.something_went_wrong')}</h1>
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 font-mono">{message}</p>
+    <div className="min-h-screen flex items-center justify-center bg-[var(--color-surface-elevated)]">
+      <div className="max-w-md w-full p-8 bg-[var(--color-surface)] rounded-lg shadow-sm border border-[var(--color-border)]">
+        <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">{t('errors.something_went_wrong')}</h1>
+        <p className="mt-2 text-sm text-[var(--color-text-secondary)] font-mono">{message}</p>
       </div>
     </div>
   )
@@ -69,7 +69,7 @@ function AppShell() {
   return (
     <LiveAnnouncerProvider>
       <CreateProjectDialogProvider>
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="min-h-screen bg-[var(--color-surface-elevated)]">
           <ProjectSwitcher />
           <Breadcrumbs />
           <main id="main-content" ref={mainRef} tabIndex={-1} className="outline-none">

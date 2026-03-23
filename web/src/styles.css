@@ -9,32 +9,42 @@
 }
 
 @theme {
-  /* Accent colour — indigo-500 */
-  --color-accent: #6366f1;
+  /* Backgrounds and surfaces */
+  --color-bg:               #0d0f1c;
+  --color-surface:          #141729;
+  --color-surface-elevated: #1c1f35;
+  --color-border:           rgba(255,255,255,0.07);
+  --color-border-hover:     rgba(255,255,255,0.14);
 
-  /* Text hierarchy */
-  --color-text-secondary: #6b7280;  /* gray-500 — labels, descriptions */
+  /* Accent gradient */
+  --color-accent-start: #00d4aa;
+  --color-accent-end:   #4f7cff;
+  --color-accent:       #4f7cff;
+
+  /* Text */
+  --color-text-primary:   #e8eaf6;
+  --color-text-secondary: #7b83a8;
+  --color-text-muted:     #4a5070;
 
   /* Status colours */
-  --color-status-enabled: #10b981;  /* emerald-500 — flag enabled / healthy */
-  --color-status-warning: #fbbf24;  /* amber-400  — partial rollout / caution */
-  --color-status-error:   #ef4444;  /* red-500    — flag disabled / error */
+  --color-status-enabled:  #10d9a8;
+  --color-status-warning:  #fbbf24;
+  --color-status-error:    #f87171;
+
+  /* Typography scale */
+  --text-xs:   0.75rem;
+  --text-sm:   0.875rem;
+  --text-base: 1rem;
+  --text-lg:   1.125rem;
+  --text-xl:   1.25rem;
+  --text-2xl:  1.5rem;
+
+  /* Border radius */
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  14px;
+  --radius-xl:  20px;
 
   /* Monospace font for keys, slugs, IDs, code */
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
-}
-
-/* Dark mode overrides for CSS custom properties.
-   Tailwind v4 @theme is compile-time only and cannot be wrapped in @media.
-   These overrides adjust token values that components reference via var(). */
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Accent — indigo-400 has better contrast on dark surfaces than indigo-500 */
-    --color-accent: #818cf8;
-
-    /* Status dot colours — used via bg-[var(--color-status-*)] in StatusBadge */
-    --color-status-enabled: #34d399;  /* emerald-400 — brighter on dark */
-    --color-status-warning: #fcd34d;  /* amber-300  — brighter on dark */
-    --color-status-error:   #f87171;  /* red-400    — brighter on dark */
-  }
 }

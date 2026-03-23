@@ -19,25 +19,25 @@ describe('TierBadge', () => {
     expect(screen.getByText('Destructive')).toBeInTheDocument()
   })
 
-  // @happy — colour classes
-  it('read tier uses neutral/grey classes', () => {
+  // @happy — M9 design token colour classes per docs/ui-design.md TierBadge spec
+  it('read tier uses design token classes', () => {
     const { container } = render(<TierBadge tier="read" />)
     const badge = container.querySelector('span')
-    expect(badge?.className).toContain('bg-neutral-100')
-    expect(badge?.className).toContain('text-neutral-600')
+    expect(badge?.className).toContain('rgba(255,255,255,0.06)')
+    expect(badge?.className).toContain('color-text-secondary')
   })
 
-  it('write tier uses blue classes', () => {
+  it('write tier uses design token classes', () => {
     const { container } = render(<TierBadge tier="write" />)
     const badge = container.querySelector('span')
-    expect(badge?.className).toContain('bg-blue-50')
-    expect(badge?.className).toContain('text-blue-700')
+    expect(badge?.className).toContain('rgba(79,124,255,0.15)')
+    expect(badge?.className).toContain('#818cf8')
   })
 
-  it('destructive tier uses amber classes', () => {
+  it('destructive tier uses design token classes', () => {
     const { container } = render(<TierBadge tier="destructive" />)
     const badge = container.querySelector('span')
-    expect(badge?.className).toContain('bg-amber-50')
-    expect(badge?.className).toContain('text-amber-700')
+    expect(badge?.className).toContain('rgba(251,191,36,0.12)')
+    expect(badge?.className).toContain('#fbbf24')
   })
 })

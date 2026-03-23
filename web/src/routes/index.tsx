@@ -46,10 +46,10 @@ function HomePage() {
   if (isError) {
     return (
       <div className="p-6 text-center">
-        <p className="text-sm text-red-600 dark:text-red-400">{t('list.error')}</p>
+        <p className="text-sm text-[var(--color-status-error)]">{t('list.error')}</p>
         <button
           onClick={() => void refetch()}
-          className="mt-2 text-sm text-red-600 dark:text-red-400 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
+          className="mt-2 text-sm text-[var(--color-status-error)] underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-[var(--color-status-error)] rounded"
         >
           {t('actions.retry', { ns: 'common' })}
         </button>
@@ -62,8 +62,8 @@ function HomePage() {
   if (projects.length === 0) {
     return (
       <div className="p-6 text-center">
-        <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('list.empty_title')}</h1>
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+        <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">{t('list.empty_title')}</h1>
+        <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
           {t('list.empty_body')}
         </p>
         <Button onClick={openCreateDialog} size="lg" className="mt-4">
@@ -76,7 +76,7 @@ function HomePage() {
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('list.title')}</h1>
+        <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">{t('list.title')}</h1>
         <Button onClick={openCreateDialog} size="md">
           {t('list.new_project')}
         </Button>
@@ -100,11 +100,11 @@ function ProjectCard({ project }: { project: Project }) {
     <Link
       to="/projects/$slug"
       params={{ slug: project.slug }}
-      className="block border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 p-4 hover:border-[var(--color-accent)] hover:shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+      className="block border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] p-4 hover:border-[var(--color-accent)] hover:shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
     >
-      <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{project.name}</h2>
-      <p className="mt-0.5 font-mono text-xs text-gray-500 dark:text-gray-400">{project.slug}</p>
-      <div className="mt-3 flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
+      <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">{project.name}</h2>
+      <p className="mt-0.5 font-mono text-xs text-[var(--color-text-secondary)]">{project.slug}</p>
+      <div className="mt-3 flex items-center gap-4 text-xs text-[var(--color-text-secondary)]">
         <CountBadge label={t('list.count_environments')} count={envsCount.data} isLoading={envsCount.isLoading} isError={envsCount.isError} />
         <CountBadge label={t('list.count_flags')} count={flagsCount.data} isLoading={flagsCount.isLoading} isError={flagsCount.isError} />
         <CountBadge label={t('list.count_members')} count={membersCount.data} isLoading={membersCount.isLoading} isError={membersCount.isError} />
@@ -127,11 +127,11 @@ function CountBadge({
   return (
     <span className="flex items-center gap-1">
       {isLoading ? (
-        <span className="inline-block h-3.5 w-4 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+        <span className="inline-block h-3.5 w-4 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
       ) : isError ? (
-        <span className="text-red-400">-</span>
+        <span className="text-[var(--color-status-error)]">-</span>
       ) : (
-        <span className="font-medium text-gray-900 dark:text-gray-100">{count ?? 0}</span>
+        <span className="font-medium text-[var(--color-text-primary)]">{count ?? 0}</span>
       )}
       <span>{label}</span>
     </span>
@@ -141,19 +141,19 @@ function CountBadge({
 function HomePageSkeleton() {
   return (
     <div className="p-6">
-      <div className="h-6 w-24 bg-gray-100 dark:bg-gray-700 rounded animate-pulse mb-6" />
+      <div className="h-6 w-24 bg-[var(--color-surface-elevated)] rounded animate-pulse mb-6" />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 p-4"
+            className="border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] p-4"
           >
-            <div className="h-4 w-32 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
-            <div className="mt-1.5 h-3 w-20 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+            <div className="h-4 w-32 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+            <div className="mt-1.5 h-3 w-20 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
             <div className="mt-3 flex items-center gap-4">
-              <div className="h-3 w-20 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
-              <div className="h-3 w-12 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
-              <div className="h-3 w-16 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+              <div className="h-3 w-20 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+              <div className="h-3 w-12 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+              <div className="h-3 w-16 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
             </div>
           </div>
         ))}

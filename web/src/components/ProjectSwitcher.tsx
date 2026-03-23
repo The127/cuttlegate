@@ -64,23 +64,23 @@ export function ProjectSwitcher() {
   }
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+    <div className="flex items-center gap-3 px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
       <div className="flex items-center gap-2 mr-2">
         {logo_url !== null ? (
           <img src={logo_url} alt={app_name} className="h-6 w-auto" />
         ) : (
-          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{app_name}</span>
+          <span className="text-sm font-semibold text-[var(--color-text-primary)]">{app_name}</span>
         )}
       </div>
-      <div className="w-px h-5 bg-gray-200 dark:bg-gray-700" aria-hidden="true" />
+      <div className="w-px h-5 bg-[var(--color-surface-elevated)]" aria-hidden="true" />
       <div className="flex items-center gap-2">
-        <label htmlFor="project-select" className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+        <label htmlFor="project-select" className="text-xs font-medium text-[var(--color-text-secondary)] font-medium">
           {t('switcher.project_label')}
         </label>
         {projectsQuery.isLoading ? (
-          <div className="h-8 w-32 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+          <div className="h-8 w-32 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
         ) : projectsQuery.isError ? (
-          <span className="text-xs text-red-600 flex items-center gap-1">
+          <span className="text-xs text-[var(--color-status-error)] flex items-center gap-1">
             {t('switcher.failed_to_load')}
             <button
               onClick={() => void projectsQuery.refetch()}
@@ -90,11 +90,11 @@ export function ProjectSwitcher() {
             </button>
           </span>
         ) : projectsQuery.data?.length === 0 ? (
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-[var(--color-text-secondary)]">
             {t('switcher.no_projects_prefix')}{' '}
             <button
               onClick={openCreateDialog}
-              className="text-blue-600 hover:text-blue-800"
+              className="text-[var(--color-accent)] hover:text-[var(--color-accent)]"
             >
               {t('switcher.create_one')}
             </button>
@@ -104,7 +104,7 @@ export function ProjectSwitcher() {
             id="project-select"
             value={projectSlug ?? ''}
             onChange={(e) => handleProjectChange(e.target.value)}
-            className="text-sm border border-gray-200 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            className="text-sm border border-[var(--color-border)] rounded px-2 py-1 bg-[var(--color-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
           >
             <option value="">{t('switcher.select_project')}</option>
             {projectsQuery.data?.map((p) => (
@@ -119,14 +119,14 @@ export function ProjectSwitcher() {
 
       {projectSlug !== null && (
         <div className="flex items-center gap-2">
-          <span className="text-gray-300 dark:text-gray-600">/</span>
-          <label htmlFor="env-select" className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+          <span className="text-[var(--color-text-muted)]">/</span>
+          <label htmlFor="env-select" className="text-xs font-medium text-[var(--color-text-secondary)] font-medium">
             {t('switcher.environment_label')}
           </label>
           {envsQuery.isLoading ? (
-            <div className="h-8 w-28 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+            <div className="h-8 w-28 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
           ) : envsQuery.isError ? (
-            <span className="text-xs text-red-600 flex items-center gap-1">
+            <span className="text-xs text-[var(--color-status-error)] flex items-center gap-1">
               {t('switcher.failed_to_load')}
               <button
                 onClick={() => void envsQuery.refetch()}
@@ -147,7 +147,7 @@ export function ProjectSwitcher() {
                   })
                 }
               }}
-              className="text-sm border border-gray-200 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+              className="text-sm border border-[var(--color-border)] rounded px-2 py-1 bg-[var(--color-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
             >
               <option value="">{t('switcher.select_environment')}</option>
               {envsQuery.data?.map((e) => (

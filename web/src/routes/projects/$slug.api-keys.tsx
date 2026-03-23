@@ -97,7 +97,7 @@ function APIKeyPage() {
   return (
     <div className="p-6 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{t('api_keys.title')}</h1>
+        <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">{t('api_keys.title')}</h1>
         <Button
           onClick={() => setShowCreate(true)}
           disabled={envSlug === null}
@@ -107,11 +107,11 @@ function APIKeyPage() {
       </div>
 
       {envsQuery.isLoading ? (
-        <div className="h-8 w-48 bg-gray-100 dark:bg-gray-700 rounded animate-pulse mb-4" />
+        <div className="h-8 w-48 bg-[var(--color-surface-elevated)] rounded animate-pulse mb-4" />
       ) : envsQuery.isError ? (
-        <p className="text-sm text-red-600 dark:text-red-400 mb-4">{t('api_keys.environments_error')}</p>
+        <p className="text-sm text-[var(--color-status-error)] mb-4">{t('api_keys.environments_error')}</p>
       ) : envsQuery.data!.length === 0 ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-[var(--color-text-secondary)]">
           {t('api_keys.no_environments')}
         </p>
       ) : (
@@ -119,7 +119,7 @@ function APIKeyPage() {
           <div className="mb-4">
             <label
               htmlFor="env-selector"
-              className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+              className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1"
             >
               {t('api_keys.environment_label')}
             </label>
@@ -127,7 +127,7 @@ function APIKeyPage() {
               id="env-selector"
               value={envSlug ?? ''}
               onChange={(e) => setSelectedEnvSlug(e.target.value)}
-              className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+              className="text-sm border border-[var(--color-border)] rounded px-2 py-1.5 bg-[var(--color-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
             >
               {envsQuery.data!.map((env) => (
                 <option key={env.id} value={env.slug}>
@@ -141,10 +141,10 @@ function APIKeyPage() {
             <APIKeyListSkeleton />
           ) : keysQuery.isError ? (
             <div>
-              <span className="text-sm text-red-600 dark:text-red-400">{t('api_keys.error')} </span>
+              <span className="text-sm text-[var(--color-status-error)]">{t('api_keys.error')} </span>
               <button
                 onClick={() => void keysQuery.refetch()}
-                className="text-sm text-red-600 dark:text-red-400 underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
+                className="text-sm text-[var(--color-status-error)] underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-[var(--color-status-error)] rounded"
               >
                 {t('actions.retry', { ns: 'common' })}
               </button>
@@ -152,7 +152,7 @@ function APIKeyPage() {
           ) : keys.length === 0 ? (
             <APIKeyEmptyState onCreateClick={() => setShowCreate(true)} />
           ) : (
-            <ul className="divide-y divide-gray-100 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
+            <ul className="divide-y divide-[var(--color-border)] border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)]">
               {keys.map((key) => (
                 <APIKeyRow
                   key={key.id}
@@ -202,16 +202,16 @@ function APIKeyRow({
   return (
     <li className="flex items-center justify-between px-4 py-3 gap-4">
       <div className="flex items-center gap-3 min-w-0">
-        <span className="font-mono text-sm text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-2 py-0.5 shrink-0">
+        <span className="font-mono text-sm text-[var(--color-text-primary)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-2 py-0.5 shrink-0">
           cg_{apiKey.display_prefix}…
         </span>
-        <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{apiKey.name}</span>
+        <span className="text-sm text-[var(--color-text-primary)] truncate">{apiKey.name}</span>
         <TierBadge tier={apiKey.capability_tier} />
       </div>
       <div className="flex items-center gap-3 shrink-0">
         <time
           dateTime={apiKey.created_at}
-          className="text-xs text-gray-400 dark:text-gray-500"
+          className="text-xs text-[var(--color-text-muted)]"
           title={new Date(apiKey.created_at).toLocaleString()}
         >
           {formatRelativeDate(apiKey.created_at)}
@@ -219,7 +219,7 @@ function APIKeyRow({
         <button
           onClick={onRevokeIntent}
           aria-label={t('api_keys.revoke_aria', { name: apiKey.name })}
-          className="px-2 py-1 text-xs font-medium text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 dark:hover:bg-red-950 focus:outline-none focus:ring-2 focus:ring-red-500"
+          className="px-2 py-1 text-xs font-medium text-[var(--color-status-error)] border border-[var(--color-status-error)] rounded hover:bg-[rgba(248,113,113,0.08)] focus:outline-none focus:ring-2 focus:ring-[var(--color-status-error)]"
         >
           {t('api_keys.revoke')}
         </button>
@@ -232,7 +232,7 @@ function APIKeyEmptyState({ onCreateClick }: { onCreateClick: () => void }) {
   const { t } = useTranslation('projects')
   return (
     <div className="text-center py-16 px-6">
-      <p className="text-sm text-gray-500 dark:text-gray-400">
+      <p className="text-sm text-[var(--color-text-secondary)]">
         {t('api_keys.empty')}
       </p>
       <Button size="lg" className="mt-4" onClick={onCreateClick}>
@@ -244,16 +244,16 @@ function APIKeyEmptyState({ onCreateClick }: { onCreateClick: () => void }) {
 
 function APIKeyListSkeleton() {
   return (
-    <ul className="divide-y divide-gray-100 border border-gray-200 rounded-lg bg-white">
+    <ul className="divide-y divide-[var(--color-border)] border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)]">
       {[1, 2, 3].map((i) => (
         <li key={i} className="flex items-center justify-between px-4 py-3 gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-6 w-36 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
-            <div className="h-4 w-32 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+            <div className="h-6 w-36 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+            <div className="h-4 w-32 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
           </div>
           <div className="flex items-center gap-3">
-            <div className="h-3 w-12 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
-            <div className="h-6 w-14 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+            <div className="h-3 w-12 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+            <div className="h-6 w-14 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
           </div>
         </li>
       ))}
@@ -332,7 +332,7 @@ function CreateAPIKeyModal({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="key-name" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+            <label htmlFor="key-name" className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
               {t('api_keys.name_label')}
             </label>
             <input
@@ -345,16 +345,16 @@ function CreateAPIKeyModal({
                 setServerError(null)
               }}
               placeholder={t('api_keys.name_placeholder')}
-              className="w-full text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+              className="w-full text-sm bg-[var(--color-surface)] text-[var(--color-text-primary)] border border-[var(--color-border)] rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
               {t('api_keys.capability_tier_label')}
             </label>
             <TierSelector value={tier} onChange={setTier} />
           </div>
-          {serverError && <p className="text-xs text-red-600 dark:text-red-400">{serverError}</p>}
+          {serverError && <p className="text-xs text-[var(--color-status-error)]">{serverError}</p>}
           <DialogFooter>
             <Button
               type="button"
@@ -426,14 +426,14 @@ function ShowOnceModal({
         <DialogHeader>
           <DialogTitle>{t('api_keys.show_once_title', { name: keyName })}</DialogTitle>
         </DialogHeader>
-        <p className="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded px-3 py-2 mb-4">
+        <p className="text-xs text-[var(--color-status-warning)] bg-[rgba(251,191,36,0.08)] border border-[var(--color-status-warning)] rounded px-3 py-2 mb-4">
           {t('api_keys.show_once_warning')}
         </p>
 
         <div className="mb-4">
-          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('api_keys.your_key_label')}</label>
+          <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">{t('api_keys.your_key_label')}</label>
           <div className="flex items-center gap-2">
-            <code className="flex-1 font-mono text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 break-all select-all">
+            <code className="flex-1 font-mono text-sm text-[var(--color-text-primary)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-3 py-2 break-all select-all">
               {plaintextKey}
             </code>
             <Button
@@ -449,10 +449,10 @@ function ShowOnceModal({
         </div>
 
         <div className="mb-6">
-          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+          <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
             {t('api_keys.getting_started_label')}
           </label>
-          <pre className="font-mono text-xs text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 overflow-x-auto whitespace-pre">
+          <pre className="font-mono text-xs text-[var(--color-text-primary)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-3 py-2 overflow-x-auto whitespace-pre">
             {curlSnippet}
           </pre>
         </div>
@@ -505,12 +505,12 @@ function RevokeAPIKeyModal({
           )}
         </DialogHeader>
         {isLastKey && (
-          <p className="text-sm text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded px-3 py-2">
+          <p className="text-sm text-[var(--color-status-warning)] bg-[rgba(251,191,36,0.08)] border border-[var(--color-status-warning)] rounded px-3 py-2">
             {t('api_keys.revoke_last_warning')}
           </p>
         )}
         {revokeFailed && (
-          <p className="mt-3 text-xs text-red-600 dark:text-red-400">{t('api_keys.revoke_failed')}</p>
+          <p className="mt-3 text-xs text-[var(--color-status-error)]">{t('api_keys.revoke_failed')}</p>
         )}
         <DialogFooter>
           <Button
