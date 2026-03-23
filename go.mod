@@ -2,6 +2,8 @@ module github.com/karo/cuttlegate
 
 go 1.25.0
 
+toolchain go1.25.8
+
 require (
 	github.com/coreos/go-oidc/v3 v3.17.0
 	github.com/golang-migrate/migrate/v4 v4.19.1
