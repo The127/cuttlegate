@@ -642,7 +642,7 @@ function ManageMembersModal({
                   if (!showBulk) setBulkText(members.join('\n'))
                   setShowBulk((v) => !v)
                 }}
-                className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-gray-400 rounded"
+                className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
               >
                 {showBulk ? t('members.bulk_hide') : t('members.bulk_show')}
               </button>
