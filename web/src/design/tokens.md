@@ -58,7 +58,8 @@ Approximate contrast on `#111827` (gray-900, luminance ≈ 0.018):
 |---|---|---|
 | `--font-mono` | `'JetBrains Mono', ui-monospace, monospace` | `font-mono` |
 
-Loaded from Google Fonts (Latin subset, weight 400) in `index.html`. Used for:
+Self-hosted from `web/public/fonts/JetBrainsMono[wght].woff2` via `@font-face` in `src/styles.css`.
+Variable font, Latin subset, weight range 100–800. No CDN dependency. Used for:
 - Flag keys and slugs
 - Environment IDs and slugs
 - API key previews
