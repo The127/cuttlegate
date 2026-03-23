@@ -8,7 +8,7 @@ COPY web/ ./
 RUN npm run build
 
 # ── Stage 2: Build the Go server (with embedded frontend) ────────────────────
-FROM golang:1.25-alpine AS backend
+FROM golang:1.25.8-alpine AS backend
 
 WORKDIR /build
 COPY go.mod go.sum ./
