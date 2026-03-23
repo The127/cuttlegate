@@ -6,7 +6,7 @@ import (
 )
 
 func TestGenerateAPIKey(t *testing.T) {
-	key, plaintext, err := GenerateAPIKey("id-1", "proj-1", "env-1", "test key")
+	key, plaintext, err := GenerateAPIKey("id-1", "proj-1", "env-1", "test key", TierRead)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -31,8 +31,8 @@ func TestGenerateAPIKey(t *testing.T) {
 }
 
 func TestGenerateAPIKey_Uniqueness(t *testing.T) {
-	_, p1, _ := GenerateAPIKey("id-1", "proj-1", "env-1", "key 1")
-	_, p2, _ := GenerateAPIKey("id-2", "proj-1", "env-1", "key 2")
+	_, p1, _ := GenerateAPIKey("id-1", "proj-1", "env-1", "key 1", TierRead)
+	_, p2, _ := GenerateAPIKey("id-2", "proj-1", "env-1", "key 2", TierRead)
 	if p1 == p2 {
 		t.Error("two generated keys should not be identical")
 	}

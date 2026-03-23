@@ -10,13 +10,14 @@ import (
 
 // APIKeyView is the external representation of an API key (no secret material).
 type APIKeyView struct {
-	ID            string
-	ProjectID     string
-	EnvironmentID string
-	Name          string
-	DisplayPrefix string
-	CreatedAt     time.Time
-	RevokedAt     *time.Time
+	ID             string
+	ProjectID      string
+	EnvironmentID  string
+	Name           string
+	DisplayPrefix  string
+	CapabilityTier string
+	CreatedAt      time.Time
+	RevokedAt      *time.Time
 }
 
 // APIKeyCreateResult is returned from Create — includes the plaintext key
@@ -38,7 +39,7 @@ func NewAPIKeyService(repo ports.APIKeyRepository) *APIKeyService {
 
 // Create generates a new API key scoped to the given project and environment.
 // Requires admin role.
-func (s *APIKeyService) Create(ctx context.Context, projectID, environmentID, name string) (*APIKeyCreateResult, error) {
+func (s *APIKeyService) Create(ctx context.Context, projectID, environmentID, name string, tier domain.ToolCapabilityTier) (*APIKeyCreateResult, error) {
 	if _, err := requireRole(ctx, domain.RoleAdmin); err != nil {
 		return nil, err
 	}
@@ -48,7 +49,7 @@ func (s *APIKeyService) Create(ctx context.Context, projectID, environmentID, na
 		return nil, err
 	}
 
-	key, plaintext, err := domain.GenerateAPIKey(id, projectID, environmentID, name)
+	key, plaintext, err := domain.GenerateAPIKey(id, projectID, environmentID, name, tier)
 	if err != nil {
 		return nil, err
 	}
@@ -59,12 +60,13 @@ func (s *APIKeyService) Create(ctx context.Context, projectID, environmentID, na
 
 	return &APIKeyCreateResult{
 		APIKeyView: APIKeyView{
-			ID:            key.ID,
-			ProjectID:     key.ProjectID,
-			EnvironmentID: key.EnvironmentID,
-			Name:          key.Name,
-			DisplayPrefix: key.DisplayPrefix,
-			CreatedAt:     key.CreatedAt,
+			ID:             key.ID,
+			ProjectID:      key.ProjectID,
+			EnvironmentID:  key.EnvironmentID,
+			Name:           key.Name,
+			DisplayPrefix:  key.DisplayPrefix,
+			CapabilityTier: string(key.CapabilityTier),
+			CreatedAt:      key.CreatedAt,
 		},
 		Plaintext: plaintext,
 	}, nil
@@ -85,13 +87,14 @@ func (s *APIKeyService) List(ctx context.Context, projectID, environmentID strin
 	views := make([]APIKeyView, len(keys))
 	for i, k := range keys {
 		views[i] = APIKeyView{
-			ID:            k.ID,
-			ProjectID:     k.ProjectID,
-			EnvironmentID: k.EnvironmentID,
-			Name:          k.Name,
-			DisplayPrefix: k.DisplayPrefix,
-			CreatedAt:     k.CreatedAt,
-			RevokedAt:     k.RevokedAt,
+			ID:             k.ID,
+			ProjectID:      k.ProjectID,
+			EnvironmentID:  k.EnvironmentID,
+			Name:           k.Name,
+			DisplayPrefix:  k.DisplayPrefix,
+			CapabilityTier: string(k.CapabilityTier),
+			CreatedAt:      k.CreatedAt,
+			RevokedAt:      k.RevokedAt,
 		}
 	}
 	return views, nil

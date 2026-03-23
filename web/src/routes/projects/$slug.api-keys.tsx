@@ -6,6 +6,9 @@ import { projectRoute } from './$slug'
 import { fetchJSON, postJSON, deleteRequest, APIError } from '../../api'
 import { formatRelativeDate } from '../../utils/date'
 import { Button } from '../../components/ui/Button'
+import { TierBadge } from '../../components/ui/TierBadge'
+import { TierSelector } from '../../components/ui/TierSelector'
+import type { ToolCapabilityTier } from '../../components/ui/TierBadge'
 import {
   Dialog,
   DialogContent,
@@ -25,6 +28,7 @@ interface APIKey {
   id: string
   name: string
   display_prefix: string
+  capability_tier: ToolCapabilityTier
   created_at: string
   revoked_at?: string
 }
@@ -33,6 +37,7 @@ interface CreateAPIKeyResult {
   id: string
   name: string
   display_prefix: string
+  capability_tier: ToolCapabilityTier
   created_at: string
   key: string
 }
@@ -201,6 +206,7 @@ function APIKeyRow({
           cg_{apiKey.display_prefix}…
         </span>
         <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{apiKey.name}</span>
+        <TierBadge tier={apiKey.capability_tier} />
       </div>
       <div className="flex items-center gap-3 shrink-0">
         <time
@@ -273,6 +279,7 @@ function CreateAPIKeyModal({
   const { t } = useTranslation('projects')
   const [phase, setPhase] = useState<CreatePhase>({ type: 'form' })
   const [name, setName] = useState('')
+  const [tier, setTier] = useState<ToolCapabilityTier>('read')
   const [serverError, setServerError] = useState<string | null>(null)
 
   // Security: plaintext key is ephemeral — held in component state only, never cached.
@@ -281,7 +288,7 @@ function CreateAPIKeyModal({
     mutationFn: () =>
       postJSON<CreateAPIKeyResult>(
         `/api/v1/projects/${projectSlug}/environments/${envSlug}/api-keys`,
-        { name },
+        { name, capability_tier: tier },
       ),
     onSuccess: (result) => {
       setPhase({ type: 'show', key: result.key, name: result.name })
@@ -340,6 +347,12 @@ function CreateAPIKeyModal({
               placeholder={t('api_keys.name_placeholder')}
               className="w-full text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
             />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+              {t('api_keys.capability_tier_label')}
+            </label>
+            <TierSelector value={tier} onChange={setTier} />
           </div>
           {serverError && <p className="text-xs text-red-600 dark:text-red-400">{serverError}</p>}
           <DialogFooter>
@@ -522,4 +535,3 @@ function RevokeAPIKeyModal({
     </Dialog>
   )
 }
-

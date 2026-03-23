@@ -133,6 +133,40 @@ If something is missing soul — it feels assembled rather than designed, or it 
 
 ---
 
+## Component Patterns
+
+### TierSelector
+
+A controlled button-group for selecting an API key capability tier. Lives at `web/src/components/ui/TierSelector.tsx`.
+
+**Props:** `value: ToolCapabilityTier`, `onChange: (tier: ToolCapabilityTier) => void`
+
+**Behaviour:**
+- Three buttons in order: Read → Write → Destructive
+- Caller must default to `"read"` — never `"destructive"` as default
+- Active button uses tier-specific colour (Read: accent, Write: blue, Destructive: amber)
+- **Destructive uses amber when active, not red.** Red = destructive action (Delete buttons). Amber = destructive capability (this key can delete). The distinction is intentional and must be preserved.
+- Inline warning `<p>` in amber text appears only when `value === "destructive"`
+- All copy via `useTranslation('projects')` — no hardcoded strings
+
+### TierBadge
+
+A read-only coloured pill for displaying an API key's capability tier. Lives at `web/src/components/ui/TierBadge.tsx`.
+
+**Props:** `tier: ToolCapabilityTier`, `className?: string`
+
+**Colour convention:**
+
+| Tier | Classes |
+|---|---|
+| `read` | `bg-neutral-100 text-neutral-600 border-neutral-200` (grey) |
+| `write` | `bg-blue-50 text-blue-700 border-blue-200` (blue) |
+| `destructive` | `bg-amber-50 text-amber-700 border-amber-200` (amber) |
+
+**Rule:** TierBadge is distinct from StatusBadge. Do not merge them — capability tier and flag/environment status are orthogonal concepts with different colour semantics.
+
+---
+
 ## Changelog
 
 | Date | Decision | Session context |
@@ -141,3 +175,5 @@ If something is missing soul — it feels assembled rather than designed, or it 
 | 2026-03-23 | Context-sensitive nav: no "Select environment..." when none exist | Design review session with owner |
 | 2026-03-23 | First-run contract: project → environment → flag in under 3 minutes, no docs | Design review session with owner |
 | 2026-03-23 | "Beautiful, not just functional" — visual craft is a product requirement, not polish | Owner directive |
+| 2026-03-23 | TierSelector: amber for destructive capability (not red); inline warning on destructive | Sprint 21 #278 |
+| 2026-03-23 | TierBadge: grey/blue/amber for read/write/destructive — separate from StatusBadge | Sprint 21 #278 |

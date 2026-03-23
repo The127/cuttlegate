@@ -33,7 +33,7 @@ func (k *APIKey) Revoked() bool {
 
 // GenerateAPIKey creates a new API key, returning the domain entity and the
 // plaintext key. The plaintext is shown to the caller once and never stored.
-func GenerateAPIKey(id, projectID, environmentID, name string) (*APIKey, string, error) {
+func GenerateAPIKey(id, projectID, environmentID, name string, tier ToolCapabilityTier) (*APIKey, string, error) {
 	raw := make([]byte, apiKeyRandBytes)
 	if _, err := rand.Read(raw); err != nil {
 		return nil, "", err
@@ -50,7 +50,7 @@ func GenerateAPIKey(id, projectID, environmentID, name string) (*APIKey, string,
 		Name:           name,
 		KeyHash:        hash,
 		DisplayPrefix:  encoded[:displayPrefixLen],
-		CapabilityTier: TierRead,
+		CapabilityTier: tier,
 		CreatedAt:      time.Now(),
 	}, plaintext, nil
 }

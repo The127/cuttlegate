@@ -7,11 +7,12 @@ import (
 	"time"
 
 	"github.com/karo/cuttlegate/internal/app"
+	"github.com/karo/cuttlegate/internal/domain"
 )
 
 // apiKeyService is the use-case interface required by APIKeyHandler.
 type apiKeyService interface {
-	Create(ctx context.Context, projectID, environmentID, name string) (*app.APIKeyCreateResult, error)
+	Create(ctx context.Context, projectID, environmentID, name string, tier domain.ToolCapabilityTier) (*app.APIKeyCreateResult, error)
 	List(ctx context.Context, projectID, environmentID string) ([]app.APIKeyView, error)
 	Revoke(ctx context.Context, id string) error
 }
@@ -39,11 +40,12 @@ func (h *APIKeyHandler) RegisterRoutes(mux *http.ServeMux, auth func(http.Handle
 }
 
 type apiKeyResponse struct {
-	ID            string     `json:"id"`
-	Name          string     `json:"name"`
-	DisplayPrefix string     `json:"display_prefix"`
-	CreatedAt     time.Time  `json:"created_at"`
-	RevokedAt     *time.Time `json:"revoked_at,omitempty"`
+	ID             string     `json:"id"`
+	Name           string     `json:"name"`
+	DisplayPrefix  string     `json:"display_prefix"`
+	CapabilityTier string     `json:"capability_tier"`
+	CreatedAt      time.Time  `json:"created_at"`
+	RevokedAt      *time.Time `json:"revoked_at,omitempty"`
 }
 
 type apiKeyCreateResponse struct {
@@ -58,7 +60,8 @@ func (h *APIKeyHandler) create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var body struct {
-		Name string `json:"name"`
+		Name           string `json:"name"`
+		CapabilityTier string `json:"capability_tier"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		WriteError(w, newBadRequest("invalid request body"))
@@ -69,7 +72,19 @@ func (h *APIKeyHandler) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.svc.Create(r.Context(), proj.ID, env.ID, body.Name)
+	tier := domain.TierRead
+	if body.CapabilityTier != "" {
+		t := domain.ToolCapabilityTier(body.CapabilityTier)
+		if !t.Valid() {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(`{"error":"invalid_capability_tier","message":"capability_tier must be one of: read, write, destructive"}`))
+			return
+		}
+		tier = t
+	}
+
+	result, err := h.svc.Create(r.Context(), proj.ID, env.ID, body.Name, tier)
 	if err != nil {
 		WriteError(w, err)
 		return
@@ -77,10 +92,11 @@ func (h *APIKeyHandler) create(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusCreated, apiKeyCreateResponse{
 		apiKeyResponse: apiKeyResponse{
-			ID:            result.ID,
-			Name:          result.Name,
-			DisplayPrefix: result.DisplayPrefix,
-			CreatedAt:     result.CreatedAt.UTC(),
+			ID:             result.ID,
+			Name:           result.Name,
+			DisplayPrefix:  result.DisplayPrefix,
+			CapabilityTier: result.CapabilityTier,
+			CreatedAt:      result.CreatedAt.UTC(),
 		},
 		Key: result.Plaintext,
 	})
@@ -101,11 +117,12 @@ func (h *APIKeyHandler) list(w http.ResponseWriter, r *http.Request) {
 	items := make([]apiKeyResponse, len(views))
 	for i, v := range views {
 		items[i] = apiKeyResponse{
-			ID:            v.ID,
-			Name:          v.Name,
-			DisplayPrefix: v.DisplayPrefix,
-			CreatedAt:     v.CreatedAt.UTC(),
-			RevokedAt:     v.RevokedAt,
+			ID:             v.ID,
+			Name:           v.Name,
+			DisplayPrefix:  v.DisplayPrefix,
+			CapabilityTier: v.CapabilityTier,
+			CreatedAt:      v.CreatedAt.UTC(),
+			RevokedAt:      v.RevokedAt,
 		}
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"api_keys": items})
