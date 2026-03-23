@@ -17,14 +17,22 @@ lint-sdk:
 build-sdk:
     cd sdk/js && npm run build
 
+# Run the Go SDK tests (sdk/go is a separate module — must cd in)
+test-sdk-go:
+    cd sdk/go && go test -race ./...
+
 # Run the JS/TS SDK tests
-test-sdk:
+test-sdk-js:
     cd sdk/js && npm test
 
 # Run the Python SDK tests
 # Requires dev deps: pip install -e '.[dev]' from sdk/python/
 test-sdk-python:
     cd sdk/python && python -m pytest
+
+# Run all SDK test suites in sequence (Go → JS/TS → Python)
+# Prerequisites: node_modules in sdk/js/ (npm install); pip install -e '.[dev]' in sdk/python/
+test-sdk: test-sdk-go test-sdk-js test-sdk-python
 
 # Run frontend component tests (Vitest + Testing Library)
 test-frontend:
@@ -35,7 +43,7 @@ build:
     go build -o build/server ./cmd/server
 
 # Run lint and all tests in sequence — mirrors CI exactly
-ci: lint test test-integration
+ci: lint test test-integration test-sdk
 
 # Run E2E tests against the full stack
 # Builds the SPA, embeds it into the server binary, then Playwright starts Postgres, OIDC stub, and server.
