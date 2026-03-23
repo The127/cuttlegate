@@ -312,15 +312,19 @@ function safeSetDismissed(): void {
   }
 }
 
+// SDK snippet methods verified against actual source (2026-03-24):
+//   Go:     CachedClient.Bool(ctx, key, ec)         — sdk/go/cached_client.go:92
+//   JS:     evaluateFlag(key, context)               — sdk/js/src/client.ts:146
+//   Python: CuttlegateClient.bool(key, ctx)          — sdk/python/cuttlegate/client.py:83
 function buildSnippet(tab: SdkTab, flagKey: string): string {
   if (tab === 'go') {
-    return `result, err := client.CachedClient(ctx, "${flagKey}")\nif err != nil {\n    // handle error\n}`
+    return `result, err := client.Bool(ctx, "${flagKey}", evalCtx)\nif err != nil {\n    // handle error\n}`
   }
   if (tab === 'js') {
-    return `const result = await client.cachedClient(ctx, '${flagKey}');\n`
+    return `const result = await client.evaluateFlag('${flagKey}', context);\n`
   }
   // python
-  return `result = client.get_flag("${flagKey}", context)\n`
+  return `result = client.bool("${flagKey}", ctx)\n`
 }
 
 function SdkPrompt({ flagKey }: { flagKey: string }) {
