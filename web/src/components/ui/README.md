@@ -49,7 +49,7 @@ For non-`Input` children (e.g. `<textarea>`), manual wiring is still required:
 
 ## Accent colour
 
-The `Button` (primary variant) and all focus rings use `--color-accent` (default: `#2563eb`).
+The `Button` (primary variant) and all focus rings use `--color-accent` (default: `#6366f1`).
 This is set in `src/styles.css` and overridden at runtime by the brandability configuration.
 Any new component that needs brand-consistent colour must use `var(--color-accent)`, not a hardcoded Tailwind colour class.
 

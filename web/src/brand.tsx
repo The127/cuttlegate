@@ -9,7 +9,7 @@ export interface BrandConfig {
 const defaultBrand: BrandConfig = {
   app_name: 'Cuttlegate',
   logo_url: null,
-  accent_colour: '#2563eb',
+  accent_colour: '#6366f1',
 }
 
 const BrandContext = createContext<BrandConfig>(defaultBrand)

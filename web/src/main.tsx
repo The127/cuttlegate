@@ -20,6 +20,9 @@ async function bootstrap() {
   const [config] = await Promise.all([(res.json() as Promise<AppConfig>), initI18n()])
 
   // Apply branding before first render to avoid flash of default styles.
+  // The single --color-accent token is the only accent custom property in @theme.
+  // Verified post-redesign (Sprint 25, #317): no gradient tokens exist — this
+  // override covers all accent usages (Button bg, focus rings, hover states).
   document.documentElement.style.setProperty('--color-accent', config.accent_colour)
   document.title = config.app_name
 
