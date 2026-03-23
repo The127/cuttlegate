@@ -3,6 +3,7 @@
 Public exports:
 
     CuttlegateClient          — synchronous flag evaluation client
+    MockCuttlegateClient      — in-memory test helper; no live server required
     CuttlegateClientProtocol  — PEP 544 protocol for type-safe consumer code
     CuttlegateConfig          — configuration dataclass (api_key suppressed in repr)
     EvalContext               — evaluation context (user_id + attributes)
@@ -17,10 +18,12 @@ Public exports:
 
 from .client import CuttlegateClient
 from .errors import AuthError, ConfigError, NotFoundError, SDKError, ServerError
+from .testing import MockCuttlegateClient
 from .types import CuttlegateClientProtocol, CuttlegateConfig, EvalContext, EvalResult
 
 __all__ = [
     "CuttlegateClient",
+    "MockCuttlegateClient",
     "CuttlegateClientProtocol",
     "CuttlegateConfig",
     "EvalContext",
