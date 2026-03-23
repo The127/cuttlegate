@@ -1,12 +1,14 @@
 import { createRoute } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { projectRoute } from './$slug'
 import { fetchJSON, patchEmpty, postJSON, deleteRequest, APIError } from '../../api'
 import { getUserManager } from '../../auth'
 import { formatRelativeDate } from '../../utils/date'
 import { Button } from '../../components/ui/Button'
+import { Input } from '../../components/ui/Input'
+import { Select, SelectItem } from '../../components/ui/Select'
 import {
   Dialog,
   DialogContent,
@@ -67,6 +69,8 @@ function MemberListPage() {
   const myRole = members.find((m) => m.user_id === currentUserId)?.role ?? 'viewer'
   const isAdmin = myRole === 'admin'
 
+  const addMemberSectionRef = useRef<HTMLDivElement>(null)
+
   const [pendingRemove, setPendingRemove] = useState<Member | null>(null)
   const [removeError, setRemoveError] = useState<string | null>(null)
   const [roleErrors, setRoleErrors] = useState<Record<string, string>>({})
@@ -123,7 +127,13 @@ function MemberListPage() {
       <h1 className="text-xl font-semibold text-[var(--color-text-primary)] mb-6">{t('members.title')}</h1>
 
       {members.length === 0 ? (
-        <MemberEmptyState />
+        <MemberEmptyState
+          isAdmin={isAdmin}
+          onAddClick={() => {
+            addMemberSectionRef.current?.scrollIntoView({ behavior: 'smooth' })
+            document.getElementById('member-user-id')?.focus()
+          }}
+        />
       ) : (
         <div className="border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] overflow-hidden">
           <table className="w-full text-sm">
@@ -165,7 +175,7 @@ function MemberListPage() {
       )}
 
       {isAdmin && (
-        <div className="mt-6">
+        <div className="mt-6" ref={addMemberSectionRef}>
           <AddMemberForm slug={slug} />
         </div>
       )}
@@ -209,7 +219,7 @@ function MemberRow({
   const { t } = useTranslation('projects')
   const displayName = memberDisplayName(member)
   return (
-    <tr className="hover:bg-[var(--color-surface)]
+    <tr className="hover:bg-[var(--color-surface)]">
       <td className="px-4 py-3">
         <div className="flex flex-col gap-0.5">
           <span className="text-sm text-[var(--color-text-primary)] font-medium">
@@ -229,19 +239,18 @@ function MemberRow({
       <td className="px-4 py-3 whitespace-nowrap">
         {isAdmin ? (
           <div>
-            <select
+            <Select
               value={member.role}
+              onValueChange={(v) => onRoleChange(v as Role)}
               disabled={rolePending}
-              onChange={(e) => onRoleChange(e.target.value as Role)}
               aria-label={t('members.role_aria', { name: displayName })}
-              className="text-xs border border-[var(--color-border)] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] disabled:opacity-50 bg-[var(--color-surface)]"
             >
               {ROLES.map((r) => (
-                <option key={r} value={r}>
+                <SelectItem key={r} value={r}>
                   {r}
-                </option>
+                </SelectItem>
               ))}
-            </select>
+            </Select>
             {roleError && (
               <p className="mt-1 text-xs text-[var(--color-status-error)]">{roleError}</p>
             )}
@@ -337,7 +346,7 @@ function AddMemberForm({ slug }: { slug: string }) {
           <label htmlFor="member-user-id" className="sr-only">
             {t('members.user_id_label')}
           </label>
-          <input
+          <Input
             id="member-user-id"
             type="text"
             value={userId}
@@ -346,31 +355,26 @@ function AddMemberForm({ slug }: { slug: string }) {
               setError(null)
             }}
             placeholder={t('members.user_id_placeholder')}
-            aria-invalid={!!error}
+            hasError={!!error}
             aria-describedby={error ? 'add-member-error' : undefined}
-            className={`w-full font-mono text-sm bg-[var(--color-surface)] text-[var(--color-text-primary)] border rounded px-2 py-1.5 focus:outline-none focus:ring-2 ${
-              error
-                ? 'border-[var(--color-status-error)] focus:ring-[var(--color-status-error)]'
-                : 'border-[var(--color-border)] focus:ring-[var(--color-accent)]'
-            }`}
+            className="font-mono"
           />
         </div>
         <div>
           <label htmlFor="member-role" className="sr-only">
             {t('members.role_label')}
           </label>
-          <select
-            id="member-role"
+          <Select
             value={role}
-            onChange={(e) => setRole(e.target.value as Role)}
-            className="text-sm border border-[var(--color-border)] rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] bg-[var(--color-surface)]"
+            onValueChange={(v) => setRole(v as Role)}
+            aria-label={t('members.role_label')}
           >
             {ROLES.map((r) => (
-              <option key={r} value={r}>
+              <SelectItem key={r} value={r}>
                 {r}
-              </option>
+              </SelectItem>
             ))}
-          </select>
+          </Select>
         </div>
         <Button
           type="submit"
@@ -453,13 +457,24 @@ function RemoveMemberDialog({
   )
 }
 
-function MemberEmptyState() {
+function MemberEmptyState({
+  isAdmin,
+  onAddClick,
+}: {
+  isAdmin: boolean
+  onAddClick: () => void
+}) {
   const { t } = useTranslation('projects')
   return (
     <div className="text-center py-16 px-6 border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)]">
       <p className="text-sm text-[var(--color-text-secondary)]">
         {t('members.empty')}
       </p>
+      {isAdmin && (
+        <Button size="lg" className="mt-4" onClick={onAddClick}>
+          {t('members.add_button')}
+        </Button>
+      )}
     </div>
   )
 }

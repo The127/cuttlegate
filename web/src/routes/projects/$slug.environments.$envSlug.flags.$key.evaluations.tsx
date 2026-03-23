@@ -36,7 +36,7 @@ const REASON_LABEL_MAP: Record<string, string> = {
 
 const REASON_BADGE_CLASS: Record<string, string> = {
   flag_disabled: 'bg-[var(--color-surface-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border)]',
-  no_match: 'bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800',
+  no_match: 'bg-[rgba(251,191,36,0.08)] text-[var(--color-status-warning)] border-[rgba(251,191,36,0.25)]',
   rule_match: 'bg-[rgba(16,217,168,0.08)] text-[var(--color-status-enabled)] border-[var(--color-status-enabled)]',
   override: 'bg-[rgba(79,124,255,0.1)] text-[var(--color-accent)] border-[rgba(79,124,255,0.3)]',
 }
@@ -144,7 +144,7 @@ function EvaluationRow({ item }: { item: EvaluationEvent }) {
 
   return (
     <>
-      <tr className="hover:bg-[var(--color-surface)]
+      <tr className="hover:bg-[var(--color-surface)]">
         <td className="px-4 py-2 text-xs font-mono text-[var(--color-text-secondary)] whitespace-nowrap">
           {new Date(item.occurred_at).toLocaleString()}
         </td>

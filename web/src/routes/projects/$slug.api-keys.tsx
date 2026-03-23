@@ -6,6 +6,8 @@ import { projectRoute } from './$slug'
 import { fetchJSON, postJSON, deleteRequest, APIError } from '../../api'
 import { formatRelativeDate } from '../../utils/date'
 import { Button } from '../../components/ui/Button'
+import { Input } from '../../components/ui/Input'
+import { Select, SelectItem } from '../../components/ui/Select'
 import { TierBadge } from '../../components/ui/TierBadge'
 import { TierSelector } from '../../components/ui/TierSelector'
 import type { ToolCapabilityTier } from '../../components/ui/TierBadge'
@@ -118,23 +120,21 @@ function APIKeyPage() {
         <>
           <div className="mb-4">
             <label
-              htmlFor="env-selector"
               className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1"
             >
               {t('api_keys.environment_label')}
             </label>
-            <select
-              id="env-selector"
+            <Select
               value={envSlug ?? ''}
-              onChange={(e) => setSelectedEnvSlug(e.target.value)}
-              className="text-sm border border-[var(--color-border)] rounded px-2 py-1.5 bg-[var(--color-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+              onValueChange={(v) => setSelectedEnvSlug(v)}
+              aria-label={t('api_keys.environment_label')}
             >
               {envsQuery.data!.map((env) => (
-                <option key={env.id} value={env.slug}>
+                <SelectItem key={env.id} value={env.slug}>
                   {env.name}
-                </option>
+                </SelectItem>
               ))}
-            </select>
+            </Select>
           </div>
 
           {keysQuery.isLoading ? (
@@ -152,15 +152,15 @@ function APIKeyPage() {
           ) : keys.length === 0 ? (
             <APIKeyEmptyState onCreateClick={() => setShowCreate(true)} />
           ) : (
-            <ul className="divide-y divide-[var(--color-border)] border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)]">
+            <div className="space-y-3">
               {keys.map((key) => (
-                <APIKeyRow
+                <APIKeyCard
                   key={key.id}
                   apiKey={key}
                   onRevokeIntent={() => setPendingRevoke(key)}
                 />
               ))}
-            </ul>
+            </div>
           )}
         </>
       )}
@@ -191,7 +191,7 @@ function APIKeyPage() {
   )
 }
 
-function APIKeyRow({
+function APIKeyCard({
   apiKey,
   onRevokeIntent,
 }: {
@@ -200,31 +200,33 @@ function APIKeyRow({
 }) {
   const { t } = useTranslation('projects')
   return (
-    <li className="flex items-center justify-between px-4 py-3 gap-4">
-      <div className="flex items-center gap-3 min-w-0">
-        <span className="font-mono text-sm text-[var(--color-text-primary)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-2 py-0.5 shrink-0">
-          cg_{apiKey.display_prefix}…
-        </span>
-        <span className="text-sm text-[var(--color-text-primary)] truncate">{apiKey.name}</span>
-        <TierBadge tier={apiKey.capability_tier} />
+    <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)] px-4 py-3 flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-[var(--color-text-primary)] truncate">{apiKey.name}</span>
+          <TierBadge tier={apiKey.capability_tier} />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-xs text-[var(--color-text-secondary)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-2 py-0.5">
+            cg_{apiKey.display_prefix}…
+          </span>
+          <time
+            dateTime={apiKey.created_at}
+            className="text-xs text-[var(--color-text-muted)]"
+            title={new Date(apiKey.created_at).toLocaleString()}
+          >
+            {formatRelativeDate(apiKey.created_at)}
+          </time>
+        </div>
       </div>
-      <div className="flex items-center gap-3 shrink-0">
-        <time
-          dateTime={apiKey.created_at}
-          className="text-xs text-[var(--color-text-muted)]"
-          title={new Date(apiKey.created_at).toLocaleString()}
-        >
-          {formatRelativeDate(apiKey.created_at)}
-        </time>
-        <button
-          onClick={onRevokeIntent}
-          aria-label={t('api_keys.revoke_aria', { name: apiKey.name })}
-          className="px-2 py-1 text-xs font-medium text-[var(--color-status-error)] border border-[var(--color-status-error)] rounded hover:bg-[rgba(248,113,113,0.08)] focus:outline-none focus:ring-2 focus:ring-[var(--color-status-error)]"
-        >
-          {t('api_keys.revoke')}
-        </button>
-      </div>
-    </li>
+      <button
+        onClick={onRevokeIntent}
+        aria-label={t('api_keys.revoke_aria', { name: apiKey.name })}
+        className="shrink-0 px-2 py-1 text-xs font-medium text-[var(--color-status-error)] border border-[var(--color-status-error)] rounded hover:bg-[rgba(248,113,113,0.08)] focus:outline-none focus:ring-2 focus:ring-[var(--color-status-error)]"
+      >
+        {t('api_keys.revoke')}
+      </button>
+    </div>
   )
 }
 
@@ -244,20 +246,23 @@ function APIKeyEmptyState({ onCreateClick }: { onCreateClick: () => void }) {
 
 function APIKeyListSkeleton() {
   return (
-    <ul className="divide-y divide-[var(--color-border)] border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)]">
+    <div className="space-y-3">
       {[1, 2, 3].map((i) => (
-        <li key={i} className="flex items-center justify-between px-4 py-3 gap-4">
-          <div className="flex items-center gap-3">
-            <div className="h-6 w-36 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
-            <div className="h-4 w-32 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+        <div key={i} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)] px-4 py-3 flex items-center justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <div className="h-4 w-32 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+              <div className="h-4 w-12 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-5 w-28 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+              <div className="h-3 w-16 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="h-3 w-12 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
-            <div className="h-6 w-14 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
-          </div>
-        </li>
+          <div className="h-6 w-14 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
+        </div>
       ))}
-    </ul>
+    </div>
   )
 }
 
@@ -335,7 +340,7 @@ function CreateAPIKeyModal({
             <label htmlFor="key-name" className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
               {t('api_keys.name_label')}
             </label>
-            <input
+            <Input
               id="key-name"
               type="text"
               autoFocus
@@ -345,7 +350,6 @@ function CreateAPIKeyModal({
                 setServerError(null)
               }}
               placeholder={t('api_keys.name_placeholder')}
-              className="w-full text-sm bg-[var(--color-surface)] text-[var(--color-text-primary)] border border-[var(--color-border)] rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
             />
           </div>
           <div>

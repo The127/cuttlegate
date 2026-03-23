@@ -6,6 +6,7 @@ import { projectRoute } from './$slug'
 import { patchJSON, deleteRequest, APIError } from '../../api'
 import { useProjectRole } from '../../hooks/useProjectRole'
 import { Button } from '../../components/ui/Button'
+import { Input } from '../../components/ui/Input'
 import {
   Dialog,
   DialogContent,
@@ -117,7 +118,7 @@ function NameField({ project, isAdmin }: { project: ProjectData; isAdmin: boolea
       </label>
       {isAdmin ? (
         <form onSubmit={handleSubmit} className="flex items-center gap-3">
-          <input
+          <Input
             id="project-name"
             type="text"
             value={name}
@@ -126,7 +127,7 @@ function NameField({ project, isAdmin }: { project: ProjectData; isAdmin: boolea
               setServerError(null)
               setSaved(false)
             }}
-            className="flex-1 text-sm bg-[var(--color-surface)] text-[var(--color-text-primary)] border border-[var(--color-border)] rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            className="flex-1"
           />
           <Button
             type="submit"
@@ -195,7 +196,7 @@ function DangerZone({ project }: { project: ProjectData }) {
           </p>
         </div>
         <Button
-          variant="danger-outline"
+          variant="destructive"
           onClick={() => setShowDeleteModal(true)}
           className="shrink-0"
         >
@@ -283,7 +284,7 @@ function DeleteProjectModal({
                 components={{ mono: <span className="font-mono font-semibold" /> }}
               />
             </label>
-            <input
+            <Input
               id="confirm-name"
               type="text"
               value={confirmName}
@@ -293,7 +294,8 @@ function DeleteProjectModal({
               }}
               autoFocus
               placeholder={project.name}
-              className="w-full text-sm bg-[var(--color-surface)] text-[var(--color-text-primary)] border border-[var(--color-border)] rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-status-error)]"
+              hasError={false}
+              className="focus:border-[var(--color-status-error)] focus:shadow-[0_0_0_2px_rgba(248,113,113,0.4)]"
             />
           </div>
           {serverError && <p className="text-xs text-[var(--color-status-error)]">{serverError}</p>}

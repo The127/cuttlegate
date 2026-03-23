@@ -341,8 +341,8 @@ function FlagDetailCard({
             aria-label={flag.enabled ? t('toggle.disable') : t('toggle.enable')}
             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-60 ${
               flag.enabled
-                ? 'bg-[rgba(16,217,168,0.08)] text-[var(--color-status-enabled)] border-[var(--color-status-enabled)] hover:bg-[rgba(16,217,168,0.08)] focus:ring-green-500
-                : 'bg-[var(--color-surface)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:bg-[var(--color-surface-elevated)] focus:ring-[var(--color-accent)]
+                ? 'bg-[rgba(16,217,168,0.08)] text-[var(--color-status-enabled)] border-[var(--color-status-enabled)] hover:bg-[rgba(16,217,168,0.08)] focus:ring-[var(--color-status-enabled)]'
+                : 'bg-[var(--color-surface)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:bg-[var(--color-surface-elevated)] focus:ring-[var(--color-accent)]'
             }`}
           >
             <span
@@ -514,7 +514,7 @@ function EnvironmentToggleRow({
           aria-label={data!.enabled ? t('toggle.disable_in_env', { env: env.name }) : t('toggle.enable_in_env', { env: env.name })}
           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-60 ${
             data!.enabled
-              ? 'bg-[rgba(16,217,168,0.08)] text-[var(--color-status-enabled)] border-[var(--color-status-enabled)] hover:bg-[rgba(16,217,168,0.08)] focus:ring-green-500'
+              ? 'bg-[rgba(16,217,168,0.08)] text-[var(--color-status-enabled)] border-[var(--color-status-enabled)] hover:bg-[rgba(16,217,168,0.08)] focus:ring-[var(--color-status-enabled)]'
               : 'bg-[var(--color-surface-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:bg-[var(--color-surface-elevated)] focus:ring-[var(--color-accent)]'
           }`}
         >

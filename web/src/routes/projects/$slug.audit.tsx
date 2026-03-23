@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { projectRoute } from './$slug'
 import { fetchJSON } from '../../api'
 import { formatAbsoluteDate, formatRelativeDate } from '../../utils/date'
+import { Input } from '../../components/ui/Input'
 
 interface AuditEntry {
   id: string
@@ -81,13 +82,13 @@ function AuditLogPage() {
         <label htmlFor="audit-flag-filter" className="sr-only">
           {t('audit.filter_label')}
         </label>
-        <input
+        <Input
           id="audit-flag-filter"
           type="text"
           value={flagKey}
           onChange={(e) => setFlagKey(e.target.value)}
           placeholder={t('audit.filter_placeholder')}
-          className="w-full max-w-sm font-mono text-sm bg-[var(--color-surface)] text-[var(--color-text-primary)] border border-[var(--color-border)] rounded px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+          className="max-w-sm font-mono"
         />
       </div>
 
@@ -145,7 +146,7 @@ function AuditEntryRow({ entry }: { entry: AuditEntry }) {
   const absolute = formatAbsoluteDate(entry.occurred_at)
   const relative = formatRelativeDate(entry.occurred_at)
   return (
-    <tr className="hover:bg-[var(--color-surface)]
+    <tr className="hover:bg-[var(--color-surface)]">
       <td className="px-4 py-3 whitespace-nowrap">
         <time
           dateTime={entry.occurred_at}

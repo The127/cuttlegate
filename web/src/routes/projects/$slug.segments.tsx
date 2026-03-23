@@ -6,6 +6,7 @@ import { projectRoute } from './$slug'
 import { fetchJSON, postJSON, patchJSON, putJSON, deleteRequest, APIError } from '../../api'
 import { formatRelativeDate } from '../../utils/date'
 import { Button } from '../../components/ui/Button'
+import { Input } from '../../components/ui/Input'
 import {
   Dialog,
   DialogContent,
@@ -334,32 +335,29 @@ function CreateSegmentModal({
             <label htmlFor="seg-name" className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
               {t('create.name_label')}
             </label>
-            <input
+            <Input
               id="seg-name"
               type="text"
               autoFocus
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
               placeholder={t('create.name_placeholder')}
-              className="w-full text-sm bg-[var(--color-surface)] text-[var(--color-text-primary)] border border-[var(--color-border)] rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
             />
           </div>
           <div>
             <label htmlFor="seg-slug" className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
               {t('create.slug_label')}
             </label>
-            <input
+            <Input
               id="seg-slug"
               type="text"
               value={segSlug}
               onChange={(e) => handleSlugChange(e.target.value)}
               onBlur={handleSlugBlur}
               placeholder={t('create.slug_placeholder')}
-              aria-invalid={!!slugError}
+              hasError={!!slugError}
               aria-describedby={slugError ? 'seg-slug-error' : undefined}
-              className={`w-full font-mono text-sm border rounded px-2 py-1.5 focus:outline-none focus:ring-2 ${
-                slugError ? 'border-[var(--color-status-error)] focus:ring-[var(--color-status-error)]' : 'border-[var(--color-border)] focus:ring-[var(--color-accent)]'
-              }`}
+              className="font-mono"
             />
             {slugError && (
               <p id="seg-slug-error" className="mt-1 text-xs text-[var(--color-status-error)]">
@@ -445,13 +443,12 @@ function EditSegmentModal({
             <label htmlFor="edit-seg-name" className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
               {t('edit.name_label')}
             </label>
-            <input
+            <Input
               id="edit-seg-name"
               type="text"
               autoFocus
               value={name}
               onChange={(e) => { setName(e.target.value); setServerError(null) }}
-              className="w-full text-sm bg-[var(--color-surface)] text-[var(--color-text-primary)] border border-[var(--color-border)] rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
             />
           </div>
           <div>
@@ -590,17 +587,15 @@ function ManageMembersModal({
         ) : (
           <>
             <div className="flex gap-2 mb-3">
-              <input
+              <Input
                 type="text"
                 value={addKey}
                 onChange={(e) => { setAddKey(e.target.value); setAddError(null) }}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddMember() } }}
                 placeholder={t('members.add_placeholder')}
                 aria-label={t('members.add_aria')}
-                aria-invalid={!!addError}
-                className={`flex-1 font-mono text-sm border rounded px-2 py-1.5 focus:outline-none focus:ring-2 ${
-                  addError ? 'border-[var(--color-status-error)] focus:ring-[var(--color-status-error)]' : 'border-[var(--color-border)] focus:ring-[var(--color-accent)]'
-                }`}
+                hasError={!!addError}
+                className="flex-1 font-mono"
               />
               <Button
                 type="button"
@@ -654,7 +649,7 @@ function ManageMembersModal({
                     rows={5}
                     placeholder={t('members.bulk_placeholder')}
                     aria-label={t('members.bulk_aria')}
-                    className="w-full font-mono text-sm bg-[var(--color-surface)] text-[var(--color-text-primary)] border border-[var(--color-border)] rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] resize-none"
+                    className="w-full font-mono text-sm bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] border border-[var(--color-border)] rounded px-2 py-1.5 focus:outline-none focus:border-[var(--color-accent)] focus:shadow-[0_0_0_2px_rgba(79,124,255,0.4)] resize-none"
                   />
                   <Button
                     type="button"
