@@ -24,7 +24,8 @@ const (
 )
 
 // Permits reports whether t grants access to a tool requiring required.
-// The ordering is Read < Write < Destructive.
+// The ordering is Read < Write < Destructive. An unrecognised tier value
+// is treated as below all valid tiers and always returns false.
 func (t ToolCapabilityTier) Permits(required ToolCapabilityTier) bool {
 	return tierRank(t) >= tierRank(required)
 }
