@@ -61,5 +61,14 @@ export default defineConfig({
         storageState: STORAGE_STATE_PATH,
       },
     },
+    // Critical path — authenticated navigation, flag key visibility, 404 error state.
+    {
+      name: 'critical-path',
+      testMatch: 'critical-path.spec.ts',
+      dependencies: ['auth-setup'],
+      use: {
+        storageState: STORAGE_STATE_PATH,
+      },
+    },
   ],
 });
