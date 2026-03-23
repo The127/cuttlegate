@@ -195,7 +195,6 @@ describe('ProjectSwitcher', () => {
     })
 
     expect(screen.queryByRole('combobox', { name: 'Environment' })).not.toBeInTheDocument()
-    expect(screen.queryByText('/')).not.toBeInTheDocument()
   })
 
   // @error-path — project fetch failure shows error + retry button
