@@ -45,7 +45,7 @@ function HomePage() {
 
   if (isError) {
     return (
-      <div className="p-8 text-center">
+      <div className="p-6 text-center">
         <p className="text-sm text-red-600 dark:text-red-400">{t('list.error')}</p>
         <button
           onClick={() => void refetch()}
@@ -61,7 +61,7 @@ function HomePage() {
 
   if (projects.length === 0) {
     return (
-      <div className="p-8 text-center">
+      <div className="p-6 text-center">
         <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('list.empty_title')}</h1>
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
           {t('list.empty_body')}
@@ -74,7 +74,7 @@ function HomePage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('list.title')}</h1>
         <Button onClick={openCreateDialog} size="md">
@@ -140,7 +140,7 @@ function CountBadge({
 
 function HomePageSkeleton() {
   return (
-    <div className="p-8">
+    <div className="p-6">
       <div className="h-6 w-24 bg-gray-100 dark:bg-gray-700 rounded animate-pulse mb-6" />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {[1, 2, 3].map((i) => (

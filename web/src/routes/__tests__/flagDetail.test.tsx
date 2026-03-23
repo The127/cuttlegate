@@ -406,3 +406,28 @@ describe('FlagChangeHistoryPanel', () => {
     expect(screen.queryByRole('table')).not.toBeInTheDocument()
   })
 })
+
+describe('FlagDetailPage — copy flag key', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockFetchJSON.mockImplementation(mockFetchBase)
+  })
+
+  // @happy: flag key in header renders as a copyable button (CopyableCode)
+  it('renders flag key as a clickable copy button in the header', async () => {
+    const { flagDetailRoute } = await loadFlagDetailPage()
+    const FlagDetailPage = flagDetailRoute.options.component
+
+    render(<Wrapper><FlagDetailPage /></Wrapper>)
+
+    await waitFor(() => {
+      expect(screen.getByText('Dark Mode')).toBeInTheDocument()
+    })
+
+    // CopyableCode renders as a button with aria-label "Copy flag key dark-mode"
+    const copyBtn = screen.getByRole('button', { name: /copy flag key dark-mode/i })
+    expect(copyBtn).toBeInTheDocument()
+    // The flag key text appears inside the button
+    expect(copyBtn).toHaveTextContent('dark-mode')
+  })
+})

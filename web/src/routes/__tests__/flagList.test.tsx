@@ -275,3 +275,122 @@ describe('useMemo dep array — toggleMutation primitives', () => {
     })
   })
 })
+
+describe('CreateFlagModal — post-create success state', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  // @happy: after successful flag creation, success state shows the flag key
+  it('shows flag key in success state after creation', async () => {
+    mockFetchJSON.mockImplementation((url: string) => {
+      if (url.endsWith('/stats')) return Promise.resolve(STATS_NEVER)
+      return Promise.resolve({ flags: [] })
+    })
+    mockPostJSON.mockResolvedValue({})
+
+    const { flagListRoute } = await loadFlagListPage()
+    const FlagListPage = flagListRoute.options.component
+
+    const { userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+
+    render(<Wrapper><FlagListPage /></Wrapper>)
+
+    // Wait for empty state
+    await waitFor(() => {
+      expect(screen.getByText(/No flags yet/)).toBeInTheDocument()
+    })
+
+    // Click the header "New flag" button (first occurrence)
+    const newFlagBtns = screen.getAllByRole('button', { name: /new flag/i })
+    await user.click(newFlagBtns[0])
+
+    // Fill in flag key
+    const keyInput = await screen.findByPlaceholderText('my-feature-flag')
+    await user.type(keyInput, 'my-new-flag')
+
+    // Submit
+    await user.click(screen.getByRole('button', { name: /^create$/i }))
+
+    // Success state: flag key should appear
+    await waitFor(() => {
+      expect(screen.getByText('Flag created')).toBeInTheDocument()
+      expect(screen.getByText('my-new-flag')).toBeInTheDocument()
+    })
+  })
+
+  // @happy: Done button in success state calls onCreated and closes modal
+  it('Done button in success state closes the modal', async () => {
+    mockFetchJSON.mockImplementation((url: string) => {
+      if (url.endsWith('/stats')) return Promise.resolve(STATS_NEVER)
+      return Promise.resolve({ flags: [] })
+    })
+    mockPostJSON.mockResolvedValue({})
+
+    const { flagListRoute } = await loadFlagListPage()
+    const FlagListPage = flagListRoute.options.component
+
+    const { userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+
+    render(<Wrapper><FlagListPage /></Wrapper>)
+
+    await waitFor(() => {
+      expect(screen.getByText(/No flags yet/)).toBeInTheDocument()
+    })
+
+    const newFlagBtns = screen.getAllByRole('button', { name: /new flag/i })
+    await user.click(newFlagBtns[0])
+
+    const keyInput = await screen.findByPlaceholderText('my-feature-flag')
+    await user.type(keyInput, 'my-new-flag')
+    await user.click(screen.getByRole('button', { name: /^create$/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText('Flag created')).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByRole('button', { name: /done/i }))
+
+    // Modal should close — success title no longer visible
+    await waitFor(() => {
+      expect(screen.queryByText('Flag created')).not.toBeInTheDocument()
+    })
+  })
+
+  // @error-path: invalid key shows inline error, not toast
+  it('shows inline error for invalid flag key', async () => {
+    mockFetchJSON.mockImplementation((url: string) => {
+      if (url.endsWith('/stats')) return Promise.resolve(STATS_NEVER)
+      return Promise.resolve({ flags: [] })
+    })
+
+    const { flagListRoute } = await loadFlagListPage()
+    const FlagListPage = flagListRoute.options.component
+
+    const { userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+
+    render(<Wrapper><FlagListPage /></Wrapper>)
+
+    await waitFor(() => {
+      expect(screen.getByText(/No flags yet/)).toBeInTheDocument()
+    })
+
+    const newFlagBtns = screen.getAllByRole('button', { name: /new flag/i })
+    await user.click(newFlagBtns[0])
+
+    const keyInput = await screen.findByPlaceholderText('my-feature-flag')
+    await user.type(keyInput, 'INVALID KEY')
+    await user.tab() // trigger blur
+
+    // Inline error should appear
+    await waitFor(() => {
+      expect(screen.getByText(/lowercase/i)).toBeInTheDocument()
+    })
+
+    // No toast, no redirect — still in the modal
+    expect(screen.getByText('Create flag')).toBeInTheDocument()
+  })
+})

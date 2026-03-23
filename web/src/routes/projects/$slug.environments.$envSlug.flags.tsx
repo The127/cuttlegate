@@ -1,6 +1,6 @@
 import { createRoute, Link } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useTranslation, Trans } from 'react-i18next'
 import { projectEnvRoute } from './$slug.environments.$envSlug'
 import { fetchJSON, patchJSON, postJSON, deleteRequest, APIError } from '../../api'
@@ -14,6 +14,14 @@ import {
   CopyableCode,
   StatusBadge,
 } from '../../components/ui'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogCloseButton,
+} from '../../components/ui/Dialog'
 import type { ColumnDef } from '../../components/ui'
 import { formatRelativeDate } from '../../utils/date'
 
@@ -291,6 +299,7 @@ function CreateFlagModal({
   const [keyError, setKeyError] = useState<string | null>(null)
   const [serverError, setServerError] = useState<string | null>(null)
   const [keyTouched, setKeyTouched] = useState(false)
+  const [createdKey, setCreatedKey] = useState<string | null>(null)
 
   const createMutation = useMutation({
     mutationFn: () => {
@@ -307,7 +316,7 @@ function CreateFlagModal({
         default_variant_key,
       })
     },
-    onSuccess: () => onCreated(),
+    onSuccess: () => setCreatedKey(key),
     onError: (err) => {
       if (err instanceof APIError) {
         if (err.status === 409 || err.code === 'conflict') {
@@ -354,101 +363,111 @@ function CreateFlagModal({
     createMutation.mutate()
   }
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCancel()
-    }
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [onCancel])
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="create-dialog-title"
-    >
-      <div className="absolute inset-0 bg-black/30" onClick={onCancel} aria-hidden="true" />
-      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
-        <h2 id="create-dialog-title" className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          {t('create.title')}
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="flag-key" className="text-xs text-gray-500 mb-1">{t('create.key_label')}</Label>
-            <Input
-              id="flag-key"
-              type="text"
-              autoFocus
-              value={key}
-              onChange={(e) => handleKeyChange(e.target.value)}
-              onBlur={handleKeyBlur}
-              placeholder={t('create.key_placeholder')}
-              aria-invalid={!!keyError}
-              aria-describedby={keyError ? 'flag-key-error' : undefined}
-              hasError={!!keyError}
-              className="font-mono py-1.5 px-2"
+    <Dialog open onOpenChange={(open) => { if (!open) { if (createdKey) onCreated(); else onCancel() } }}>
+      <DialogContent>
+        <DialogCloseButton />
+        {createdKey ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>{t('create.success_title')}</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              {t('create.success_body')}
+            </p>
+            <CopyableCode
+              value={createdKey}
+              aria-label={t('create.success_copy_aria', { key: createdKey })}
+              className="w-full justify-between"
             />
-            {keyError && (
-              <p id="flag-key-error" className="mt-1 text-xs text-red-600 dark:text-red-400">
-                {keyError}
-              </p>
-            )}
-          </div>
+            <DialogFooter>
+              <Button variant="primary" onClick={onCreated}>
+                {t('create.success_done')}
+              </Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle>{t('create.title')}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="flag-key" className="text-xs text-gray-500 mb-1">{t('create.key_label')}</Label>
+                <Input
+                  id="flag-key"
+                  type="text"
+                  autoFocus
+                  value={key}
+                  onChange={(e) => handleKeyChange(e.target.value)}
+                  onBlur={handleKeyBlur}
+                  placeholder={t('create.key_placeholder')}
+                  aria-invalid={!!keyError}
+                  aria-describedby={keyError ? 'flag-key-error' : undefined}
+                  hasError={!!keyError}
+                  className="font-mono py-1.5 px-2"
+                />
+                {keyError && (
+                  <p id="flag-key-error" className="mt-1 text-xs text-red-600 dark:text-red-400">
+                    {keyError}
+                  </p>
+                )}
+              </div>
 
-          <div>
-            <Label htmlFor="flag-name" className="text-xs text-gray-500 mb-1">{t('create.name_label')}</Label>
-            <Input
-              id="flag-name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t('create.name_placeholder')}
-              className="py-1.5 px-2"
-            />
-          </div>
+              <div>
+                <Label htmlFor="flag-name" className="text-xs text-gray-500 mb-1">{t('create.name_label')}</Label>
+                <Input
+                  id="flag-name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={t('create.name_placeholder')}
+                  className="py-1.5 px-2"
+                />
+              </div>
 
-          <div>
-            <Label htmlFor="flag-type" className="text-xs text-gray-500 mb-1">{t('create.type_label')}</Label>
-            <Select
-              value={type}
-              onValueChange={setType}
-              aria-label={t('create.type_aria')}
-              className="w-full"
-            >
-              <SelectItem value="bool">{t('create.type_bool')}</SelectItem>
-              <SelectItem value="string">{t('create.type_string')}</SelectItem>
-              <SelectItem value="number">{t('create.type_number')}</SelectItem>
-              <SelectItem value="json">{t('create.type_json')}</SelectItem>
-            </Select>
-          </div>
+              <div>
+                <Label htmlFor="flag-type" className="text-xs text-gray-500 mb-1">{t('create.type_label')}</Label>
+                <Select
+                  value={type}
+                  onValueChange={setType}
+                  aria-label={t('create.type_aria')}
+                  className="w-full"
+                >
+                  <SelectItem value="bool">{t('create.type_bool')}</SelectItem>
+                  <SelectItem value="string">{t('create.type_string')}</SelectItem>
+                  <SelectItem value="number">{t('create.type_number')}</SelectItem>
+                  <SelectItem value="json">{t('create.type_json')}</SelectItem>
+                </Select>
+              </div>
 
-          {serverError && (
-            <p className="text-xs text-red-600 dark:text-red-400">{serverError}</p>
-          )}
+              {serverError && (
+                <p className="text-xs text-red-600 dark:text-red-400">{serverError}</p>
+              )}
 
-          <div className="flex justify-end gap-3 pt-2">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onCancel}
-              disabled={createMutation.isPending}
-            >
-              {t('actions.cancel', { ns: 'common' })}
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              loading={createMutation.isPending}
-              disabled={!!keyError}
-            >
-              {createMutation.isPending ? t('states.creating', { ns: 'common' }) : t('actions.create', { ns: 'common' })}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={onCancel}
+                  disabled={createMutation.isPending}
+                >
+                  {t('actions.cancel', { ns: 'common' })}
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  loading={createMutation.isPending}
+                  disabled={!!keyError}
+                >
+                  {createMutation.isPending ? t('states.creating', { ns: 'common' }) : t('actions.create', { ns: 'common' })}
+                </Button>
+              </div>
+            </form>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -467,27 +486,13 @@ function DeleteConfirmModal({
 }) {
   const { t } = useTranslation('flags')
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCancel()
-    }
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [onCancel])
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="delete-dialog-title"
-    >
-      <div className="absolute inset-0 bg-black/30" onClick={onCancel} aria-hidden="true" />
-      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-sm w-full mx-4 p-6">
-        <h2 id="delete-dialog-title" className="text-base font-semibold text-gray-900 dark:text-gray-100">
-          {t('delete.title')}
-        </h2>
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+    <Dialog open onOpenChange={(open) => { if (!open) onCancel() }}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{t('delete.title')}</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           <Trans
             i18nKey="delete.body"
             ns="flags"
@@ -498,16 +503,16 @@ function DeleteConfirmModal({
         {deleteFailed && (
           <p className="mt-3 text-xs text-red-600 dark:text-red-400">{t('delete.failed')}</p>
         )}
-        <div className="mt-5 flex justify-end gap-3">
+        <DialogFooter>
           <Button autoFocus variant="secondary" onClick={onCancel} disabled={isDeleting}>
             {t('actions.cancel', { ns: 'common' })}
           </Button>
           <Button variant="destructive" onClick={onConfirm} loading={isDeleting}>
             {isDeleting ? t('states.deleting', { ns: 'common' }) : t('actions.delete', { ns: 'common' })}
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 

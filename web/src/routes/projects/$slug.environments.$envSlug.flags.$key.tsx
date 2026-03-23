@@ -5,7 +5,7 @@ import { useTranslation, Trans } from 'react-i18next'
 import { projectEnvRoute } from './$slug.environments.$envSlug'
 import { fetchJSON, patchJSON, postJSON, deleteRequest, APIError } from '../../api'
 import { useFlagSSE } from '../../hooks/useFlagSSE'
-import { Button, Input, Select, SelectItem } from '../../components/ui'
+import { Button, Input, Select, SelectItem, CopyableCode } from '../../components/ui'
 import { PromoteDialog } from '../../components/PromoteDialog'
 import { FlagAnalyticsPanel } from '../../components/FlagAnalyticsPanel'
 import { formatAbsoluteDate, formatRelativeDate } from '../../utils/date'
@@ -234,11 +234,12 @@ function FlagDetailCard({
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
       {/* Header */}
       <div className="flex items-start justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
-        <div>
-          <span className="font-mono text-sm text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-2 py-0.5">
-            {flag.key}
-          </span>
-          <span className="ml-2 text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded px-1.5 py-0.5">
+        <div className="flex items-center gap-2">
+          <CopyableCode
+            value={flag.key}
+            aria-label={t('detail.copy_key_aria', { key: flag.key })}
+          />
+          <span className="text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded px-1.5 py-0.5">
             {flag.type}
           </span>
         </div>

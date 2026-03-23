@@ -40,7 +40,11 @@
     "type_string": "String",
     "type_number": "Number",
     "type_json": "JSON",
-    "type_aria": "Flag type"
+    "type_aria": "Flag type",
+    "success_title": "Flag created",
+    "success_body": "Copy your flag key and use it in your SDK to start evaluating.",
+    "success_copy_aria": "Copy flag key {{key}}",
+    "success_done": "Done"
   },
   "detail": {
     "name_label": "Name",
@@ -55,7 +59,8 @@
     "environments_section": "Environments",
     "env_error": "Failed to load environments.",
     "env_row_error": "Failed to load",
-    "loading_aria": "Loading"
+    "loading_aria": "Loading",
+    "copy_key_aria": "Copy flag key {{key}}"
   },
   "eval": {
     "title": "Evaluation playground",
