@@ -61,6 +61,88 @@ func main() {
 }
 ```
 
+## Production use — CachedClient
+
+For production applications where flag evaluation is in the hot request path,
+use `CachedClient`. It seeds a local in-memory cache via `EvaluateAll` on
+startup and keeps it fresh via a single background SSE connection. `Bool` and
+`String` read from cache with no network round trip; they fall back to a live
+HTTP call only on a cache miss (e.g. a new flag added after startup).
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "log"
+
+    cuttlegate "github.com/karo/cuttlegate/sdk/go"
+)
+
+func main() {
+    cc, err := cuttlegate.NewCachedClient(cuttlegate.Config{
+        BaseURL:      "https://flags.example.com",
+        ServiceToken: "cg_your_api_key_here",
+        Project:      "my-project",
+        Environment:  "production",
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // ctx controls the background SSE goroutine lifetime.
+    // Cancel it on shutdown to stop the goroutine cleanly.
+    ctx, cancel := context.WithCancel(context.Background())
+    defer cancel()
+
+    evalCtx := cuttlegate.EvalContext{UserID: "user-123"}
+
+    // Bootstrap seeds the cache via EvaluateAll and starts the SSE goroutine.
+    if err := cc.Bootstrap(ctx, evalCtx); err != nil {
+        log.Fatalf("Bootstrap: %v", err)
+    }
+
+    // Bool and String read from cache — no network call on cache hit.
+    enabled, err := cc.Bool(ctx, "dark-mode", evalCtx)
+    if err != nil {
+        log.Printf("dark-mode eval: %v", err)
+    }
+    fmt.Println("dark-mode:", enabled)
+
+    banner, err := cc.String(ctx, "banner-text", evalCtx)
+    if err != nil {
+        log.Printf("banner-text eval: %v", err)
+    }
+    fmt.Println("banner-text:", banner)
+}
+```
+
+**How it works:**
+
+- `NewCachedClient` validates config — no network calls.
+- `Bootstrap(ctx, evalCtx)` calls `EvaluateAll` once to seed the cache, then
+  starts **one** background goroutine managing **one** SSE connection for all
+  flags (see ADR-0025). The goroutine reconnects with exponential backoff on
+  transient errors (5xx, network); it stops permanently on auth errors (401/403).
+- `Bool`/`String` check the cache first. On a cache miss (key not present after
+  `Bootstrap`), they fall back to a live HTTP evaluation — the result is not
+  stored in cache.
+- Cancelling `ctx` stops the SSE goroutine cleanly. The cache remains readable
+  after cancel; `Bool`/`String` fall back to live HTTP for any subsequent calls.
+- `Bootstrap` may be called more than once to refresh the full cache. The
+  previous goroutine is stopped before the new one starts.
+- `*CachedClient` satisfies the `Client` interface — inject it wherever a
+  `Client` is expected.
+
+**When to use `CachedClient` vs `NewClient`:**
+
+| Scenario | Use |
+|---|---|
+| Hot request path, many flag checks per request | `CachedClient` |
+| Low-volume / batch jobs | `NewClient` |
+| Tests | `cuttlegatetesting.MockClient` |
+
 ## Typed errors
 
 All methods return typed errors — no string-only errors.
