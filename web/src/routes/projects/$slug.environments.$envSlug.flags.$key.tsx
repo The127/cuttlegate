@@ -441,7 +441,7 @@ function EnvironmentTogglePanel({ slug, flagKey }: { slug: string; flagKey: stri
   return (
     <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg mt-4">
       <div className="px-5 py-3 border-b border-[var(--color-border)]">
-        <h2 className="text-xs font-semibold text-[var(--color-text-secondary)] font-medium">{t('detail.environments_section')}</h2>
+        <h2 className="text-xs font-semibold text-[var(--color-text-secondary)]">{t('detail.environments_section')}</h2>
       </div>
       {isLoading ? (
         <EnvToggleSkeleton />
@@ -608,7 +608,7 @@ function EvaluationPanel({
         aria-expanded={open}
         className="w-full flex items-center justify-between px-5 py-3 text-left focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--color-accent)]"
       >
-        <span className="text-xs font-semibold text-[var(--color-text-secondary)] font-medium">
+        <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
           {t('eval.title')}
         </span>
         <span className="text-[var(--color-text-muted)] text-sm" aria-hidden="true">
@@ -763,7 +763,7 @@ function FlagChangeHistoryPanel({ slug, flagKey }: { slug: string; flagKey: stri
         aria-expanded={open}
         className="w-full flex items-center justify-between px-5 py-3 text-left focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--color-accent)]"
       >
-        <span className="text-xs font-semibold text-[var(--color-text-secondary)] font-medium">
+        <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
           {t('history.title')}
         </span>
         <span className="text-[var(--color-text-muted)] text-sm" aria-hidden="true">
@@ -811,16 +811,16 @@ function FlagChangeHistoryPanel({ slug, flagKey }: { slug: string; flagKey: stri
                   >
                     <thead className="bg-[var(--color-surface-elevated)] border-b border-[var(--color-border)]">
                       <tr>
-                        <th scope="col" className="text-left px-4 py-2 text-xs font-medium text-[var(--color-text-secondary)] font-medium whitespace-nowrap">
+                        <th scope="col" className="text-left px-4 py-2 text-xs font-medium text-[var(--color-text-secondary)] whitespace-nowrap">
                           {t('history.col_timestamp')}
                         </th>
-                        <th scope="col" className="text-left px-4 py-2 text-xs font-medium text-[var(--color-text-secondary)] font-medium whitespace-nowrap">
+                        <th scope="col" className="text-left px-4 py-2 text-xs font-medium text-[var(--color-text-secondary)] whitespace-nowrap">
                           {t('history.col_environment')}
                         </th>
-                        <th scope="col" className="text-left px-4 py-2 text-xs font-medium text-[var(--color-text-secondary)] font-medium whitespace-nowrap">
+                        <th scope="col" className="text-left px-4 py-2 text-xs font-medium text-[var(--color-text-secondary)] whitespace-nowrap">
                           {t('history.col_actor')}
                         </th>
-                        <th scope="col" className="text-left px-4 py-2 text-xs font-medium text-[var(--color-text-secondary)] font-medium whitespace-nowrap">
+                        <th scope="col" className="text-left px-4 py-2 text-xs font-medium text-[var(--color-text-secondary)] whitespace-nowrap">
                           {t('history.col_action')}
                         </th>
                       </tr>
