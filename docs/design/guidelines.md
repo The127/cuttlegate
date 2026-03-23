@@ -130,8 +130,8 @@ Base unit is 4 px (Tailwind default). No custom spacing tokens.
 | Screen type | Max width |
 |---|---|
 | Narrow (settings, rules editor) | `max-w-2xl` |
-| Wide (flag list, members, audit) | `max-w-4xl` or `max-w-5xl` |
-| Dashboard overview | `max-w-5xl` |
+| Wide (flag list, members, audit, segments) | `max-w-4xl` |
+| Dashboard overview and analytics | `max-w-5xl` |
 | Full-bleed tables | No max-width cap |
 
 ---
