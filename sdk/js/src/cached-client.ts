@@ -40,6 +40,20 @@ export interface CachedClient extends CuttlegateClient {
    * The SSE connection is also closed on hydration failure.
    */
   ready: Promise<void>;
+  /**
+   * Subscribe to changes for a single flag key.
+   *
+   * The callback fires with the new `enabled` value whenever an SSE event
+   * updates that key in the cache. Callbacks only fire for keys present in
+   * the cache at hydration time — unknown keys are silently ignored.
+   *
+   * Safe to call before `ready` resolves. Callbacks fire for any
+   * post-hydration SSE events regardless of when subscribe was called.
+   *
+   * Returns an unsubscribe function. Always call it in cleanup to avoid
+   * memory leaks (e.g. return it from a React useEffect).
+   */
+  subscribe(key: string, callback: (enabled: boolean) => void): () => void;
 }
 
 // Compile-time assertion: CachedClient must extend CuttlegateClient.
@@ -103,6 +117,10 @@ export function createCachedClient(
   // In-memory cache: flagKey → EvaluationResult (as seeded by hydration).
   const cache = new Map<string, EvaluationResult>();
 
+  // Subscriber registry: flagKey → Set of callbacks to notify on cache update.
+  // Registered immediately on subscribe() — safe to call before ready resolves.
+  const subscribers = new Map<string, Set<(enabled: boolean) => void>>();
+
   // Buffer for SSE events that arrive before hydration completes.
   const sseBuffer: FlagStateChangedEvent[] = [];
   let hydrationComplete = false;
@@ -134,13 +152,20 @@ export function createCachedClient(
     }
   }
 
-  // Apply a single SSE event to the cache.
+  // Apply a single SSE event to the cache, then notify subscribers.
   // Preserves valueKey from hydration; sets reason to "default" (consistent
   // with CuttlegateProvider in react.ts). Ignores unknown keys.
   function applyCacheEvent(event: FlagStateChangedEvent): void {
     const existing = cache.get(event.flagKey);
     if (!existing) return; // unknown key — ignore
     cache.set(event.flagKey, { ...existing, enabled: event.enabled, reason: 'default' });
+    // Notify subscribers after the cache is updated.
+    const cbs = subscribers.get(event.flagKey);
+    if (cbs) {
+      for (const cb of cbs) {
+        cb(event.enabled);
+      }
+    }
   }
 
   // Called when an SSE event arrives.
@@ -299,5 +324,17 @@ export function createCachedClient(
     sseConnection?.close();
   }
 
-  return { evaluate, evaluateFlag, close, ready };
+  function subscribe(key: string, callback: (enabled: boolean) => void): () => void {
+    let cbs = subscribers.get(key);
+    if (!cbs) {
+      cbs = new Set();
+      subscribers.set(key, cbs);
+    }
+    cbs.add(callback);
+    return () => {
+      cbs.delete(callback);
+    };
+  }
+
+  return { evaluate, evaluateFlag, close, ready, subscribe };
 }

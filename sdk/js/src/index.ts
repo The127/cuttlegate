@@ -19,3 +19,5 @@ export type { StreamOptions, StreamConnection, FlagStateChangedEvent } from './s
 
 export { createCachedClient } from './cached-client.js';
 export type { CachedClient, CachedClientOptions } from './cached-client.js';
+
+export { useCachedFlag } from './react.js';

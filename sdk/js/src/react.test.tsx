@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act, waitFor, cleanup } from '@testing-library/react';
-import { CuttlegateProvider, useFlag, useFlagVariant } from './react.js';
+import { CuttlegateProvider, useFlag, useFlagVariant, useCachedFlag } from './react.js';
 import type { CuttlegateConfig } from './types.js';
 import type { StreamOptions, StreamConnection } from './streaming.js';
-import type { EvaluationResult, CuttlegateClient } from './client.js';
+import type { EvaluationResult, CuttlegateClient, FlagResult } from './client.js';
+import type { CachedClient } from './cached-client.js';
 
 // Mock createClient and connectStream so tests don't make real HTTP calls.
 vi.mock('./client.js', async (importOriginal) => {
@@ -279,5 +280,251 @@ describe('useFlag/useFlagVariant outside provider', () => {
     );
 
     spy.mockRestore();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// useCachedFlag tests
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a controllable CachedClient mock.
+ *
+ * Returns:
+ * - `client` — the mock CachedClient
+ * - `resolveReady` — call to resolve the ready promise
+ * - `rejectReady` — call to reject the ready promise
+ * - `fireSubscriber` — simulate an SSE event for a given key
+ * - `subscribeCalls` — list of [key, callback] pairs passed to subscribe
+ */
+function makeCachedClient(initialFlags: Record<string, boolean> = {}) {
+  let resolveReady!: () => void;
+  let rejectReady!: (err: unknown) => void;
+
+  const ready = new Promise<void>((res, rej) => {
+    resolveReady = res;
+    rejectReady = rej;
+  });
+
+  // Prevent unhandled rejection in tests that don't reject.
+  ready.catch(() => {});
+
+  const subscribeCalls: Array<[string, (enabled: boolean) => void]> = [];
+  const subscriberMap = new Map<string, Set<(enabled: boolean) => void>>();
+
+  const client: CachedClient = {
+    ready,
+    close: vi.fn(),
+    evaluate: vi.fn().mockResolvedValue([]),
+    evaluateFlag: vi.fn().mockImplementation((key: string): Promise<FlagResult> => {
+      const enabled = initialFlags[key] ?? false;
+      const reason = key in initialFlags ? 'default' : 'not_found';
+      return Promise.resolve({ enabled, value: null, valueKey: '', reason });
+    }),
+    subscribe: vi.fn().mockImplementation((key: string, cb: (enabled: boolean) => void) => {
+      subscribeCalls.push([key, cb]);
+      let cbs = subscriberMap.get(key);
+      if (!cbs) {
+        cbs = new Set();
+        subscriberMap.set(key, cbs);
+      }
+      cbs.add(cb);
+      return () => {
+        subscriberMap.get(key)?.delete(cb);
+      };
+    }),
+  };
+
+  function fireSubscriber(key: string, enabled: boolean): void {
+    subscriberMap.get(key)?.forEach((cb) => cb(enabled));
+  }
+
+  return { client, resolveReady, rejectReady, fireSubscriber, subscribeCalls };
+}
+
+/** Test component for useCachedFlag. */
+function CachedFlagConsumer({ client, flagKey }: { client: CachedClient; flagKey: string }) {
+  const { enabled, loading } = useCachedFlag(client, flagKey);
+  return (
+    <div data-testid={`cached-${flagKey}`}>
+      {loading ? 'loading' : enabled ? 'enabled' : 'disabled'}
+    </div>
+  );
+}
+
+describe('useCachedFlag', () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('@happy: returns loading state before ready resolves', () => {
+    const { client } = makeCachedClient({ 'my-flag': true });
+
+    render(<CachedFlagConsumer client={client} flagKey="my-flag" />);
+
+    expect(screen.getByTestId('cached-my-flag').textContent).toBe('loading');
+  });
+
+  it('@happy: returns flag value after ready resolves with flag enabled', async () => {
+    const { client, resolveReady } = makeCachedClient({ 'my-flag': true });
+
+    render(<CachedFlagConsumer client={client} flagKey="my-flag" />);
+
+    await act(async () => {
+      resolveReady();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cached-my-flag').textContent).toBe('enabled');
+    });
+  });
+
+  it('@happy: returns enabled:false after ready when flag is disabled in cache', async () => {
+    const { client, resolveReady } = makeCachedClient({ 'my-flag': false });
+
+    render(<CachedFlagConsumer client={client} flagKey="my-flag" />);
+
+    await act(async () => {
+      resolveReady();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cached-my-flag').textContent).toBe('disabled');
+    });
+  });
+
+  it('@happy: reactive update — subscribe callback fires → hook re-renders with new value', async () => {
+    const { client, resolveReady, fireSubscriber } = makeCachedClient({ 'my-flag': true });
+
+    render(<CachedFlagConsumer client={client} flagKey="my-flag" />);
+
+    await act(async () => {
+      resolveReady();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cached-my-flag').textContent).toBe('enabled');
+    });
+
+    act(() => {
+      fireSubscriber('my-flag', false);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cached-my-flag').textContent).toBe('disabled');
+    });
+  });
+
+  it('@edge: ready rejects → returns enabled:false, loading:false, no error thrown', async () => {
+    const { client, rejectReady } = makeCachedClient();
+
+    render(<CachedFlagConsumer client={client} flagKey="my-flag" />);
+
+    // Starts loading.
+    expect(screen.getByTestId('cached-my-flag').textContent).toBe('loading');
+
+    await act(async () => {
+      rejectReady(new Error('unauthorized'));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cached-my-flag').textContent).toBe('disabled');
+    });
+  });
+
+  it('@edge: key does not exist in cache after ready resolves → returns enabled:false, loading:false', async () => {
+    // 'other-flag' is in cache, 'my-flag' is not.
+    const { client, resolveReady } = makeCachedClient({ 'other-flag': true });
+
+    render(<CachedFlagConsumer client={client} flagKey="my-flag" />);
+
+    await act(async () => {
+      resolveReady();
+    });
+
+    await waitFor(() => {
+      // Not stuck in loading — unknown key resolves to disabled.
+      expect(screen.getByTestId('cached-my-flag').textContent).toBe('disabled');
+    });
+  });
+
+  it('@edge: hook unmounts before ready resolves → no setState after unmount', async () => {
+    const { client, resolveReady } = makeCachedClient({ 'my-flag': true });
+
+    const { unmount } = render(<CachedFlagConsumer client={client} flagKey="my-flag" />);
+
+    // Unmount before ready resolves.
+    unmount();
+
+    // Now resolve — should not trigger any setState (no warning emitted).
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await act(async () => {
+      resolveReady();
+    });
+
+    // No React state-update-after-unmount warning.
+    expect(consoleSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining("Can't perform a React state update"),
+    );
+    consoleSpy.mockRestore();
+  });
+
+  it('@edge: hook unmounts → unsubscribe is called', async () => {
+    const { client, resolveReady } = makeCachedClient({ 'my-flag': true });
+    const mockUnsubscribe = vi.fn();
+    vi.mocked(client.subscribe).mockReturnValueOnce(mockUnsubscribe);
+
+    const { unmount } = render(<CachedFlagConsumer client={client} flagKey="my-flag" />);
+
+    await act(async () => {
+      resolveReady();
+    });
+
+    unmount();
+
+    expect(mockUnsubscribe).toHaveBeenCalledOnce();
+  });
+
+  it('@edge: key changes while mounted → old subscription cleaned up, new subscription started', async () => {
+    const { client, resolveReady, fireSubscriber } = makeCachedClient({
+      'flag-a': true,
+      'flag-b': false,
+    });
+
+    const { rerender } = render(<CachedFlagConsumer client={client} flagKey="flag-a" />);
+
+    await act(async () => {
+      resolveReady();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cached-flag-a').textContent).toBe('enabled');
+    });
+
+    // Change key prop to flag-b.
+    act(() => {
+      rerender(<CachedFlagConsumer client={client} flagKey="flag-b" />);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cached-flag-b').textContent).toBe('disabled');
+    });
+
+    // SSE event for flag-a should not trigger a re-render (old subscription cleaned up).
+    act(() => {
+      fireSubscriber('flag-a', false);
+    });
+
+    // Still shows flag-b disabled.
+    expect(screen.getByTestId('cached-flag-b').textContent).toBe('disabled');
+
+    // SSE event for flag-b should trigger a re-render.
+    act(() => {
+      fireSubscriber('flag-b', true);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cached-flag-b').textContent).toBe('enabled');
+    });
   });
 });

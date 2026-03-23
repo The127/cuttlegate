@@ -11,6 +11,7 @@ import type { CuttlegateConfig } from './types.js';
 import type { EvaluationResult } from './client.js';
 import { createClient } from './client.js';
 import { connectStream } from './streaming.js';
+import type { CachedClient } from './cached-client.js';
 
 /** Props for the CuttlegateProvider component. */
 export interface CuttlegateProviderProps {
@@ -140,4 +141,60 @@ export function useFlagVariant(
     return { value: null, loading: true };
   }
   return { value: flag?.value ?? null, loading: false };
+}
+
+/**
+ * Hook for consuming a single flag from a `CachedClient` instance.
+ *
+ * Returns `{ enabled: false, loading: true }` until `client.ready` resolves,
+ * then `{ enabled: <cached value>, loading: false }`. Reactively re-renders
+ * when an SSE event updates the flag in the cache via `client.subscribe`.
+ * Returns `{ enabled: false, loading: false }` if `client.ready` rejects.
+ *
+ * The `client` reference must be stable (module-level singleton or useMemo).
+ * An unstable reference causes the effect to re-run on every render.
+ */
+export function useCachedFlag(
+  client: CachedClient,
+  key: string,
+): { enabled: boolean; loading: boolean } {
+  const [state, setState] = useState<{ enabled: boolean; loading: boolean }>({
+    enabled: false,
+    loading: true,
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    // Resolve the initial value once ready, then subscribe to live updates.
+    client.ready.then(
+      () => {
+        if (cancelled) return;
+        // Read the current cached value now that hydration is complete.
+        void client.evaluateFlag(key, { user_id: '', attributes: {} }).then((result) => {
+          if (cancelled) return;
+          setState({ enabled: result.enabled, loading: false });
+        });
+      },
+      () => {
+        // ready rejected — surface as enabled:false, loading:false.
+        if (cancelled) return;
+        setState({ enabled: false, loading: false });
+      },
+    );
+
+    // Subscribe to live SSE updates for this key.
+    // The callback fires after the cache is updated, with the new enabled value.
+    const unsubscribe = client.subscribe(key, (enabled) => {
+      if (cancelled) return;
+      setState({ enabled, loading: false });
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [client, key]);
+
+  return state;
 }
