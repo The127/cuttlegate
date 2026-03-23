@@ -58,3 +58,4 @@ See `template.md`. Status values: `Proposed`, `Accepted`, `Deprecated`, `Superse
 | [0027](0027-python-sdk-sync-first-httpx-pep544.md) | Python SDK — sync-first client, httpx, PEP 544 protocol | Accepted |
 | [0028](0028-mcp-tool-capability-tiers.md) | MCP tool capability tiers — read / write / destructive | Accepted |
 | [0029](0029-localstorage-client-persistence-policy.md) | localStorage client persistence policy — UI preferences only | Accepted |
+| [0030](0030-mcp-transport-http-sse.md) | MCP transport — HTTP+SSE over stdio | Accepted |

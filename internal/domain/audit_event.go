@@ -16,6 +16,7 @@ type AuditEvent struct {
 	EnvironmentSlug string // slug of the environment affected; empty for project-scoped actions
 	BeforeState     string
 	AfterState      string
+	Source          string // origin of the mutation: empty for HTTP, "mcp" for MCP-originated events
 	OccurredAt      time.Time
 }
 

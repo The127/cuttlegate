@@ -22,6 +22,7 @@ import (
 	dbmigrations "github.com/karo/cuttlegate/db"
 	dbadapter "github.com/karo/cuttlegate/internal/adapters/db"
 	httpadapter "github.com/karo/cuttlegate/internal/adapters/http"
+	mcpadapter "github.com/karo/cuttlegate/internal/adapters/mcp"
 	"github.com/karo/cuttlegate/internal/app"
 )
 
@@ -162,6 +163,28 @@ func run() error {
 		httpadapter.NewSSEHandler(broker, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
 		httpadapter.NewAuditHandler(auditSvc, projSvc).RegisterRoutes(mux, requireBearer)
 		httpadapter.NewPromotionHandler(promotionSvc, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
+
+		// ── MCP server ────────────────────────────────────────────────────────
+		mcpMux := http.NewServeMux()
+		mcpSrv := mcpadapter.NewServer(apiKeySvc, apiKeyRepo, flagSvc, evalSvc, projSvc, envSvc)
+		mcpSrv.RegisterRoutes(mcpMux)
+		mcpServer := &http.Server{
+			Addr:    cfg.MCPAddr,
+			Handler: mcpMux,
+		}
+		go func() {
+			log.Printf("mcp: listening on %s", cfg.MCPAddr)
+			if err := mcpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				log.Printf("mcp: server error: %v", err)
+			}
+		}()
+		defer func() {
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			if err := mcpServer.Shutdown(shutdownCtx); err != nil {
+				log.Printf("mcp: shutdown error: %v", err)
+			}
+		}()
 	}
 
 	// Health checks — public, no auth required.

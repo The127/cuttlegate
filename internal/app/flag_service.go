@@ -37,16 +37,24 @@ type auditEntry struct {
 	EnvironmentSlug string
 	Before          string
 	After           string
+	Source          string
 }
 
 // recordAudit persists an audit event on a best-effort basis.
 // Failures are logged but never block the calling mutation.
 func (s *FlagService) recordAudit(ctx context.Context, entry auditEntry) {
+	if err := s.recordAuditErr(ctx, entry); err != nil {
+		log.Printf("audit: failed to record %s for %s/%s: %v", entry.Action, entry.ProjectID, entry.EntityKey, err)
+	}
+}
+
+// recordAuditErr persists an audit event and returns any error.
+// Callers that need fail-hard audit semantics (e.g. MCP write tools) use this directly.
+func (s *FlagService) recordAuditErr(ctx context.Context, entry auditEntry) error {
 	ac, _ := domain.AuthContextFrom(ctx)
 	id, err := newUUID()
 	if err != nil {
-		log.Printf("audit: failed to generate UUID: %v", err)
-		return
+		return err
 	}
 	event := &domain.AuditEvent{
 		ID:              id,
@@ -59,11 +67,10 @@ func (s *FlagService) recordAudit(ctx context.Context, entry auditEntry) {
 		EnvironmentSlug: entry.EnvironmentSlug,
 		BeforeState:     entry.Before,
 		AfterState:      entry.After,
+		Source:          entry.Source,
 		OccurredAt:      time.Now().UTC(),
 	}
-	if err := s.auditRepo.Record(ctx, event); err != nil {
-		log.Printf("audit: failed to record %s for %s/%s: %v", entry.Action, entry.ProjectID, entry.EntityKey, err)
-	}
+	return s.auditRepo.Record(ctx, event)
 }
 
 // Create validates the flag, assigns a UUID and creation timestamp, persists it, then
@@ -296,6 +303,9 @@ type SetEnabledParams struct {
 	Enabled       bool
 	ProjectSlug   string
 	EnvSlug       string
+	// Source identifies the origin of the mutation. Empty for HTTP-originated calls (best-effort audit).
+	// Set to "mcp" for MCP-originated calls — audit failure is then treated as a hard error.
+	Source string
 }
 
 // SetEnabled enables or disables a flag in a specific environment.
@@ -323,7 +333,12 @@ func (s *FlagService) SetEnabled(ctx context.Context, params SetEnabledParams) e
 		before = "enabled"
 		after = "disabled"
 	}
-	s.recordAudit(ctx, auditEntry{Action: "flag.state_changed", EntityID: f.ID, EntityKey: params.FlagKey, ProjectID: params.ProjectID, EnvironmentSlug: params.EnvSlug, Before: before, After: after})
+	entry := auditEntry{Action: "flag.state_changed", EntityID: f.ID, EntityKey: params.FlagKey, ProjectID: params.ProjectID, EnvironmentSlug: params.EnvSlug, Before: before, After: after, Source: params.Source}
+	if params.Source != "" {
+		// MCP path: audit failure is a hard error — do not silently succeed the mutation.
+		return s.recordAuditErr(ctx, entry)
+	}
+	s.recordAudit(ctx, entry)
 	return nil
 }
 
