@@ -127,9 +127,14 @@ func run() error {
 		uowFactory := dbadapter.NewPostgresUnitOfWorkFactory(conn)
 
 		requireBearer := httpadapter.RequireBearer(verifier, userRepo)
+		tenantRLS := httpadapter.TenantRLS(conn, projRepo)
+		// requireBearerWithRLS chains auth → tenant RLS for project-scoped routes.
+		requireBearerWithRLS := func(h http.Handler) http.Handler {
+			return requireBearer(tenantRLS(h))
+		}
 
 		projSvc := app.NewProjectService(projRepo)
-		envSvc := app.NewEnvironmentService(envRepo, projRepo)
+		envSvc := app.NewEnvironmentService(envRepo)
 		memberSvc := app.NewProjectMemberService(memberRepo, projRepo, userRepo)
 		flagSvc := app.NewFlagService(flagRepo, envRepo, stateRepo, broker, auditRepo)
 		ruleSvc := app.NewRuleService(ruleRepo)
@@ -145,24 +150,24 @@ func run() error {
 		dbadapter.StartEvaluationRetentionWorker(ctx, evalEventRepo, cfg.EvalEventRetentionDays, cfg.EvalEventRetentionInterval)
 
 		httpadapter.NewProjectHandler(projSvc).RegisterRoutes(mux, requireBearer)
-		httpadapter.NewEnvironmentHandler(envSvc, projSvc).RegisterRoutes(mux, requireBearer)
-		httpadapter.NewProjectMemberHandler(memberSvc).RegisterRoutes(mux, requireBearer)
-		httpadapter.NewFlagHandler(flagSvc, projSvc).RegisterRoutes(mux, requireBearer)
-		httpadapter.NewFlagVariantHandler(flagSvc, projSvc).RegisterRoutes(mux, requireBearer)
-		httpadapter.NewFlagEnvironmentHandler(flagSvc, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
-		httpadapter.NewRuleHandler(ruleSvc, projSvc, flagSvc, envSvc).RegisterRoutes(mux, requireBearer)
-		httpadapter.NewSegmentHandler(segmentSvc, projSvc).RegisterRoutes(mux, requireBearer)
-		httpadapter.NewAPIKeyHandler(apiKeySvc, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
+		httpadapter.NewEnvironmentHandler(envSvc, projSvc).RegisterRoutes(mux, requireBearerWithRLS)
+		httpadapter.NewProjectMemberHandler(memberSvc).RegisterRoutes(mux, requireBearerWithRLS)
+		httpadapter.NewFlagHandler(flagSvc, projSvc).RegisterRoutes(mux, requireBearerWithRLS)
+		httpadapter.NewFlagVariantHandler(flagSvc, projSvc).RegisterRoutes(mux, requireBearerWithRLS)
+		httpadapter.NewFlagEnvironmentHandler(flagSvc, projSvc, envSvc).RegisterRoutes(mux, requireBearerWithRLS)
+		httpadapter.NewRuleHandler(ruleSvc, projSvc, flagSvc, envSvc).RegisterRoutes(mux, requireBearerWithRLS)
+		httpadapter.NewSegmentHandler(segmentSvc, projSvc).RegisterRoutes(mux, requireBearerWithRLS)
+		httpadapter.NewAPIKeyHandler(apiKeySvc, projSvc, envSvc).RegisterRoutes(mux, requireBearerWithRLS)
 		evalRateLimiter := httpadapter.NewRateLimiter(cfg.EvalRateLimit, cfg.EvalRateLimitWindow)
 		requireBearerOrAPIKey := httpadapter.RequireBearerOrAPIKey(verifier, apiKeySvc)
-		evalAuth := func(h http.Handler) http.Handler { return requireBearerOrAPIKey(evalRateLimiter.Limit(h)) }
+		evalAuth := func(h http.Handler) http.Handler { return requireBearerOrAPIKey(tenantRLS(evalRateLimiter.Limit(h))) }
 		httpadapter.NewEvaluationHandler(evalSvc, projSvc, envSvc).RegisterRoutes(mux, evalAuth)
-		httpadapter.NewEvaluationAuditHandler(evalAuditSvc, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
-		httpadapter.NewEvaluationStatsHandler(evalStatsSvc, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
+		httpadapter.NewEvaluationAuditHandler(evalAuditSvc, projSvc, envSvc).RegisterRoutes(mux, requireBearerWithRLS)
+		httpadapter.NewEvaluationStatsHandler(evalStatsSvc, projSvc, envSvc).RegisterRoutes(mux, requireBearerWithRLS)
 
-		httpadapter.NewSSEHandler(broker, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
-		httpadapter.NewAuditHandler(auditSvc, projSvc).RegisterRoutes(mux, requireBearer)
-		httpadapter.NewPromotionHandler(promotionSvc, projSvc, envSvc).RegisterRoutes(mux, requireBearer)
+		httpadapter.NewSSEHandler(broker, projSvc, envSvc).RegisterRoutes(mux, requireBearerWithRLS)
+		httpadapter.NewAuditHandler(auditSvc, projSvc).RegisterRoutes(mux, requireBearerWithRLS)
+		httpadapter.NewPromotionHandler(promotionSvc, projSvc, envSvc).RegisterRoutes(mux, requireBearerWithRLS)
 
 		// ── MCP server ────────────────────────────────────────────────────────
 		mcpMux := http.NewServeMux()

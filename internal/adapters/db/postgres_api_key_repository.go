@@ -23,8 +23,12 @@ func NewPostgresAPIKeyRepository(db *sql.DB) *PostgresAPIKeyRepository {
 
 var _ ports.APIKeyRepository = (*PostgresAPIKeyRepository)(nil)
 
+func (r *PostgresAPIKeyRepository) conn(ctx context.Context) DBTX {
+	return TenantDBTX(ctx, r.db)
+}
+
 func (r *PostgresAPIKeyRepository) Create(ctx context.Context, key *domain.APIKey) error {
-	_, err := r.db.ExecContext(ctx,
+	_, err := r.conn(ctx).ExecContext(ctx,
 		`INSERT INTO api_keys (id, project_id, environment_id, name, key_hash, display_prefix, capability_tier, created_at)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
 		key.ID, key.ProjectID, key.EnvironmentID, key.Name, key.KeyHash[:], key.DisplayPrefix, key.CapabilityTier, key.CreatedAt,
@@ -42,7 +46,7 @@ func (r *PostgresAPIKeyRepository) Create(ctx context.Context, key *domain.APIKe
 func (r *PostgresAPIKeyRepository) GetByID(ctx context.Context, id string) (*domain.APIKey, error) {
 	var key domain.APIKey
 	var hashBytes []byte
-	err := r.db.QueryRowContext(ctx,
+	err := r.conn(ctx).QueryRowContext(ctx,
 		`SELECT id, project_id, environment_id, name, key_hash, display_prefix, capability_tier, created_at, revoked_at
 		 FROM api_keys WHERE id = $1`,
 		id,
@@ -60,7 +64,7 @@ func (r *PostgresAPIKeyRepository) GetByID(ctx context.Context, id string) (*dom
 func (r *PostgresAPIKeyRepository) GetByHash(ctx context.Context, hash [32]byte) (*domain.APIKey, error) {
 	var key domain.APIKey
 	var hashBytes []byte
-	err := r.db.QueryRowContext(ctx,
+	err := r.conn(ctx).QueryRowContext(ctx,
 		`SELECT id, project_id, environment_id, name, key_hash, display_prefix, capability_tier, created_at, revoked_at
 		 FROM api_keys WHERE key_hash = $1`,
 		hash[:],
@@ -76,7 +80,7 @@ func (r *PostgresAPIKeyRepository) GetByHash(ctx context.Context, hash [32]byte)
 }
 
 func (r *PostgresAPIKeyRepository) ListByEnvironment(ctx context.Context, projectID, environmentID string) ([]*domain.APIKey, error) {
-	rows, err := r.db.QueryContext(ctx,
+	rows, err := r.conn(ctx).QueryContext(ctx,
 		`SELECT id, project_id, environment_id, name, key_hash, display_prefix, capability_tier, created_at, revoked_at
 		 FROM api_keys WHERE project_id = $1 AND environment_id = $2 ORDER BY created_at`,
 		projectID, environmentID,
@@ -100,7 +104,7 @@ func (r *PostgresAPIKeyRepository) ListByEnvironment(ctx context.Context, projec
 }
 
 func (r *PostgresAPIKeyRepository) Revoke(ctx context.Context, id string) error {
-	res, err := r.db.ExecContext(ctx,
+	res, err := r.conn(ctx).ExecContext(ctx,
 		`UPDATE api_keys SET revoked_at = now() WHERE id = $1 AND revoked_at IS NULL`,
 		id,
 	)
@@ -118,7 +122,7 @@ func (r *PostgresAPIKeyRepository) Revoke(ctx context.Context, id string) error 
 }
 
 func (r *PostgresAPIKeyRepository) UpdateCapabilityTier(ctx context.Context, id string, tier domain.ToolCapabilityTier) error {
-	res, err := r.db.ExecContext(ctx,
+	res, err := r.conn(ctx).ExecContext(ctx,
 		`UPDATE api_keys SET capability_tier = $1 WHERE id = $2 AND revoked_at IS NULL`,
 		tier, id,
 	)

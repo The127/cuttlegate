@@ -25,6 +25,13 @@ func NewPostgresFlagRepository(db *sql.DB) *PostgresFlagRepository {
 
 var _ ports.FlagRepository = (*PostgresFlagRepository)(nil)
 
+// conn returns the tenant-scoped *sql.Tx from context if present,
+// otherwise falls back to the connection pool. This ensures queries
+// run within the RLS-scoped transaction when tenant middleware is active.
+func (r *PostgresFlagRepository) conn(ctx context.Context) DBTX {
+	return TenantDBTX(ctx, r.db)
+}
+
 // dbVariant is the JSON-serialisable form of domain.Variant stored in the variants jsonb column.
 type dbVariant struct {
 	Key  string `json:"key"`
@@ -56,7 +63,7 @@ func (r *PostgresFlagRepository) Create(ctx context.Context, flag *domain.Flag) 
 	if err != nil {
 		return err
 	}
-	_, err = r.db.ExecContext(ctx,
+	_, err = r.conn(ctx).ExecContext(ctx,
 		`INSERT INTO flags (id, project_id, key, name, type, variants, default_variant_key, created_at)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
 		flag.ID, flag.ProjectID, flag.Key, flag.Name, string(flag.Type),
@@ -73,7 +80,7 @@ func (r *PostgresFlagRepository) Create(ctx context.Context, flag *domain.Flag) 
 }
 
 func (r *PostgresFlagRepository) GetByKey(ctx context.Context, projectID, key string) (*domain.Flag, error) {
-	row := r.db.QueryRowContext(ctx,
+	row := r.conn(ctx).QueryRowContext(ctx,
 		`SELECT id, project_id, key, name, type, variants, default_variant_key, created_at
 		 FROM flags WHERE project_id = $1 AND key = $2`,
 		projectID, key,
@@ -82,7 +89,7 @@ func (r *PostgresFlagRepository) GetByKey(ctx context.Context, projectID, key st
 }
 
 func (r *PostgresFlagRepository) ListByProject(ctx context.Context, projectID string) ([]*domain.Flag, error) {
-	rows, err := r.db.QueryContext(ctx,
+	rows, err := r.conn(ctx).QueryContext(ctx,
 		`SELECT id, project_id, key, name, type, variants, default_variant_key, created_at
 		 FROM flags WHERE project_id = $1 ORDER BY created_at ASC`,
 		projectID,
@@ -131,7 +138,7 @@ func (r *PostgresFlagRepository) ListByProjectPaginated(ctx context.Context, pro
 	// Count query
 	var total int
 	countQuery := "SELECT COUNT(*) FROM flags " + whereClause
-	if err := r.db.QueryRowContext(ctx, countQuery, args...).Scan(&total); err != nil {
+	if err := r.conn(ctx).QueryRowContext(ctx, countQuery, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
@@ -153,7 +160,7 @@ func (r *PostgresFlagRepository) ListByProjectPaginated(ctx context.Context, pro
 	)
 	args = append(args, filter.PerPage, offset)
 
-	rows, err := r.db.QueryContext(ctx, dataQuery, args...)
+	rows, err := r.conn(ctx).QueryContext(ctx, dataQuery, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -178,7 +185,7 @@ func (r *PostgresFlagRepository) Update(ctx context.Context, flag *domain.Flag) 
 	if err != nil {
 		return err
 	}
-	res, err := r.db.ExecContext(ctx,
+	res, err := r.conn(ctx).ExecContext(ctx,
 		`UPDATE flags SET name = $1, variants = $2, default_variant_key = $3 WHERE id = $4`,
 		flag.Name, variants, flag.DefaultVariantKey, flag.ID,
 	)
@@ -196,7 +203,7 @@ func (r *PostgresFlagRepository) Update(ctx context.Context, flag *domain.Flag) 
 }
 
 func (r *PostgresFlagRepository) Delete(ctx context.Context, id string) error {
-	res, err := r.db.ExecContext(ctx, `DELETE FROM flags WHERE id = $1`, id)
+	res, err := r.conn(ctx).ExecContext(ctx, `DELETE FROM flags WHERE id = $1`, id)
 	if err != nil {
 		return err
 	}

@@ -23,8 +23,12 @@ func NewPostgresSegmentRepository(db *sql.DB) *PostgresSegmentRepository {
 
 var _ ports.SegmentRepository = (*PostgresSegmentRepository)(nil)
 
+func (r *PostgresSegmentRepository) conn(ctx context.Context) DBTX {
+	return TenantDBTX(ctx, r.db)
+}
+
 func (r *PostgresSegmentRepository) Create(ctx context.Context, segment *domain.Segment) error {
-	_, err := r.db.ExecContext(ctx,
+	_, err := r.conn(ctx).ExecContext(ctx,
 		`INSERT INTO segments (id, slug, name, project_id, created_at) VALUES ($1, $2, $3, $4, $5)`,
 		segment.ID, segment.Slug, segment.Name, segment.ProjectID, segment.CreatedAt,
 	)
@@ -39,7 +43,7 @@ func (r *PostgresSegmentRepository) Create(ctx context.Context, segment *domain.
 }
 
 func (r *PostgresSegmentRepository) GetBySlug(ctx context.Context, projectID, slug string) (*domain.Segment, error) {
-	row := r.db.QueryRowContext(ctx,
+	row := r.conn(ctx).QueryRowContext(ctx,
 		`SELECT id, slug, name, project_id, created_at FROM segments WHERE project_id = $1 AND slug = $2`,
 		projectID, slug,
 	)
@@ -54,7 +58,7 @@ func (r *PostgresSegmentRepository) GetBySlug(ctx context.Context, projectID, sl
 }
 
 func (r *PostgresSegmentRepository) List(ctx context.Context, projectID string) ([]*domain.Segment, error) {
-	rows, err := r.db.QueryContext(ctx,
+	rows, err := r.conn(ctx).QueryContext(ctx,
 		`SELECT id, slug, name, project_id, created_at FROM segments WHERE project_id = $1 ORDER BY created_at`,
 		projectID,
 	)
@@ -75,7 +79,7 @@ func (r *PostgresSegmentRepository) List(ctx context.Context, projectID string) 
 }
 
 func (r *PostgresSegmentRepository) ListWithCount(ctx context.Context, projectID string) ([]*ports.SegmentWithCount, error) {
-	rows, err := r.db.QueryContext(ctx, `
+	rows, err := r.conn(ctx).QueryContext(ctx, `
 		SELECT s.id, s.slug, s.name, s.project_id, s.created_at, COUNT(sm.user_key) AS member_count
 		FROM segments s
 		LEFT JOIN segment_members sm ON sm.segment_id = s.id
@@ -102,7 +106,7 @@ func (r *PostgresSegmentRepository) ListWithCount(ctx context.Context, projectID
 }
 
 func (r *PostgresSegmentRepository) UpdateName(ctx context.Context, id, name string) error {
-	res, err := r.db.ExecContext(ctx, `UPDATE segments SET name = $1 WHERE id = $2`, name, id)
+	res, err := r.conn(ctx).ExecContext(ctx, `UPDATE segments SET name = $1 WHERE id = $2`, name, id)
 	if err != nil {
 		return err
 	}
@@ -117,7 +121,7 @@ func (r *PostgresSegmentRepository) UpdateName(ctx context.Context, id, name str
 }
 
 func (r *PostgresSegmentRepository) Delete(ctx context.Context, id string) error {
-	res, err := r.db.ExecContext(ctx, `DELETE FROM segments WHERE id = $1`, id)
+	res, err := r.conn(ctx).ExecContext(ctx, `DELETE FROM segments WHERE id = $1`, id)
 	if err != nil {
 		return err
 	}
@@ -155,7 +159,7 @@ func (r *PostgresSegmentRepository) SetMembers(ctx context.Context, segmentID st
 }
 
 func (r *PostgresSegmentRepository) ListMembers(ctx context.Context, segmentID string) ([]string, error) {
-	rows, err := r.db.QueryContext(ctx,
+	rows, err := r.conn(ctx).QueryContext(ctx,
 		`SELECT user_key FROM segment_members WHERE segment_id = $1 ORDER BY added_at`,
 		segmentID,
 	)
@@ -177,7 +181,7 @@ func (r *PostgresSegmentRepository) ListMembers(ctx context.Context, segmentID s
 
 func (r *PostgresSegmentRepository) IsMember(ctx context.Context, segmentID string, userKey string) (bool, error) {
 	var exists bool
-	err := r.db.QueryRowContext(ctx,
+	err := r.conn(ctx).QueryRowContext(ctx,
 		`SELECT EXISTS(SELECT 1 FROM segment_members WHERE segment_id = $1 AND user_key = $2)`,
 		segmentID, userKey,
 	).Scan(&exists)

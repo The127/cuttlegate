@@ -23,8 +23,12 @@ func NewPostgresEnvironmentRepository(db *sql.DB) *PostgresEnvironmentRepository
 
 var _ ports.EnvironmentRepository = (*PostgresEnvironmentRepository)(nil)
 
+func (r *PostgresEnvironmentRepository) conn(ctx context.Context) DBTX {
+	return TenantDBTX(ctx, r.db)
+}
+
 func (r *PostgresEnvironmentRepository) Create(ctx context.Context, env domain.Environment) error {
-	_, err := r.db.ExecContext(ctx,
+	_, err := r.conn(ctx).ExecContext(ctx,
 		`INSERT INTO environments (id, project_id, name, slug, created_at)
 		 VALUES ($1, $2, $3, $4, $5)`,
 		env.ID, env.ProjectID, env.Name, env.Slug, env.CreatedAt,
@@ -40,7 +44,7 @@ func (r *PostgresEnvironmentRepository) Create(ctx context.Context, env domain.E
 }
 
 func (r *PostgresEnvironmentRepository) GetBySlug(ctx context.Context, projectID, slug string) (*domain.Environment, error) {
-	row := r.db.QueryRowContext(ctx,
+	row := r.conn(ctx).QueryRowContext(ctx,
 		`SELECT id, project_id, name, slug, created_at FROM environments
 		 WHERE project_id = $1 AND slug = $2`,
 		projectID, slug,
@@ -56,7 +60,7 @@ func (r *PostgresEnvironmentRepository) GetBySlug(ctx context.Context, projectID
 }
 
 func (r *PostgresEnvironmentRepository) ListByProject(ctx context.Context, projectID string) ([]*domain.Environment, error) {
-	rows, err := r.db.QueryContext(ctx,
+	rows, err := r.conn(ctx).QueryContext(ctx,
 		`SELECT id, project_id, name, slug, created_at FROM environments
 		 WHERE project_id = $1 ORDER BY created_at ASC`,
 		projectID,
@@ -78,7 +82,7 @@ func (r *PostgresEnvironmentRepository) ListByProject(ctx context.Context, proje
 }
 
 func (r *PostgresEnvironmentRepository) UpdateName(ctx context.Context, id, name string) error {
-	res, err := r.db.ExecContext(ctx, `UPDATE environments SET name = $1 WHERE id = $2`, name, id)
+	res, err := r.conn(ctx).ExecContext(ctx, `UPDATE environments SET name = $1 WHERE id = $2`, name, id)
 	if err != nil {
 		return err
 	}
@@ -93,7 +97,7 @@ func (r *PostgresEnvironmentRepository) UpdateName(ctx context.Context, id, name
 }
 
 func (r *PostgresEnvironmentRepository) Delete(ctx context.Context, id string) error {
-	res, err := r.db.ExecContext(ctx, `DELETE FROM environments WHERE id = $1`, id)
+	res, err := r.conn(ctx).ExecContext(ctx, `DELETE FROM environments WHERE id = $1`, id)
 	if err != nil {
 		return err
 	}

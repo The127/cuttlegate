@@ -23,8 +23,12 @@ func NewPostgresProjectMemberRepository(db *sql.DB) *PostgresProjectMemberReposi
 
 var _ ports.ProjectMemberRepository = (*PostgresProjectMemberRepository)(nil)
 
+func (r *PostgresProjectMemberRepository) conn(ctx context.Context) DBTX {
+	return TenantDBTX(ctx, r.db)
+}
+
 func (r *PostgresProjectMemberRepository) AddMember(ctx context.Context, m *domain.ProjectMember) error {
-	_, err := r.db.ExecContext(ctx,
+	_, err := r.conn(ctx).ExecContext(ctx,
 		`INSERT INTO project_members (project_id, user_id, role, created_at) VALUES ($1, $2, $3, $4)`,
 		m.ProjectID, m.UserID, string(m.Role), m.CreatedAt,
 	)
@@ -39,7 +43,7 @@ func (r *PostgresProjectMemberRepository) AddMember(ctx context.Context, m *doma
 }
 
 func (r *PostgresProjectMemberRepository) ListMembers(ctx context.Context, projectID string) ([]*domain.ProjectMember, error) {
-	rows, err := r.db.QueryContext(ctx,
+	rows, err := r.conn(ctx).QueryContext(ctx,
 		`SELECT project_id, user_id, role, created_at FROM project_members WHERE project_id = $1 ORDER BY created_at`,
 		projectID,
 	)
@@ -62,7 +66,7 @@ func (r *PostgresProjectMemberRepository) ListMembers(ctx context.Context, proje
 }
 
 func (r *PostgresProjectMemberRepository) UpdateRole(ctx context.Context, projectID, userID string, role domain.Role) error {
-	res, err := r.db.ExecContext(ctx,
+	res, err := r.conn(ctx).ExecContext(ctx,
 		`UPDATE project_members SET role = $1 WHERE project_id = $2 AND user_id = $3`,
 		string(role), projectID, userID,
 	)
@@ -80,7 +84,7 @@ func (r *PostgresProjectMemberRepository) UpdateRole(ctx context.Context, projec
 }
 
 func (r *PostgresProjectMemberRepository) RemoveMember(ctx context.Context, projectID, userID string) error {
-	res, err := r.db.ExecContext(ctx,
+	res, err := r.conn(ctx).ExecContext(ctx,
 		`DELETE FROM project_members WHERE project_id = $1 AND user_id = $2`,
 		projectID, userID,
 	)
