@@ -106,7 +106,7 @@ func TestTenantRLS_BeginsTransaction(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 
 	proj := &domain.Project{ID: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", Slug: "test-project"}
 	resolver := &stubProjectResolver{project: proj}
@@ -163,9 +163,9 @@ func testDSN(t *testing.T) string {
 		t.Skipf("skipping integration test: %v", err)
 	}
 	if err := db.Ping(); err != nil {
-		db.Close()
+		_ = db.Close()
 		t.Skipf("skipping integration test: db unreachable: %v", err)
 	}
-	db.Close()
+	_ = db.Close()
 	return dsn
 }

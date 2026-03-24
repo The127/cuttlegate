@@ -30,7 +30,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("open db: %v", err)
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 
 	ctx := context.Background()
 
@@ -49,13 +49,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("prepare: %v", err)
 	}
-	defer stmt.Close()
+	defer stmt.Close() //nolint:errcheck
 
 	for i := 0; i < *count; i++ {
 		key := fmt.Sprintf("flag-%05d", i)
 		name := fmt.Sprintf("Flag %d", i)
 		if _, err := stmt.ExecContext(ctx, *projectID, key, name); err != nil {
-			tx.Rollback()
+			_ = tx.Rollback()
 			log.Fatalf("insert flag %d: %v", i, err)
 		}
 	}

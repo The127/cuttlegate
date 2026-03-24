@@ -155,9 +155,9 @@ func (f *fakeFlagRepository) ListByProject(_ context.Context, projectID string) 
 	return result, nil
 }
 
-func (f *fakeFlagRepository) ListByProjectPaginated(_ context.Context, projectID string, filter domain.FlagListFilter) ([]*domain.Flag, int, error) {
+func (f *fakeFlagRepository) ListByProjectPaginated(ctx context.Context, projectID string, filter domain.FlagListFilter) ([]*domain.Flag, int, error) {
 	filter.Normalize()
-	all, _ := f.ListByProject(nil, projectID)
+	all, _ := f.ListByProject(ctx, projectID)
 	return all, len(all), nil
 }
 
