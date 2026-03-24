@@ -125,6 +125,13 @@ function FlagListPage() {
         sortValue: (f) => f.key,
         cell: (f) => (
           <div className="flex items-center gap-2">
+            <Link
+              to="/projects/$slug/environments/$envSlug/flags/$key"
+              params={{ slug, envSlug, key: f.key }}
+              className="font-mono text-sm text-[var(--color-accent-start)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] rounded"
+            >
+              {f.key}
+            </Link>
             <CopyableCode
               value={f.key}
               aria-label={t('list.copy_key_aria', { key: f.key })}
@@ -145,7 +152,7 @@ function FlagListPage() {
           <Link
             to="/projects/$slug/environments/$envSlug/flags/$key"
             params={{ slug, envSlug, key: f.key }}
-            className="text-sm text-[var(--color-text-primary)] truncate hover:text-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
+            className="text-sm text-[var(--color-text-primary)] truncate hover:underline hover:text-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] rounded"
           >
             {f.name}
           </Link>
