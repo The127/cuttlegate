@@ -1,6 +1,6 @@
 # Frontend Index
 
-_Generated 2026-03-24 09:02 UTC. Read this at session start for frontend orientation._
+_Generated 2026-03-24 09:32 UTC. Read this at session start for frontend orientation._
 
 ## Routes (`web/src/routes/`)
 
@@ -16,6 +16,7 @@ _Generated 2026-03-24 09:02 UTC. Read this at session start for frontend orienta
 | `projects/$slug.environments.$envSlug.flags.$key.tsx` | `/projects/:slug/environments/:envSlug/flags/:key` | $slug, $envSlug, $key | — |
 | `projects/$slug.environments.$envSlug.flags.tsx` | `/projects/:slug/environments/:envSlug/flags` | $slug, $envSlug | — |
 | `projects/$slug.environments.$envSlug.tsx` | `/projects/:slug/environments/:envSlug` | $slug, $envSlug | — |
+| `projects/$slug.environments.tsx` | `/projects/:slug/environments` | $slug | — |
 | `projects/$slug.index.tsx` | `/projects/:slug` | $slug | — |
 | `projects/$slug.members.tsx` | `/projects/:slug/members` | $slug | — |
 | `projects/$slug.segments.tsx` | `/projects/:slug/segments` | $slug | — |
