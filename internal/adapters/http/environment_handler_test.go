@@ -79,6 +79,20 @@ func (f *fakeEnvironmentService) ListByProject(_ context.Context, projectID stri
 	return result, nil
 }
 
+func (f *fakeEnvironmentService) UpdateName(_ context.Context, projectID, slug, name string) (*domain.Environment, error) {
+	if f.mutateErr != nil {
+		return nil, f.mutateErr
+	}
+	k := ek(projectID, slug)
+	e, ok := f.envs[k]
+	if !ok {
+		return nil, domain.ErrNotFound
+	}
+	e.Name = name
+	cp := *e
+	return &cp, nil
+}
+
 func (f *fakeEnvironmentService) DeleteBySlug(_ context.Context, projectID, slug string) error {
 	if f.mutateErr != nil {
 		return f.mutateErr
@@ -273,6 +287,7 @@ func TestEnvironmentHandler_Unauthenticated_Returns401(t *testing.T) {
 		{http.MethodGet, "/api/v1/projects/acme/environments"},
 		{http.MethodPost, "/api/v1/projects/acme/environments"},
 		{http.MethodGet, "/api/v1/projects/acme/environments/prod"},
+		{http.MethodPatch, "/api/v1/projects/acme/environments/prod"},
 		{http.MethodDelete, "/api/v1/projects/acme/environments/prod"},
 	}
 	mux := newEnvMux(newFakeEnvironmentService("acme"), newFakeResolver("acme"), requireAuth401)
@@ -325,15 +340,113 @@ func TestEnvironmentHandler_Delete_Forbidden_Returns403(t *testing.T) {
 	}
 }
 
-// ── PATCH → 405 ───────────────────────────────────────────────────────────────
+// ── PATCH (Update) ────────────────────────────────────────────────────────────
 
-func TestEnvironmentHandler_Patch_Returns405(t *testing.T) {
-	mux := newEnvMux(newFakeEnvironmentService("acme"), newFakeResolver("acme"), noopAuth)
-	req := httptest.NewRequest(http.MethodPatch, "/api/v1/projects/acme/environments/prod",
-		strings.NewReader(`{"name":"x"}`))
+func TestEnvironmentHandler_Update_Succeeds(t *testing.T) {
+	svc := newFakeEnvironmentService("acme")
+	resolver := newFakeResolver("acme")
+	mux := newEnvMux(svc, resolver, noopAuth)
+
+	// seed
+	seedReq := httptest.NewRequest(http.MethodPost, "/api/v1/projects/acme/environments",
+		strings.NewReader(`{"name":"Staging","slug":"staging"}`))
+	seedReq.Header.Set("Content-Type", "application/json")
+	mux.ServeHTTP(httptest.NewRecorder(), seedReq)
+
+	req := httptest.NewRequest(http.MethodPatch, "/api/v1/projects/acme/environments/staging",
+		strings.NewReader(`{"name":"Pre-Production"}`))
+	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
-	if rec.Code != http.StatusMethodNotAllowed {
-		t.Fatalf("status: got %d, want 405", rec.Code)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status: got %d, want 200", rec.Code)
+	}
+	var body map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if body["name"] != "Pre-Production" {
+		t.Errorf("name: got %v, want Pre-Production", body["name"])
+	}
+	if body["slug"] != "staging" {
+		t.Errorf("slug should remain staging, got %v", body["slug"])
+	}
+}
+
+func TestEnvironmentHandler_Update_EmptyName_Returns400(t *testing.T) {
+	svc := newFakeEnvironmentService("acme")
+	resolver := newFakeResolver("acme")
+	mux := newEnvMux(svc, resolver, noopAuth)
+
+	req := httptest.NewRequest(http.MethodPatch, "/api/v1/projects/acme/environments/staging",
+		strings.NewReader(`{"name":""}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status: got %d, want 400", rec.Code)
+	}
+}
+
+func TestEnvironmentHandler_Update_NotFound_Returns404(t *testing.T) {
+	svc := newFakeEnvironmentService("acme")
+	resolver := newFakeResolver("acme")
+	mux := newEnvMux(svc, resolver, noopAuth)
+
+	req := httptest.NewRequest(http.MethodPatch, "/api/v1/projects/acme/environments/ghost",
+		strings.NewReader(`{"name":"x"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status: got %d, want 404", rec.Code)
+	}
+}
+
+func TestEnvironmentHandler_Update_Forbidden_Returns403(t *testing.T) {
+	svc := newFakeEnvironmentService("acme")
+	svc.mutateErr = domain.ErrForbidden
+	mux := newEnvMux(svc, newFakeResolver("acme"), noopAuth)
+
+	req := httptest.NewRequest(http.MethodPatch, "/api/v1/projects/acme/environments/staging",
+		strings.NewReader(`{"name":"x"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status: got %d, want 403", rec.Code)
+	}
+}
+
+func TestEnvironmentHandler_Update_NilName_ReturnsCurrentState(t *testing.T) {
+	svc := newFakeEnvironmentService("acme")
+	resolver := newFakeResolver("acme")
+	mux := newEnvMux(svc, resolver, noopAuth)
+
+	// seed
+	seedReq := httptest.NewRequest(http.MethodPost, "/api/v1/projects/acme/environments",
+		strings.NewReader(`{"name":"Staging","slug":"staging"}`))
+	seedReq.Header.Set("Content-Type", "application/json")
+	mux.ServeHTTP(httptest.NewRecorder(), seedReq)
+
+	req := httptest.NewRequest(http.MethodPatch, "/api/v1/projects/acme/environments/staging",
+		strings.NewReader(`{}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status: got %d, want 200", rec.Code)
+	}
+	var body map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if body["name"] != "Staging" {
+		t.Errorf("name should remain Staging, got %v", body["name"])
 	}
 }

@@ -185,7 +185,10 @@
     "delete_warning": "Deleting this environment will permanently destroy all flag states, targeting rules, and API keys scoped to it. This cannot be undone.",
     "delete_failed": "Failed to delete. Please try again.",
     "deleting": "Deleting…",
-    "delete_button": "Delete"
+    "delete_button": "Delete",
+    "edit_aria": "Edit name of environment {{slug}}",
+    "rename_failed": "Failed to rename. Please try again.",
+    "name_required": "Name cannot be empty"
   },
   "environments_overview": {
     "title": "Environments",
