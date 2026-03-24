@@ -18,6 +18,7 @@ import { projectSettingsRoute } from './routes/projects/$slug.settings'
 import { apiKeyListRoute } from './routes/projects/$slug.api-keys'
 import { memberListRoute } from './routes/projects/$slug.members'
 import { auditRoute } from './routes/projects/$slug.audit'
+import { projectFlagListRoute } from './routes/projects/$slug.flags'
 
 const routeTree = rootRoute.addChildren([
   authenticatedRoute.addChildren([
@@ -32,6 +33,7 @@ const routeTree = rootRoute.addChildren([
       apiKeyListRoute,
       memberListRoute,
       auditRoute,
+      projectFlagListRoute,
       projectEnvRoute.addChildren([flagListRoute, flagDetailRoute, flagRulesRoute, flagEvaluationsRoute]),
     ]),
   ]),
