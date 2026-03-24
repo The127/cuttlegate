@@ -464,6 +464,108 @@ func TestEvaluateAll_RespectsContextCancellation(t *testing.T) {
 	}
 }
 
+// --- @defaults-fallback: EvaluateAll with defaults ---
+
+func configWithDefaults(baseURL string) cuttlegate.Config {
+	cfg := validConfig(baseURL)
+	cfg.Defaults = map[string]cuttlegate.FlagDefault{
+		"dark-mode":   {Enabled: true, Variant: "true"},
+		"banner-text": {Enabled: false, Variant: "off"},
+	}
+	return cfg
+}
+
+func TestEvaluateAll_DefaultsOnNetworkError(t *testing.T) {
+	// Server that immediately closes the connection.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Fatal("server doesn't support hijacking")
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	}))
+	defer srv.Close()
+
+	c, _ := cuttlegate.NewClient(configWithDefaults(srv.URL))
+	results, err := c.EvaluateAll(context.Background(), cuttlegate.EvalContext{UserID: "u1"})
+	if err != nil {
+		t.Fatalf("expected defaults fallback, got error: %v", err)
+	}
+	if len(results) != 2 {
+		t.Fatalf("expected 2 default results, got %d", len(results))
+	}
+	dm := results["dark-mode"]
+	if !dm.Enabled || dm.Variant != "true" || dm.Reason != "default_fallback" {
+		t.Errorf("unexpected dark-mode default: %+v", dm)
+	}
+	bt := results["banner-text"]
+	if bt.Enabled || bt.Variant != "off" || bt.Reason != "default_fallback" {
+		t.Errorf("unexpected banner-text default: %+v", bt)
+	}
+}
+
+func TestEvaluateAll_DefaultsOn500(t *testing.T) {
+	srv := serveBulk(t, map[string]string{"error": "internal"}, 500)
+	defer srv.Close()
+
+	c, _ := cuttlegate.NewClient(configWithDefaults(srv.URL))
+	results, err := c.EvaluateAll(context.Background(), cuttlegate.EvalContext{UserID: "u1"})
+	if err != nil {
+		t.Fatalf("expected defaults fallback, got error: %v", err)
+	}
+	if len(results) != 2 {
+		t.Fatalf("expected 2 default results, got %d", len(results))
+	}
+	if results["dark-mode"].Reason != "default_fallback" {
+		t.Errorf("expected reason default_fallback, got %q", results["dark-mode"].Reason)
+	}
+}
+
+func TestEvaluateAll_AuthErrorBypassesDefaults_401(t *testing.T) {
+	srv := serveBulk(t, map[string]string{"error": "unauthorized"}, 401)
+	defer srv.Close()
+
+	c, _ := cuttlegate.NewClient(configWithDefaults(srv.URL))
+	_, err := c.EvaluateAll(context.Background(), cuttlegate.EvalContext{UserID: "u1"})
+
+	var authErr *cuttlegate.AuthError
+	if !errors.As(err, &authErr) {
+		t.Fatalf("expected *AuthError even with defaults, got %T: %v", err, err)
+	}
+}
+
+func TestEvaluateAll_AuthErrorBypassesDefaults_403(t *testing.T) {
+	srv := serveBulk(t, map[string]string{"error": "forbidden"}, 403)
+	defer srv.Close()
+
+	c, _ := cuttlegate.NewClient(configWithDefaults(srv.URL))
+	_, err := c.EvaluateAll(context.Background(), cuttlegate.EvalContext{UserID: "u1"})
+
+	var authErr *cuttlegate.AuthError
+	if !errors.As(err, &authErr) {
+		t.Fatalf("expected *AuthError even with defaults, got %T: %v", err, err)
+	}
+}
+
+func TestEvaluateAll_NoDefaultsNetworkErrorStillFails(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Fatal("server doesn't support hijacking")
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	}))
+	defer srv.Close()
+
+	c, _ := cuttlegate.NewClient(validConfig(srv.URL))
+	_, err := c.EvaluateAll(context.Background(), cuttlegate.EvalContext{UserID: "u1"})
+	if err == nil {
+		t.Fatal("expected error without defaults, got nil")
+	}
+}
+
 // --- @happy: custom HTTPClient ---
 
 func TestNewClient_AcceptsCustomHTTPClient(t *testing.T) {

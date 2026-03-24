@@ -314,3 +314,88 @@ def test_error_missing_environment_raises_config_error():
     with pytest.raises(ConfigError) as exc_info:
         CuttlegateClient(config)
     assert str(exc_info.value) == "environment is required"
+
+
+# ---------------------------------------------------------------------------
+# @defaults-fallback — evaluate_all returns defaults on server errors
+# ---------------------------------------------------------------------------
+
+_DEFAULTS = {"dark-mode": {"enabled": True, "variant": "true"}, "banner-text": {"enabled": False, "variant": "off"}}
+
+
+def _client_with_defaults(transport: httpx.MockTransport) -> CuttlegateClient:
+    config = _make_config()
+    config.defaults = _DEFAULTS
+    client = CuttlegateClient(config)
+    client._http = httpx.Client(transport=transport)
+    return client
+
+
+def test_defaults_on_network_error():
+    """evaluate_all returns defaults when network error occurs and defaults configured."""
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("connection refused", request=request)
+
+    client = _client_with_defaults(httpx.MockTransport(handler))
+    results = client.evaluate_all(EvalContext(user_id="u1"))
+
+    assert len(results) == 2
+    assert results["dark-mode"].enabled is True
+    assert results["dark-mode"].variant == "true"
+    assert results["dark-mode"].reason == "default_fallback"
+    assert results["banner-text"].enabled is False
+    assert results["banner-text"].variant == "off"
+
+
+def test_defaults_on_timeout():
+    """evaluate_all returns defaults on timeout when defaults configured."""
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.TimeoutException("timeout", request=request)
+
+    client = _client_with_defaults(httpx.MockTransport(handler))
+    results = client.evaluate_all(EvalContext(user_id="u1"))
+
+    assert len(results) == 2
+    assert results["dark-mode"].reason == "default_fallback"
+
+
+def test_defaults_on_500():
+    """evaluate_all returns defaults on 5xx when defaults configured."""
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(500, content=b'{"error":"internal"}')
+
+    client = _client_with_defaults(httpx.MockTransport(handler))
+    results = client.evaluate_all(EvalContext(user_id="u1"))
+
+    assert len(results) == 2
+    assert results["dark-mode"].reason == "default_fallback"
+
+
+def test_auth_error_bypasses_defaults_401():
+    """AuthError (401) still raises even with defaults configured."""
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(401, content=b'{"error":"unauthorized"}')
+
+    client = _client_with_defaults(httpx.MockTransport(handler))
+    with pytest.raises(AuthError):
+        client.evaluate_all(EvalContext(user_id="u1"))
+
+
+def test_auth_error_bypasses_defaults_403():
+    """AuthError (403) still raises even with defaults configured."""
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(403, content=b'{"error":"forbidden"}')
+
+    client = _client_with_defaults(httpx.MockTransport(handler))
+    with pytest.raises(AuthError):
+        client.evaluate_all(EvalContext(user_id="u1"))
+
+
+def test_no_defaults_network_error_still_raises():
+    """Without defaults, network error still raises SDKError."""
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("connection refused", request=request)
+
+    client = _client_with_transport(httpx.MockTransport(handler))
+    with pytest.raises(SDKError):
+        client.evaluate_all(EvalContext(user_id="u1"))

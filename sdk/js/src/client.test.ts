@@ -274,6 +274,84 @@ describe('string', () => {
   });
 });
 
+describe('defaults fallback', () => {
+  const defaultsConfig = {
+    ...validConfig,
+    defaults: {
+      'dark-mode': { enabled: true, variant: 'true' },
+      'banner-text': { enabled: false, variant: 'off' },
+    },
+  };
+
+  it('returns defaults on network error when defaults configured', async () => {
+    const fetchFn = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+    const client = createClient({ ...defaultsConfig, fetch: fetchFn });
+
+    const results = await client.evaluateAll({ user_id: 'u1', attributes: {} });
+
+    expect(results).toHaveLength(2);
+    expect(results.find((r) => r.key === 'dark-mode')).toEqual(
+      expect.objectContaining({ key: 'dark-mode', enabled: true, variant: 'true', reason: 'default_fallback' }),
+    );
+    expect(results.find((r) => r.key === 'banner-text')).toEqual(
+      expect.objectContaining({ key: 'banner-text', enabled: false, variant: 'off', reason: 'default_fallback' }),
+    );
+  });
+
+  it('returns defaults on timeout when defaults configured', async () => {
+    const fetchFn = vi.fn().mockImplementation((_url: string, opts: RequestInit) => {
+      return new Promise((_resolve, reject) => {
+        opts.signal?.addEventListener('abort', () => {
+          reject(new DOMException('The operation was aborted.', 'AbortError'));
+        });
+      });
+    });
+    const client = createClient({ ...defaultsConfig, timeout: 50, fetch: fetchFn });
+
+    const results = await client.evaluateAll({ user_id: 'u1', attributes: {} });
+
+    expect(results).toHaveLength(2);
+    expect(results[0].reason).toBe('default_fallback');
+  });
+
+  it('returns defaults on 5xx when defaults configured', async () => {
+    const fetchFn = mockFetchResponse({}, 500);
+    const client = createClient({ ...defaultsConfig, fetch: fetchFn });
+
+    const results = await client.evaluateAll({ user_id: 'u1', attributes: {} });
+
+    expect(results).toHaveLength(2);
+    expect(results[0].reason).toBe('default_fallback');
+  });
+
+  it('throws unauthorized even when defaults configured', async () => {
+    const fetchFn = mockFetchResponse({}, 401);
+    const client = createClient({ ...defaultsConfig, fetch: fetchFn });
+
+    await expect(client.evaluateAll({ user_id: 'u1', attributes: {} })).rejects.toSatisfy(
+      (err: unknown) => err instanceof CuttlegateError && err.code === 'unauthorized',
+    );
+  });
+
+  it('throws forbidden even when defaults configured', async () => {
+    const fetchFn = mockFetchResponse({}, 403);
+    const client = createClient({ ...defaultsConfig, fetch: fetchFn });
+
+    await expect(client.evaluateAll({ user_id: 'u1', attributes: {} })).rejects.toSatisfy(
+      (err: unknown) => err instanceof CuttlegateError && err.code === 'forbidden',
+    );
+  });
+
+  it('throws network error when no defaults configured', async () => {
+    const fetchFn = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+    const client = createClient({ ...validConfig, fetch: fetchFn });
+
+    await expect(client.evaluateAll({ user_id: 'u1', attributes: {} })).rejects.toSatisfy(
+      (err: unknown) => err instanceof CuttlegateError && err.code === 'network_error',
+    );
+  });
+});
+
 describe('evaluateFlag (deprecated)', () => {
   it('returns a single flag result from bulk response', async () => {
     const client = createClient({ ...validConfig, fetch: mockFetchResponse(bulkResponse) });
