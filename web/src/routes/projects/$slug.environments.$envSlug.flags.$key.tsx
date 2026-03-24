@@ -239,6 +239,7 @@ function FlagDetailCard({
       {/* Header */}
       <div className="flex items-start justify-between px-5 py-4 border-b border-[var(--color-border)]">
         <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-[var(--color-text-secondary)]">{t('detail.key_label')}</span>
           <CopyableCode
             value={flag.key}
             aria-label={t('detail.copy_key_aria', { key: flag.key })}
@@ -277,7 +278,9 @@ function FlagDetailCard({
               className="py-1.5 px-2"
             />
           ) : (
-            <p className="text-sm text-[var(--color-text-primary)]">{flag.name}</p>
+            <p className={`text-sm ${flag.name ? 'text-[var(--color-text-primary)]' : 'font-mono text-[var(--color-text-muted)]'}`}>
+              {flag.name || flag.key}
+            </p>
           )}
         </div>
 
@@ -496,7 +499,9 @@ function EnvironmentToggleRow({
     <li className="flex items-center justify-between px-5 py-3 border-b border-[var(--color-border)] last:border-0">
       <div className="flex items-center gap-2">
         <span className="text-sm text-[var(--color-text-primary)]">{env.name}</span>
-        <span className="font-mono text-xs text-[var(--color-text-secondary)]">{env.slug}</span>
+        {env.name !== env.slug && (
+          <span className="font-mono text-xs text-[var(--color-text-secondary)]">{env.slug}</span>
+        )}
       </div>
       {isLoading ? (
         <div className="h-6 w-16 bg-[var(--color-surface-elevated)] rounded animate-pulse" aria-label={t('detail.loading_aria')} />

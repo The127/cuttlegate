@@ -86,8 +86,12 @@ function collectVariantKeys(buckets: Bucket[]): string[] {
 // SVG bar chart
 // ---------------------------------------------------------------------------
 
-const CHART_WIDTH = 480
-const CHART_HEIGHT = 120
+const CHART_CONTENT_WIDTH = 440
+const CHART_CONTENT_HEIGHT = 120
+const MARGIN_LEFT = 40
+const MARGIN_BOTTOM = 20
+const CHART_WIDTH = CHART_CONTENT_WIDTH + MARGIN_LEFT
+const CHART_HEIGHT = CHART_CONTENT_HEIGHT + MARGIN_BOTTOM
 const BAR_GAP = 2
 
 interface BarChartProps {
@@ -97,13 +101,19 @@ interface BarChartProps {
   ariaLabel: string
 }
 
+function formatShortDate(ts: string): string {
+  const d = new Date(ts)
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+}
+
 function BarChart({ buckets, flagType, variantKeys, ariaLabel }: BarChartProps) {
+  const { t } = useTranslation('flags')
   const isBool = flagType === 'bool'
   const n = buckets.length
   if (n === 0) return null
 
   const maxTotal = Math.max(...buckets.map((b) => b.total), 1)
-  const barWidth = (CHART_WIDTH - BAR_GAP * (n - 1)) / n
+  const barWidth = (CHART_CONTENT_WIDTH - BAR_GAP * (n - 1)) / n
 
   function getSegments(b: Bucket): Array<{ color: string; value: number; label: string }> {
     if (isBool) {
@@ -123,14 +133,14 @@ function BarChart({ buckets, flagType, variantKeys, ariaLabel }: BarChartProps) 
   }
 
   const bars = buckets.map((b, i) => {
-    const x = i * (barWidth + BAR_GAP)
+    const x = MARGIN_LEFT + i * (barWidth + BAR_GAP)
     const segments = getSegments(b)
     const shapes: React.ReactNode[] = []
     let accum = 0
     for (const seg of segments) {
       if (seg.value <= 0) continue
-      const segH = (seg.value / maxTotal) * CHART_HEIGHT
-      const y = CHART_HEIGHT - accum - segH
+      const segH = (seg.value / maxTotal) * CHART_CONTENT_HEIGHT
+      const y = CHART_CONTENT_HEIGHT - accum - segH
       shapes.push(
         <rect
           key={seg.label}
@@ -150,7 +160,7 @@ function BarChart({ buckets, flagType, variantKeys, ariaLabel }: BarChartProps) 
         <rect
           key="zero"
           x={x}
-          y={CHART_HEIGHT - 2}
+          y={CHART_CONTENT_HEIGHT - 2}
           width={barWidth}
           height={2}
           fill="#1c1f35"
@@ -160,6 +170,10 @@ function BarChart({ buckets, flagType, variantKeys, ariaLabel }: BarChartProps) 
     }
     return <g key={i}>{shapes}</g>
   })
+
+  // X-axis date labels: first and last bucket
+  const firstDate = formatShortDate(buckets[0].ts)
+  const lastDate = formatShortDate(buckets[n - 1].ts)
 
   return (
     <svg
@@ -171,7 +185,34 @@ function BarChart({ buckets, flagType, variantKeys, ariaLabel }: BarChartProps) 
       className="w-full"
       data-testid="analytics-chart"
     >
+      {/* Y-axis max count label */}
+      <text
+        x={MARGIN_LEFT - 4}
+        y={10}
+        textAnchor="end"
+        className="text-[10px] fill-[var(--color-text-muted)]"
+        aria-label={t('analytics.y_axis_label', { count: maxTotal })}
+      >
+        {maxTotal}
+      </text>
       {bars}
+      {/* X-axis date labels */}
+      <text
+        x={MARGIN_LEFT}
+        y={CHART_CONTENT_HEIGHT + 14}
+        textAnchor="start"
+        className="text-[10px] fill-[var(--color-text-muted)]"
+      >
+        {firstDate}
+      </text>
+      <text
+        x={CHART_WIDTH}
+        y={CHART_CONTENT_HEIGHT + 14}
+        textAnchor="end"
+        className="text-[10px] fill-[var(--color-text-muted)]"
+      >
+        {lastDate}
+      </text>
     </svg>
   )
 }

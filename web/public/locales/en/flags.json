@@ -59,6 +59,7 @@
     }
   },
   "detail": {
+    "key_label": "Key",
     "name_label": "Name",
     "variants_label": "Variants",
     "default_variant_label": "Default variant",
@@ -171,7 +172,8 @@
     "total_evaluations": "{{count}} evaluations in the last {{window}}",
     "true_label": "True",
     "false_label": "False",
-    "variant_label": "{{key}}"
+    "variant_label": "{{key}}",
+    "y_axis_label": "Max: {{count}}"
   },
   "promote": {
     "button": "Promote to\u2026",
