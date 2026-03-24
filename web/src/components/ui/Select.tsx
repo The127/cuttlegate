@@ -15,7 +15,7 @@ export const SelectItem = forwardRef<HTMLDivElement, SelectItemProps>(
       ref={ref}
       value={value}
       disabled={disabled}
-      className="relative flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-primary)] rounded cursor-default select-none data-[highlighted]:bg-[var(--color-surface-elevated)] data-[highlighted]:outline-none data-[disabled]:opacity-50"
+      className="relative flex items-center pl-6 pr-3 py-1.5 text-sm text-[var(--color-text-primary)] rounded cursor-default select-none data-[highlighted]:bg-[var(--color-surface-elevated)] data-[highlighted]:outline-none data-[disabled]:opacity-50"
     >
       <RadixSelect.ItemText>{children}</RadixSelect.ItemText>
       <RadixSelect.ItemIndicator className="absolute left-1 text-[var(--color-accent)]">
