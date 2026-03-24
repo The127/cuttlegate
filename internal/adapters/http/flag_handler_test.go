@@ -65,6 +65,22 @@ func (f *fakeFlagService) ListByProject(_ context.Context, projectID string) ([]
 	return result, nil
 }
 
+func (f *fakeFlagService) ListByProjectPaginated(_ context.Context, projectID string, filter domain.FlagListFilter) ([]*domain.Flag, int, error) {
+	filter.Normalize()
+	all, _ := f.ListByProject(nil, projectID)
+	// Simple in-memory pagination for tests
+	total := len(all)
+	start := (filter.Page - 1) * filter.PerPage
+	if start > total {
+		return []*domain.Flag{}, total, nil
+	}
+	end := start + filter.PerPage
+	if end > total {
+		end = total
+	}
+	return all[start:end], total, nil
+}
+
 func (f *fakeFlagService) Update(_ context.Context, flag *domain.Flag) error {
 	if f.mutateErr != nil {
 		return f.mutateErr
@@ -145,6 +161,16 @@ func TestFlagHandler_List_EmptyReturnsWrappedArray(t *testing.T) {
 	arr, ok := flags.([]any)
 	if !ok || len(arr) != 0 {
 		t.Errorf("expected empty array, got %v", flags)
+	}
+	// Verify pagination envelope fields
+	if body["total"] != float64(0) {
+		t.Errorf("total: got %v, want 0", body["total"])
+	}
+	if body["page"] != float64(1) {
+		t.Errorf("page: got %v, want 1", body["page"])
+	}
+	if body["per_page"] != float64(50) {
+		t.Errorf("per_page: got %v, want 50", body["per_page"])
 	}
 }
 
@@ -427,5 +453,105 @@ func TestFlagHandler_Delete_Forbidden_Returns403(t *testing.T) {
 
 	if rec.Code != http.StatusForbidden {
 		t.Fatalf("status: got %d, want 403", rec.Code)
+	}
+}
+
+// ── Pagination validation ─────────────────────────────────────────────────────
+
+func assertBadRequest(t *testing.T, mux *http.ServeMux, url, wantMsg string) {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodGet, url, nil)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status: got %d, want 400 for %s", rec.Code, url)
+	}
+	var body map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if body["error"] != "bad_request" {
+		t.Errorf("error: got %v, want bad_request", body["error"])
+	}
+	if body["message"] != wantMsg {
+		t.Errorf("message: got %q, want %q", body["message"], wantMsg)
+	}
+}
+
+func TestFlagHandler_List_NegativePage_Returns400(t *testing.T) {
+	mux := newFlagMux(newFakeFlagService(), newFakeResolver("acme"), noopAuth)
+	assertBadRequest(t, mux, "/api/v1/projects/acme/flags?page=-1", "page must be a positive integer")
+}
+
+func TestFlagHandler_List_ZeroPage_Returns400(t *testing.T) {
+	mux := newFlagMux(newFakeFlagService(), newFakeResolver("acme"), noopAuth)
+	assertBadRequest(t, mux, "/api/v1/projects/acme/flags?page=0", "page must be a positive integer")
+}
+
+func TestFlagHandler_List_NonIntegerPage_Returns400(t *testing.T) {
+	mux := newFlagMux(newFakeFlagService(), newFakeResolver("acme"), noopAuth)
+	assertBadRequest(t, mux, "/api/v1/projects/acme/flags?page=abc", "page must be a positive integer")
+}
+
+func TestFlagHandler_List_NegativePerPage_Returns400(t *testing.T) {
+	mux := newFlagMux(newFakeFlagService(), newFakeResolver("acme"), noopAuth)
+	assertBadRequest(t, mux, "/api/v1/projects/acme/flags?per_page=-10", "per_page must be a positive integer")
+}
+
+func TestFlagHandler_List_InvalidSortBy_Returns400(t *testing.T) {
+	mux := newFlagMux(newFakeFlagService(), newFakeResolver("acme"), noopAuth)
+	assertBadRequest(t, mux, "/api/v1/projects/acme/flags?sort_by=invalid", "sort_by must be one of: key, name, type, created_at")
+}
+
+func TestFlagHandler_List_InvalidSortDir_Returns400(t *testing.T) {
+	mux := newFlagMux(newFakeFlagService(), newFakeResolver("acme"), noopAuth)
+	assertBadRequest(t, mux, "/api/v1/projects/acme/flags?sort_dir=sideways", "sort_dir must be one of: asc, desc")
+}
+
+func TestFlagHandler_List_PerPageCappedAt100(t *testing.T) {
+	mux := newFlagMux(newFakeFlagService(), newFakeResolver("acme"), noopAuth)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/projects/acme/flags?per_page=500", nil)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status: got %d, want 200", rec.Code)
+	}
+	var body map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if body["per_page"] != float64(100) {
+		t.Errorf("per_page: got %v, want 100", body["per_page"])
+	}
+}
+
+func TestFlagHandler_List_PaginationEnvelope(t *testing.T) {
+	svc := newFakeFlagService()
+	mux := newFlagMux(svc, newFakeResolver("acme"), noopAuth)
+	seedFlag(t, mux)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/projects/acme/flags?page=1&per_page=25&sort_by=key&sort_dir=asc", nil)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status: got %d, want 200", rec.Code)
+	}
+	var body map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	for _, field := range []string{"flags", "total", "page", "per_page"} {
+		if _, ok := body[field]; !ok {
+			t.Errorf("response missing field %q", field)
+		}
+	}
+	if body["page"] != float64(1) {
+		t.Errorf("page: got %v, want 1", body["page"])
+	}
+	if body["per_page"] != float64(25) {
+		t.Errorf("per_page: got %v, want 25", body["per_page"])
+	}
+	if body["total"] != float64(1) {
+		t.Errorf("total: got %v, want 1", body["total"])
 	}
 }
