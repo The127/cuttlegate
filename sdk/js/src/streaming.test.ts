@@ -297,10 +297,12 @@ describe('connectStream', () => {
 describe('reconnect', () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   it('reconnects after a transient network failure', async () => {
@@ -523,10 +525,12 @@ describe('reconnect', () => {
 describe('heartbeat timeout', () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   it('triggers reconnect when no data arrives within 90 seconds', async () => {
