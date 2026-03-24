@@ -30,7 +30,7 @@ export function SettingsTabBar({ slug }: SettingsTabBarProps) {
       className="mb-6 border-b border-[var(--color-border)]"
       aria-label={t('settings.title')}
     >
-      <div className="flex gap-0">
+      <div className="flex">
         {tabs.map((tab) => (
           <Link
             key={tab.to}
