@@ -1,6 +1,6 @@
 # Frontend Index
 
-_Generated 2026-03-24 00:54 UTC. Read this at session start for frontend orientation._
+_Generated 2026-03-24 09:02 UTC. Read this at session start for frontend orientation._
 
 ## Routes (`web/src/routes/`)
 
@@ -31,8 +31,10 @@ _Generated 2026-03-24 00:54 UTC. Read this at session start for frontend orienta
 | `useOpenCreateProjectDialog` | `CreateProjectDialog.tsx` | — |
 | `CreateProjectDialogProvider` | `CreateProjectDialog.tsx` | — |
 | `FlagAnalyticsPanel` | `FlagAnalyticsPanel.tsx` | — |
+| `PageHeading` | `PageHeading.tsx` | — |
 | `ProjectSwitcher` | `ProjectSwitcher.tsx` | — |
 | `PromoteDialog` | `PromoteDialog.tsx` | — |
+| `SettingsTabBar` | `SettingsTabBar.tsx` | — |
 | `Sidebar` | `Sidebar.tsx` | — |
 | `UserMenu` | `UserMenu.tsx` | — |
 | `Button` | `ui/Button.tsx` | — |
