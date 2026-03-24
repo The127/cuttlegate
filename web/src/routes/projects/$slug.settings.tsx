@@ -15,6 +15,7 @@ import {
   DialogFooter,
 } from '../../components/ui/Dialog'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'
+import { SettingsTabBar } from '../../components/SettingsTabBar'
 
 export const projectSettingsRoute = createRoute({
   getParentRoute: () => projectRoute,
@@ -47,6 +48,7 @@ function ProjectSettingsPage() {
   return (
     <div className="p-6 max-w-2xl">
       <h1 className="text-xl font-semibold text-[var(--color-text-primary)] mb-6">{t('settings.title')}</h1>
+      <SettingsTabBar slug={project.slug} />
 
       <GeneralSection project={project} isAdmin={isAdmin} />
 

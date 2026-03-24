@@ -16,6 +16,7 @@ import {
 } from '../../components/ui/Dialog'
 import { CreateEnvironmentDialog } from '../../components/CreateEnvironmentDialog'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'
+import { SettingsTabBar } from '../../components/SettingsTabBar'
 
 interface Environment {
   id: string
@@ -87,8 +88,11 @@ function EnvironmentSettingsPage() {
 
   return (
     <div className="p-6 max-w-4xl">
+      <h1 className="text-xl font-semibold text-[var(--color-text-primary)] mb-6">{t('settings.title')}</h1>
+      <SettingsTabBar slug={slug} />
+
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">{t('environments.title')}</h1>
+        <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">{t('environments.title')}</h2>
         <Button onClick={() => setShowCreate(true)}>
           {t('environments.new_button')}
         </Button>
