@@ -12,7 +12,7 @@ export type {
 } from './types.js';
 
 export { createClient, CuttlegateError } from './client.js';
-export type { CuttlegateClient, EvaluationResult, FlagResult } from './client.js';
+export type { CuttlegateClient, EvalResult, EvaluationResult, FlagResult } from './client.js';
 
 export { connectStream } from './streaming.js';
 export type { StreamOptions, StreamConnection, FlagStateChangedEvent } from './streaming.js';

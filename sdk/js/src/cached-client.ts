@@ -1,5 +1,5 @@
 import type { CuttlegateConfig, EvalContext } from './types.js';
-import type { CuttlegateClient, EvaluationResult, FlagResult } from './client.js';
+import type { CuttlegateClient, EvalResult, FlagResult } from './client.js';
 import { CuttlegateError } from './client.js';
 import { connectStream } from './streaming.js';
 import type { FlagStateChangedEvent, StreamConnection } from './streaming.js';
@@ -22,11 +22,10 @@ export interface CachedClientOptions {
  *
  * Implements CuttlegateClient — drop-in replaceable with createClient.
  *
- * evaluateFlag and evaluate serve from cache without HTTP round-trips.
- * Unknown flag keys return { enabled: false, value: null, valueKey: "",
- * reason: "not_found" } — there is no HTTP fallback.
+ * evaluate and evaluateAll serve from cache without HTTP round-trips.
+ * Unknown flag keys return not_found from an empty cache.
  *
- * Await ready before calling evaluateFlag/evaluate to ensure the cache is
+ * Await ready before calling evaluate/evaluateAll to ensure the cache is
  * seeded. Calls made before ready resolves return not_found from an empty
  * cache.
  */
@@ -78,7 +77,7 @@ interface BulkEvaluateResponse {
  * On construction:
  * 1. Opens the SSE stream (SSE-first ordering — see ADR 0025).
  * 2. SSE events received during hydration are buffered.
- * 3. Calls evaluate() for HTTP hydration.
+ * 3. Calls evaluateAll() for HTTP hydration.
  * 4. On hydration success: drains the buffer on top of the hydration result,
  *    then resolves ready.
  * 5. On hydration failure (401/403/timeout): closes the SSE stream, rejects
@@ -114,8 +113,8 @@ export function createCachedClient(
 
   const evalUrl = `${baseUrl}/api/v1/projects/${encodeURIComponent(project)}/environments/${encodeURIComponent(environment)}/evaluate`;
 
-  // In-memory cache: flagKey → EvaluationResult (as seeded by hydration).
-  const cache = new Map<string, EvaluationResult>();
+  // In-memory cache: flagKey → EvalResult (as seeded by hydration).
+  const cache = new Map<string, EvalResult>();
 
   // Subscriber registry: flagKey → Set of callbacks to notify on cache update.
   // Registered immediately on subscribe() — safe to call before ready resolves.
@@ -145,7 +144,7 @@ export function createCachedClient(
         key: flag.key,
         enabled: flag.enabled,
         value: flag.value,
-        valueKey: flag.value_key || flag.value || '',
+        variant: flag.value_key || flag.value || '',
         reason: flag.reason,
         evaluatedAt: data.evaluated_at,
       });
@@ -153,7 +152,7 @@ export function createCachedClient(
   }
 
   // Apply a single SSE event to the cache, then notify subscribers.
-  // Preserves valueKey from hydration; sets reason to "default" (consistent
+  // Preserves variant from hydration; sets reason to "default" (consistent
   // with CuttlegateProvider in react.ts). Ignores unknown keys.
   function applyCacheEvent(event: FlagStateChangedEvent): void {
     const existing = cache.get(event.flagKey);
@@ -298,23 +297,50 @@ export function createCachedClient(
     });
 
   // Public API — token is not on any enumerable property.
+
+  /** @deprecated Use evaluate() instead. */
   function evaluateFlag(key: string, _context: EvalContext): Promise<FlagResult> {
     const entry = cache.get(key);
     if (!entry) {
-      return Promise.resolve({ enabled: false, value: null, valueKey: '', reason: 'not_found' });
+      return Promise.resolve({ enabled: false, value: null, variant: '', reason: 'not_found' });
     }
     return Promise.resolve({
       enabled: entry.enabled,
       value: entry.value,
-      valueKey: entry.valueKey,
+      variant: entry.variant,
       reason: entry.reason,
     });
   }
 
+  function evaluate(key: string, _context: EvalContext): Promise<EvalResult> {
+    const entry = cache.get(key);
+    if (!entry) {
+      return Promise.resolve({
+        key,
+        enabled: false,
+        value: null,
+        variant: '',
+        reason: 'not_found',
+        evaluatedAt: '',
+      });
+    }
+    return Promise.resolve(entry);
+  }
+
   // context is accepted for CuttlegateClient interface compatibility; results are
   // always served from cache — the cache is not keyed per-user context.
-  function evaluate(_context: EvalContext): Promise<EvaluationResult[]> {
+  function evaluateAll(_context: EvalContext): Promise<EvalResult[]> {
     return Promise.resolve(Array.from(cache.values()));
+  }
+
+  async function bool(key: string, context: EvalContext): Promise<boolean> {
+    const result = await evaluate(key, context);
+    return result.variant === 'true';
+  }
+
+  async function string(key: string, context: EvalContext): Promise<string> {
+    const result = await evaluate(key, context);
+    return result.variant;
   }
 
   function close(): void {
@@ -336,5 +362,5 @@ export function createCachedClient(
     };
   }
 
-  return { evaluate, evaluateFlag, close, ready, subscribe };
+  return { evaluate, evaluateAll, bool, string, evaluateFlag, close, ready, subscribe };
 }

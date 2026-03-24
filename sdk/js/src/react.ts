@@ -8,7 +8,7 @@ import {
 } from 'react';
 import type { ReactNode } from 'react';
 import type { CuttlegateConfig } from './types.js';
-import type { EvaluationResult } from './client.js';
+import type { EvalResult } from './client.js';
 import { createClient } from './client.js';
 import { connectStream } from './streaming.js';
 import type { CachedClient } from './cached-client.js';
@@ -20,7 +20,7 @@ export interface CuttlegateProviderProps {
 }
 
 interface FlagState {
-  flags: Map<string, EvaluationResult>;
+  flags: Map<string, EvalResult>;
   loading: boolean;
 }
 
@@ -29,7 +29,7 @@ const CuttlegateContext = createContext<FlagState | null>(null);
 /**
  * Provider component that establishes a Cuttlegate SDK connection.
  *
- * Calls `evaluate()` on mount to get initial flag state, then opens an SSE
+ * Calls `evaluateAll()` on mount to get initial flag state, then opens an SSE
  * stream via `connectStream()` to receive real-time updates. Closes the
  * connection on unmount.
  */
@@ -52,10 +52,10 @@ export function CuttlegateProvider({
     const client = createClient(cfg);
     let closed = false;
 
-    client.evaluate({ user_id: '', attributes: {} }).then(
+    client.evaluateAll({ user_id: '', attributes: {} }).then(
       (results) => {
         if (closed) return;
-        const flags = new Map<string, EvaluationResult>();
+        const flags = new Map<string, EvalResult>();
         for (const r of results) {
           flags.set(r.key, r);
         }
@@ -77,6 +77,7 @@ export function CuttlegateProvider({
             key: event.flagKey,
             enabled: event.enabled,
             value: existing?.value ?? null,
+            variant: existing?.variant ?? '',
             reason: existing?.reason ?? 'default',
             evaluatedAt: event.occurredAt,
           });
@@ -86,10 +87,10 @@ export function CuttlegateProvider({
       onConnected: (reconnect) => {
         if (closed || !reconnect) return;
         // Re-fetch current flag state on reconnect to close the missed-events gap.
-        client.evaluate({ user_id: '', attributes: {} }).then(
+        client.evaluateAll({ user_id: '', attributes: {} }).then(
           (results) => {
             if (closed) return;
-            const flags = new Map<string, EvaluationResult>();
+            const flags = new Map<string, EvalResult>();
             for (const r of results) {
               flags.set(r.key, r);
             }
@@ -134,13 +135,13 @@ export function useFlag(key: string): { enabled: boolean; loading: boolean } {
 /** Returns the active variant key for a flag. Reactively updates on SSE events. */
 export function useFlagVariant(
   key: string,
-): { value: string | null; loading: boolean } {
+): { variant: string | null; loading: boolean } {
   const { flags, loading } = useFlagState();
   const flag = flags.get(key);
   if (loading) {
-    return { value: null, loading: true };
+    return { variant: null, loading: true };
   }
-  return { value: flag?.value ?? null, loading: false };
+  return { variant: flag?.variant ?? null, loading: false };
 }
 
 /**
@@ -171,7 +172,7 @@ export function useCachedFlag(
       () => {
         if (cancelled) return;
         // Read the current cached value now that hydration is complete.
-        void client.evaluateFlag(key, { user_id: '', attributes: {} }).then((result) => {
+        void client.evaluate(key, { user_id: '', attributes: {} }).then((result) => {
           if (cancelled) return;
           setState({ enabled: result.enabled, loading: false });
         });
