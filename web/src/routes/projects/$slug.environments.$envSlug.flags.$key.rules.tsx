@@ -168,7 +168,7 @@ function RulesPage() {
   }
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-6 max-w-4xl">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">{t('title')}</h2>
         {!addingNew && (
@@ -496,7 +496,7 @@ function RuleEditor({
                 onChange={(e) => updateCondition(i, { attribute: e.target.value })}
                 placeholder={t('attribute_placeholder')}
                 aria-label={t('condition_attribute_aria', { n: i + 1 })}
-                className="w-32 font-mono py-1.5 px-2"
+                className="flex-1 font-mono py-1.5 px-2"
               />
               {/* Operator */}
               <Select
@@ -594,7 +594,7 @@ function RuleEditor({
 
 function RulesSkeleton() {
   return (
-    <div className="p-6 max-w-2xl space-y-3">
+    <div className="p-6 max-w-4xl space-y-3">
       <div className="flex items-center justify-between mb-4">
         <div className="h-4 w-32 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
         <div className="h-8 w-20 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
