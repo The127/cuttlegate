@@ -237,6 +237,59 @@ func TestPostgresAuditRepository_FilterAndPagination(t *testing.T) {
 	})
 }
 
+func TestPostgresAuditRepository_SystemEventRoundTrip(t *testing.T) {
+	db := newTestDB(t)
+	ctx := context.Background()
+
+	// Seed a project (FK required).
+	projRepo := dbadapter.NewPostgresProjectRepository(db)
+	proj := domain.Project{
+		ID:        "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+		Name:      "System Event Project",
+		Slug:      "sys-event",
+		CreatedAt: time.Now().UTC().Truncate(time.Microsecond),
+	}
+	if err := projRepo.Create(ctx, proj); err != nil {
+		t.Fatalf("seed project: %v", err)
+	}
+
+	auditRepo := dbadapter.NewPostgresAuditRepository(db)
+
+	sysEvent := &domain.AuditEvent{
+		ID:         "eeeeeeee-eeee-4eee-8eee-eeeeeeeeee01",
+		ProjectID:  proj.ID,
+		ActorID:    "",
+		Action:     "segment_not_found",
+		EntityType: "segment",
+		EntityKey:  "deleted-seg",
+		Source:     domain.SourceSystem,
+		AfterState: `{"reason":"segment_not_found"}`,
+		OccurredAt: time.Now().UTC().Truncate(time.Microsecond),
+	}
+	if err := auditRepo.Record(ctx, sysEvent); err != nil {
+		t.Fatalf("record system event: %v", err)
+	}
+
+	events, err := auditRepo.ListByProject(ctx, proj.ID, domain.AuditFilter{Limit: 10})
+	if err != nil {
+		t.Fatalf("ListByProject: %v", err)
+	}
+	if len(events) != 1 {
+		t.Fatalf("want 1 event, got %d", len(events))
+	}
+
+	got := events[0]
+	if got.ActorID != "" {
+		t.Errorf("want ActorID=%q, got %q", "", got.ActorID)
+	}
+	if got.ActorEmail != "" {
+		t.Errorf("want ActorEmail=%q (no user to JOIN), got %q", "", got.ActorEmail)
+	}
+	if got.Source != domain.SourceSystem {
+		t.Errorf("want Source=%q, got %q", domain.SourceSystem, got.Source)
+	}
+}
+
 // padID pads n to a 12-char hex string for constructing UUIDs.
 func padID(n int) string {
 	s := "000000000000"

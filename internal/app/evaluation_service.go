@@ -301,6 +301,7 @@ func (s *EvaluationService) recordDeletedSegmentAudit(ctx context.Context, flagI
 		Action:     "segment_not_found",
 		EntityType: "segment",
 		EntityKey:  segmentSlug,
+		Source:     domain.SourceSystem,
 		AfterState: string(afterState),
 	}
 	if err := s.auditRepo.Record(ctx, event); err != nil {

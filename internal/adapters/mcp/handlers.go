@@ -141,7 +141,7 @@ func (s *Server) callSetEnabled(ctx context.Context, id json.RawMessage, rawArgs
 		Enabled:       enabled,
 		ProjectSlug:   args.ProjectSlug,
 		EnvSlug:       envSlug,
-		Source:        "mcp",
+		Source:        domain.SourceMCP,
 	})
 	if err != nil {
 		if isDomainNotFound(err) {
