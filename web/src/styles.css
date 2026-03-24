@@ -9,7 +9,7 @@
 }
 
 @theme {
-  /* Backgrounds and surfaces */
+  /* Dark tokens (default) — backgrounds and surfaces */
   --color-bg:               #0d0f1c;
   --color-surface:          #141729;
   --color-surface-elevated: #1c1f35;
@@ -54,4 +54,47 @@
   a {
     cursor: pointer;
   }
+}
+
+/*
+ * Light-mode token overrides.
+ *
+ * Applied via `.theme-light` class on <html> (manual override)
+ * or via @media (prefers-color-scheme: light) (system preference).
+ * The class takes precedence because it appears later in the cascade.
+ */
+@media (prefers-color-scheme: light) {
+  :root:not(.theme-dark) {
+    --color-bg:               #f8f9fc;
+    --color-surface:          #ffffff;
+    --color-surface-elevated: #f1f3f9;
+    --color-border:           rgba(0,0,0,0.08);
+    --color-border-hover:     rgba(0,0,0,0.16);
+    --color-text-primary:     #1a1d2e;
+    --color-text-secondary:   #5a6178;
+    --color-text-muted:       #8b91a8;
+    --color-status-enabled:   #059669;
+    --color-status-warning:   #d97706;
+    --color-status-error:     #dc2626;
+    --color-accent-start:     #00b894;
+    --color-accent-end:       #4361ee;
+    --color-accent:           #4361ee;
+  }
+}
+
+.theme-light {
+  --color-bg:               #f8f9fc;
+  --color-surface:          #ffffff;
+  --color-surface-elevated: #f1f3f9;
+  --color-border:           rgba(0,0,0,0.08);
+  --color-border-hover:     rgba(0,0,0,0.16);
+  --color-text-primary:     #1a1d2e;
+  --color-text-secondary:   #5a6178;
+  --color-text-muted:       #8b91a8;
+  --color-status-enabled:   #059669;
+  --color-status-warning:   #d97706;
+  --color-status-error:     #dc2626;
+  --color-accent-start:     #00b894;
+  --color-accent-end:       #4361ee;
+  --color-accent:           #4361ee;
 }

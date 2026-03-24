@@ -6,6 +6,7 @@ import { useOpenCreateProjectDialog } from './CreateProjectDialog'
 import { useBrand } from '../brand'
 import { Select, SelectItem } from './ui/Select'
 import { UserMenu } from './UserMenu'
+import { ThemeToggle } from './ui/ThemeToggle'
 
 interface Project {
   id: string
@@ -185,6 +186,9 @@ export function ProjectSwitcher() {
 
       {/* Spacer */}
       <div className="flex-1" aria-hidden="true" />
+
+      {/* Theme toggle — left of user menu */}
+      <ThemeToggle />
 
       <UserMenu />
     </header>
