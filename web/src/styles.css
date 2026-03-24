@@ -48,3 +48,10 @@
   /* Monospace font for keys, slugs, IDs, code */
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
+
+@layer base {
+  button:not(:disabled),
+  a {
+    cursor: pointer;
+  }
+}
