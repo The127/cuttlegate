@@ -71,7 +71,9 @@
     "save_failed": "Failed to save. Please try again.",
     "saving": "Saving…",
     "saved": "Saved",
-    "save": "Save"
+    "save": "Save",
+    "tab_general": "General",
+    "tab_environments": "Environments"
   },
   "delete_project": {
     "title": "Delete project?",
