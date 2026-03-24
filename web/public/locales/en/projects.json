@@ -225,6 +225,12 @@
     "loading_more": "Loading…",
     "filter_placeholder": "Filter by flag key…",
     "filter_label": "Filter by flag key",
-    "timestamp_aria": "{{absolute}} ({{relative}})"
+    "timestamp_aria": "{{absolute}} ({{relative}})",
+    "detail_entity_type": "Entity Type",
+    "detail_entity_id": "Entity ID",
+    "detail_source": "Source",
+    "detail_before": "Before",
+    "detail_after": "After",
+    "detail_no_state": "\u2014"
   }
 }

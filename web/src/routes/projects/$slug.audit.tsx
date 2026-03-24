@@ -11,10 +11,16 @@ import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 interface AuditEntry {
   id: string
   occurred_at: string
+  actor_id: string
   actor_email: string
   action: string
+  entity_type: string
+  entity_id: string
   flag_key: string
   environment_slug: string
+  source: string
+  before_state: string
+  after_state: string
   project_slug: string
 }
 
@@ -35,6 +41,7 @@ function AuditLogPage() {
   const project = projectRoute.useLoaderData()
   useDocumentTitle(t('audit.page_title'), project.name)
   const [flagKey, setFlagKey] = useState('')
+  const [expandedId, setExpandedId] = useState<string | null>(null)
   const debouncedFlagKey = useDebounced(flagKey, 300)
 
   const {
@@ -101,7 +108,7 @@ function AuditLogPage() {
         </div>
       ) : (
         <div className="border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] overflow-hidden">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm" role="treegrid">
             <thead className="bg-[var(--color-surface-elevated)] border-b border-[var(--color-border)]">
               <tr>
                 <th className="text-left px-4 py-2 text-xs font-medium text-[var(--color-text-secondary)] font-medium whitespace-nowrap">
@@ -123,7 +130,12 @@ function AuditLogPage() {
             </thead>
             <tbody className="divide-y divide-[var(--color-border)]">
               {allEntries.map((entry) => (
-                <AuditEntryRow key={entry.id} entry={entry} />
+                <AuditEntryRow
+                  key={entry.id}
+                  entry={entry}
+                  isExpanded={expandedId === entry.id}
+                  onToggle={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
+                />
               ))}
             </tbody>
           </table>
@@ -145,47 +157,146 @@ function AuditLogPage() {
   )
 }
 
-function AuditEntryRow({ entry }: { entry: AuditEntry }) {
+function AuditEntryRow({
+  entry,
+  isExpanded,
+  onToggle,
+}: {
+  entry: AuditEntry
+  isExpanded: boolean
+  onToggle: () => void
+}) {
+  const { t } = useTranslation('projects')
   const absolute = formatAbsoluteDate(entry.occurred_at)
   const relative = formatRelativeDate(entry.occurred_at)
+  const detailId = `audit-detail-${entry.id}`
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      onToggle()
+    }
+  }
+
   return (
-    <tr className="hover:bg-[var(--color-surface)]">
-      <td className="px-4 py-3 whitespace-nowrap">
-        <time
-          dateTime={entry.occurred_at}
-          title={relative}
-          className="text-xs text-[var(--color-text-secondary)] tabular-nums"
-        >
-          {absolute}
-        </time>
-      </td>
-      <td className="px-4 py-3 whitespace-nowrap">
-        <span className="text-sm text-[var(--color-text-primary)]">{entry.actor_email}</span>
-      </td>
-      <td className="px-4 py-3 whitespace-nowrap">
-        <span className="font-mono text-xs text-[var(--color-text-primary)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-2 py-0.5">
-          {entry.action}
-        </span>
-      </td>
-      <td className="px-4 py-3 whitespace-nowrap">
-        {entry.flag_key ? (
+    <>
+      <tr
+        className="hover:bg-[var(--color-surface)] cursor-pointer"
+        role="row"
+        tabIndex={0}
+        aria-expanded={isExpanded}
+        aria-controls={detailId}
+        onClick={onToggle}
+        onKeyDown={handleKeyDown}
+      >
+        <td className="px-4 py-3 whitespace-nowrap">
+          <time
+            dateTime={entry.occurred_at}
+            title={relative}
+            className="text-xs text-[var(--color-text-secondary)] tabular-nums"
+          >
+            {absolute}
+          </time>
+        </td>
+        <td className="px-4 py-3 whitespace-nowrap">
+          <span className="text-sm text-[var(--color-text-primary)]">{entry.actor_email}</span>
+        </td>
+        <td className="px-4 py-3 whitespace-nowrap">
           <span className="font-mono text-xs text-[var(--color-text-primary)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-2 py-0.5">
-            {entry.flag_key}
+            {entry.action}
           </span>
-        ) : (
-          <span className="text-xs text-[var(--color-text-muted)]">—</span>
+        </td>
+        <td className="px-4 py-3 whitespace-nowrap">
+          {entry.flag_key ? (
+            <span className="font-mono text-xs text-[var(--color-text-primary)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-2 py-0.5">
+              {entry.flag_key}
+            </span>
+          ) : (
+            <span className="text-xs text-[var(--color-text-muted)]">{t('audit.detail_no_state')}</span>
+          )}
+        </td>
+        <td className="px-4 py-3 whitespace-nowrap">
+          {entry.environment_slug ? (
+            <span className="font-mono text-xs text-[var(--color-text-primary)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-2 py-0.5">
+              {entry.environment_slug}
+            </span>
+          ) : (
+            <span className="text-xs text-[var(--color-text-muted)]">{t('audit.detail_no_state')}</span>
+          )}
+        </td>
+      </tr>
+      {isExpanded && (
+        <tr id={detailId} role="row">
+          <td colSpan={5} className="bg-[var(--color-surface-elevated)] border-t border-[var(--color-border)] px-4 py-4">
+            <AuditDetailPanel entry={entry} />
+          </td>
+        </tr>
+      )}
+    </>
+  )
+}
+
+function formatJSON(value: string): string {
+  try {
+    return JSON.stringify(JSON.parse(value), null, 2)
+  } catch {
+    return value
+  }
+}
+
+function AuditDetailPanel({ entry }: { entry: AuditEntry }) {
+  const { t } = useTranslation('projects')
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
+        <div>
+          <span className="text-[var(--color-text-secondary)] text-xs">{t('audit.detail_entity_type')}</span>
+          <div className="font-mono text-[var(--color-text-primary)]">
+            {entry.entity_type || t('audit.detail_no_state')}
+          </div>
+        </div>
+        <div>
+          <span className="text-[var(--color-text-secondary)] text-xs">{t('audit.detail_entity_id')}</span>
+          <div className="font-mono text-[var(--color-text-primary)]">
+            {entry.entity_id || t('audit.detail_no_state')}
+          </div>
+        </div>
+        {entry.source && (
+          <div>
+            <span className="text-[var(--color-text-secondary)] text-xs">{t('audit.detail_source')}</span>
+            <div>
+              <span className="inline-block text-xs font-medium px-2 py-0.5 rounded bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)]">
+                {entry.source}
+              </span>
+            </div>
+          </div>
         )}
-      </td>
-      <td className="px-4 py-3 whitespace-nowrap">
-        {entry.environment_slug ? (
-          <span className="font-mono text-xs text-[var(--color-text-primary)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-2 py-0.5">
-            {entry.environment_slug}
-          </span>
-        ) : (
-          <span className="text-xs text-[var(--color-text-muted)]">—</span>
-        )}
-      </td>
-    </tr>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <span className="text-[var(--color-text-secondary)] text-xs block mb-1">{t('audit.detail_before')}</span>
+          {entry.before_state ? (
+            <pre className="font-mono text-xs bg-[var(--color-surface)] border border-[var(--color-border)] rounded p-3 overflow-x-auto whitespace-pre-wrap text-[var(--color-text-primary)]">
+              {formatJSON(entry.before_state)}
+            </pre>
+          ) : (
+            <span className="text-sm text-[var(--color-text-muted)]">{t('audit.detail_no_state')}</span>
+          )}
+        </div>
+        <div>
+          <span className="text-[var(--color-text-secondary)] text-xs block mb-1">{t('audit.detail_after')}</span>
+          {entry.after_state ? (
+            <pre className="font-mono text-xs bg-[var(--color-surface)] border border-[var(--color-border)] rounded p-3 overflow-x-auto whitespace-pre-wrap text-[var(--color-text-primary)]">
+              {formatJSON(entry.after_state)}
+            </pre>
+          ) : (
+            <span className="text-sm text-[var(--color-text-muted)]">{t('audit.detail_no_state')}</span>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
 
