@@ -2,7 +2,8 @@
   "list": {
     "title": "Feature-Flags",
     "new_flag": "Neues Flag",
-    "empty_state": "Noch keine Flags. Erstellen Sie Ihr erstes Flag, um mit der Zielgruppensteuerung zu beginnen.",
+    "empty_title": "Erstellen Sie Ihr erstes Flag",
+    "empty_state": "Beginnen Sie mit der Zielgruppensteuerung, indem Sie ein Flag für diese Umgebung erstellen.",
     "error": "Flags konnten nicht geladen werden.",
     "not_found": "Flag nicht gefunden.",
     "failed_to_load": "Flag konnte nicht geladen werden.",

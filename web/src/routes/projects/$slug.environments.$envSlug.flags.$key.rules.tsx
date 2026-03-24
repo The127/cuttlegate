@@ -222,11 +222,14 @@ function RulesPage() {
 function EmptyState({ onAdd }: { onAdd: () => void }) {
   const { t } = useTranslation('rules')
   return (
-    <div className="border border-dashed border-[var(--color-border)] rounded-lg px-6 py-10 text-center">
-      <p className="text-sm text-[var(--color-text-secondary)]">
+    <div className="border border-dashed border-[var(--color-border)] rounded-lg px-6 py-12 text-center">
+      <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+        {t('empty_title')}
+      </h2>
+      <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
         {t('empty_state')}
       </p>
-      <Button onClick={onAdd} className="mt-3">{t('add_rule')}</Button>
+      <Button onClick={onAdd} size="lg" className="mt-4">{t('add_rule')}</Button>
     </div>
   )
 }

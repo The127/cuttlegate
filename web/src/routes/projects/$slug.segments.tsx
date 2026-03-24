@@ -230,7 +230,10 @@ function SegmentEmptyState({ onCreateClick }: { onCreateClick: () => void }) {
   const { t } = useTranslation('segments')
   return (
     <div className="text-center py-16 px-6">
-      <p className="text-sm text-[var(--color-text-secondary)]">
+      <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+        {t('empty_title')}
+      </h2>
+      <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
         {t('empty_state')}
       </p>
       <Button size="lg" className="mt-4" onClick={onCreateClick}>

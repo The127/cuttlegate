@@ -124,7 +124,10 @@ function FlagsNeedEnvironmentState({ onCreateClick }: { onCreateClick: () => voi
   const { t } = useTranslation('projects')
   return (
     <div className="text-center py-12 px-6">
-      <p className="text-sm text-[var(--color-text-secondary)]">
+      <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+        {t('dashboard.flags_need_environment_title')}
+      </h2>
+      <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
         {t('dashboard.flags_need_environment')}
       </p>
       <Button size="lg" variant="primary" className="mt-4" onClick={onCreateClick}>
@@ -138,7 +141,10 @@ function FlagsEmptyState({ onCreateClick }: { onCreateClick: () => void }) {
   const { t } = useTranslation('projects')
   return (
     <div className="text-center py-12 px-6">
-      <p className="text-sm text-[var(--color-text-secondary)]">
+      <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+        {t('dashboard.no_flags_title')}
+      </h2>
+      <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
         {t('dashboard.no_flags')}
       </p>
       <Button size="lg" className="mt-4" onClick={onCreateClick}>

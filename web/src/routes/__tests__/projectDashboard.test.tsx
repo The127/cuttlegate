@@ -81,12 +81,12 @@ describe('ProjectDashboard — flags section environment awareness', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText('Flags live inside environments. Create your first environment to get started.'),
+        screen.getByText('Environments scope flag states, rules, and API keys. Create one to start managing flags.'),
       ).toBeInTheDocument()
     })
 
     // The "Create your first flag" CTA must NOT be visible
-    expect(screen.queryByText('Create your first flag to start shipping features.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Ship features safely with flags that control what users see in each environment.')).not.toBeInTheDocument()
   })
 
   it('shows flag-creation CTA when environments exist but no flags', async () => {
@@ -103,13 +103,13 @@ describe('ProjectDashboard — flags section environment awareness', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText('Create your first flag to start shipping features.'),
+        screen.getByText('Ship features safely with flags that control what users see in each environment.'),
       ).toBeInTheDocument()
     })
 
     // The environment nudge must NOT be visible
     expect(
-      screen.queryByText('Flags live inside environments. Create your first environment to get started.'),
+      screen.queryByText('Environments scope flag states, rules, and API keys. Create one to start managing flags.'),
     ).not.toBeInTheDocument()
   })
 

@@ -1,7 +1,8 @@
 {
   "title": "用户分群",
   "new_segment": "新建分群",
-  "empty_state": "暂无用户分群 — 用户分群可让您将功能标志定向到特定用户群体。",
+  "empty_title": "创建您的第一个用户分群",
+  "empty_state": "将用户分组到分群中，以将功能标志定向到特定受众。",
   "error": "加载用户分群失败。",
   "edit_aria": "编辑分群 {{slug}}",
   "delete_aria": "删除分群 {{slug}}",
