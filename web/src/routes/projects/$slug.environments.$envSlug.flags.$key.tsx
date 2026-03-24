@@ -1,12 +1,13 @@
 import { createRoute, useNavigate, Link } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useMemo, type ChangeEvent } from 'react'
-import { useTranslation, Trans } from 'react-i18next'
+import { useTranslation } from 'react-i18next'
 import { projectEnvRoute } from './$slug.environments.$envSlug'
 import { projectRoute } from './$slug'
 import { fetchJSON, patchJSON, postJSON, deleteRequest, APIError } from '../../api'
 import { useFlagSSE } from '../../hooks/useFlagSSE'
 import { Button, Input, Select, SelectItem, CopyableCode, Textarea } from '../../components/ui'
+import { DeleteConfirmModal } from '../../components/DeleteConfirmModal'
 import { PromoteDialog } from '../../components/PromoteDialog'
 import { FlagAnalyticsPanel } from '../../components/FlagAnalyticsPanel'
 import { PageHeading } from '../../components/PageHeading'
@@ -393,55 +394,6 @@ function FlagDetailCard({
   )
 }
 
-function DeleteConfirmModal({
-  flagKey,
-  isDeleting,
-  deleteFailed,
-  onConfirm,
-  onCancel,
-}: {
-  flagKey: string
-  isDeleting: boolean
-  deleteFailed: boolean
-  onConfirm: () => void
-  onCancel: () => void
-}) {
-  const { t } = useTranslation('flags')
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="delete-dialog-title"
-    >
-      <div className="absolute inset-0 bg-black/30" onClick={onCancel} aria-hidden="true" />
-      <div className="relative bg-[var(--color-surface)] rounded-lg shadow-lg max-w-sm w-full mx-4 p-6">
-        <h2 id="delete-dialog-title" className="text-base font-semibold text-[var(--color-text-primary)]">
-          {t('delete.title')}
-        </h2>
-        <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-          <Trans
-            i18nKey="delete.body"
-            ns="flags"
-            values={{ key: flagKey }}
-            components={{ mono: <span className="font-mono text-[var(--color-text-primary)]" /> }}
-          />
-        </p>
-        {deleteFailed && (
-          <p className="mt-3 text-xs text-[var(--color-status-error)]">{t('delete.failed')}</p>
-        )}
-        <div className="mt-5 flex justify-end gap-3">
-          <Button autoFocus variant="secondary" onClick={onCancel} disabled={isDeleting}>
-            {t('actions.cancel', { ns: 'common' })}
-          </Button>
-          <Button variant="danger" onClick={onConfirm} disabled={isDeleting}>
-            {isDeleting ? t('states.deleting', { ns: 'common' }) : t('actions.delete', { ns: 'common' })}
-          </Button>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 function EnvironmentTogglePanel({ slug, flagKey }: { slug: string; flagKey: string }) {
   const { t } = useTranslation('flags')

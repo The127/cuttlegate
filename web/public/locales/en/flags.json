@@ -25,7 +25,10 @@
   "delete": {
     "title": "Delete flag?",
     "body": "This will permanently delete <mono>{{key}}</mono> from all environments. This action cannot be undone.",
-    "failed": "Failed to delete. Please try again."
+    "failed": "Failed to delete. Please try again.",
+    "confirm_instruction": "Type <mono>{{key}}</mono> to confirm deletion",
+    "confirm_placeholder": "Type flag key to confirm",
+    "confirm_aria": "Type the flag key to confirm deletion"
   },
   "create": {
     "title": "Create flag",

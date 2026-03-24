@@ -1,7 +1,7 @@
 import { createRoute, Link } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useMemo } from 'react'
-import { useTranslation, Trans } from 'react-i18next'
+import { useTranslation } from 'react-i18next'
 import { projectEnvRoute } from './$slug.environments.$envSlug'
 import { projectRoute } from './$slug'
 import { fetchJSON, patchJSON, postJSON, deleteRequest, APIError } from '../../api'
@@ -25,6 +25,7 @@ import {
 } from '../../components/ui/Dialog'
 import type { ColumnDef } from '../../components/ui'
 import { formatRelativeDate } from '../../utils/date'
+import { DeleteConfirmModal } from '../../components/DeleteConfirmModal'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import { PageHeading } from '../../components/PageHeading'
 
@@ -628,50 +629,6 @@ function CreateFlagModal({
   )
 }
 
-function DeleteConfirmModal({
-  flagKey,
-  isDeleting,
-  deleteFailed,
-  onConfirm,
-  onCancel,
-}: {
-  flagKey: string
-  isDeleting: boolean
-  deleteFailed: boolean
-  onConfirm: () => void
-  onCancel: () => void
-}) {
-  const { t } = useTranslation('flags')
-
-  return (
-    <Dialog open onOpenChange={(open) => { if (!open) onCancel() }}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>{t('delete.title')}</DialogTitle>
-        </DialogHeader>
-        <p className="text-sm text-[var(--color-text-secondary)]">
-          <Trans
-            i18nKey="delete.body"
-            ns="flags"
-            values={{ key: flagKey }}
-            components={{ mono: <span className="font-mono text-[var(--color-text-primary)]" /> }}
-          />
-        </p>
-        {deleteFailed && (
-          <p className="mt-3 text-xs text-[var(--color-status-error)]">{t('delete.failed')}</p>
-        )}
-        <DialogFooter>
-          <Button autoFocus variant="secondary" onClick={onCancel} disabled={isDeleting}>
-            {t('actions.cancel', { ns: 'common' })}
-          </Button>
-          <Button variant="destructive" onClick={onConfirm} loading={isDeleting}>
-            {isDeleting ? t('states.deleting', { ns: 'common' }) : t('actions.delete', { ns: 'common' })}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
 
 function FlagListSkeleton() {
   return (
