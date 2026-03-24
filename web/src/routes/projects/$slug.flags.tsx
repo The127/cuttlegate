@@ -2,9 +2,8 @@ import { createRoute, Link } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useMemo, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { projectEnvRoute } from './$slug.environments.$envSlug'
 import { projectRoute } from './$slug'
-import { fetchJSON, patchJSON, deleteRequest } from '../../api'
+import { fetchJSON, deleteRequest } from '../../api'
 import {
   Button,
   Input,
@@ -19,62 +18,58 @@ import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import { PageHeading } from '../../components/PageHeading'
 import { CreateFlagModal } from './flag-create-modal'
 
-interface Environment {
-  id: string
-  name: string
-  slug: string
-}
+// --- Types ---
 
 interface Variant {
   key: string
   name: string
 }
 
-interface FlagItem {
+interface ProjectFlagItem {
   id: string
   key: string
   name: string
   type: string
   variants: Variant[]
   default_variant_key: string
+  created_at: string
+}
+
+interface Environment {
+  id: string
+  name: string
+  slug: string
+}
+
+interface EnvFlagItem {
+  id: string
+  key: string
   enabled: boolean
 }
 
-interface FlagStats {
-  last_evaluated_at: string | null
-  evaluation_count: number
-}
+// --- Route ---
 
-function useFlagStats(slug: string, envSlug: string, flagKey: string) {
-  return useQuery<FlagStats>({
-    queryKey: ['flag-stats', slug, envSlug, flagKey],
-    queryFn: () =>
-      fetchJSON<FlagStats>(
-        `/api/v1/projects/${slug}/environments/${envSlug}/flags/${flagKey}/stats`,
-      ),
-    refetchInterval: 30_000,
-  })
-}
-
-export const flagListRoute = createRoute({
-  getParentRoute: () => projectEnvRoute,
+export const projectFlagListRoute = createRoute({
+  getParentRoute: () => projectRoute,
   path: '/flags',
-  component: FlagListPage,
+  component: ProjectFlagListPage,
 })
 
-function FlagListPage() {
+// --- Page ---
+
+function ProjectFlagListPage() {
   const { t } = useTranslation('flags')
-  const { slug, envSlug } = flagListRoute.useParams()
+  const { slug } = projectFlagListRoute.useParams()
   const project = projectRoute.useLoaderData()
-  useDocumentTitle(t('page_title'), envSlug, project.name)
+  useDocumentTitle(t('project_list.page_title'), project.name)
   const queryClient = useQueryClient()
-  const queryKey = ['flags', slug, envSlug]
+  const queryKey = ['project-flags', slug]
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey,
     queryFn: () =>
-      fetchJSON<{ flags: FlagItem[] }>(
-        `/api/v1/projects/${slug}/environments/${envSlug}/flags`,
+      fetchJSON<{ flags: ProjectFlagItem[] }>(
+        `/api/v1/projects/${slug}/flags`,
       ).then((d) => d.flags),
   })
 
@@ -86,8 +81,18 @@ function FlagListPage() {
       ).then((d) => d.environments),
     staleTime: 5 * 60_000,
   })
-  const envName = environments?.find((e) => e.slug === envSlug)?.name ?? envSlug
 
+  const sortedEnvs = useMemo(
+    () =>
+      environments
+        ? [...environments].sort((a, b) => a.slug.localeCompare(b.slug))
+        : [],
+    [environments],
+  )
+
+  const firstEnvSlug = sortedEnvs.length > 0 ? sortedEnvs[0].slug : null
+
+  // Search / filter (reuse #365 pattern)
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedTerm, setDebouncedTerm] = useState('')
 
@@ -95,18 +100,6 @@ function FlagListPage() {
     const timer = setTimeout(() => setDebouncedTerm(searchTerm), 200)
     return () => clearTimeout(timer)
   }, [searchTerm])
-
-  const [toggleErrorKey, setToggleErrorKey] = useState<string | null>(null)
-
-  const toggleMutation = useMutation({
-    mutationFn: ({ key, enabled }: { key: string; enabled: boolean }) =>
-      patchJSON(`/api/v1/projects/${slug}/environments/${envSlug}/flags/${key}`, { enabled }),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey }),
-    onError: (_err, variables) => {
-      setToggleErrorKey(variables.key)
-      setTimeout(() => setToggleErrorKey(null), 3000)
-    },
-  })
 
   const deleteMutation = useMutation({
     mutationFn: (key: string) => deleteRequest(`/api/v1/projects/${slug}/flags/${key}`),
@@ -116,94 +109,100 @@ function FlagListPage() {
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const [showCreate, setShowCreate] = useState(false)
 
-  const columns = useMemo<ColumnDef<FlagItem>[]>(
+  const columns = useMemo<ColumnDef<ProjectFlagItem>[]>(
     () => [
       {
         key: 'key',
-        header: t('table.col_key'),
+        header: t('project_list.col_key'),
         sortable: true,
         sortValue: (f) => f.key,
         cell: (f) => (
           <div className="flex items-center gap-2">
-            <Link
-              to="/projects/$slug/environments/$envSlug/flags/$key"
-              params={{ slug, envSlug, key: f.key }}
-              className="font-mono text-sm text-[var(--color-accent-start)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] rounded"
-            >
-              {f.key}
-            </Link>
+            {firstEnvSlug ? (
+              <Link
+                to="/projects/$slug/environments/$envSlug/flags/$key"
+                params={{ slug, envSlug: firstEnvSlug, key: f.key }}
+                className="font-mono text-sm text-[var(--color-accent-start)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] rounded"
+              >
+                {f.key}
+              </Link>
+            ) : (
+              <span className="font-mono text-sm text-[var(--color-text-primary)]">
+                {f.key}
+              </span>
+            )}
             <CopyableCode
               value={f.key}
-              aria-label={t('list.copy_key_aria', { key: f.key })}
+              aria-label={t('project_list.copy_key_aria', { key: f.key })}
               className="text-[var(--color-accent-start)]"
             />
-            <span className="font-mono bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-[var(--color-text-muted)] text-xs rounded px-1.5 py-0.5">
-              {t('type_badge.' + f.type, { defaultValue: f.type })}
-            </span>
           </div>
         ),
       },
       {
         key: 'name',
-        header: t('table.col_name'),
+        header: t('project_list.col_name'),
         sortable: true,
         sortValue: (f) => f.name,
         cell: (f) => (
-          <Link
-            to="/projects/$slug/environments/$envSlug/flags/$key"
-            params={{ slug, envSlug, key: f.key }}
-            className="text-sm text-[var(--color-text-primary)] truncate hover:underline hover:text-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] rounded"
-          >
+          <span className="text-sm text-[var(--color-text-primary)] truncate">
             {f.name}
-          </Link>
-        ),
-      },
-      {
-        key: 'default_variant',
-        header: t('table.col_default_variant'),
-        cell: (f) => (
-          <span className="font-mono text-xs text-[var(--color-text-secondary)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1.5 py-0.5">
-            {f.default_variant_key}
           </span>
         ),
       },
       {
-        key: 'last_evaluated',
-        header: t('table.col_last_evaluated'),
-        cell: (f) => <LastEvaluatedCell slug={slug} envSlug={envSlug} flagKey={f.key} />,
+        key: 'type',
+        header: t('project_list.col_type'),
+        cell: (f) => (
+          <span className="font-mono bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-[var(--color-text-muted)] text-xs rounded px-1.5 py-0.5">
+            {t('type_badge.' + f.type, { defaultValue: f.type })}
+          </span>
+        ),
       },
       {
-        key: 'status',
-        header: t('table.col_status'),
-        cell: (f) => {
-          const isToggling = toggleMutation.isPending && toggleMutation.variables?.key === f.key
-          const isError = toggleErrorKey === f.key
-          const status = isError ? 'warning' : f.enabled ? 'enabled' : 'disabled'
-          const label = isError
-            ? t('toggle.failed')
-            : f.enabled
-              ? t('toggle.enabled')
-              : t('toggle.disabled')
-          return (
-            <button
-              onClick={() => toggleMutation.mutate({ key: f.key, enabled: !f.enabled })}
-              disabled={isToggling}
-              aria-pressed={f.enabled}
-              aria-label={f.enabled ? t('toggle.disable') : t('toggle.enable')}
-              className="focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded-full disabled:opacity-60"
-            >
-              <StatusBadge status={status} label={label} />
-            </button>
-          )
-        },
+        key: 'variants',
+        header: t('project_list.col_variants'),
+        sortable: true,
+        sortValue: (f) => f.variants.length,
+        cell: (f) => (
+          <span className="text-sm text-[var(--color-text-secondary)]">
+            {f.variants.length}
+          </span>
+        ),
       },
+      {
+        key: 'created',
+        header: t('project_list.col_created'),
+        sortable: true,
+        sortValue: (f) => f.created_at,
+        cell: (f) => (
+          <span className="text-xs text-[var(--color-text-secondary)]">
+            {formatRelativeDate(f.created_at)}
+          </span>
+        ),
+      },
+      ...(sortedEnvs.length > 0
+        ? [
+            {
+              key: 'environments',
+              header: t('project_list.col_environments'),
+              cell: (f: ProjectFlagItem) => (
+                <EnvironmentStatusBadges
+                  slug={slug}
+                  flagKey={f.key}
+                  environments={sortedEnvs}
+                />
+              ),
+            },
+          ]
+        : []),
       {
         key: 'actions',
         header: '',
         cell: (f) => (
           <button
             onClick={() => setPendingDelete(f.key)}
-            aria-label={t('list.delete_flag_aria', { key: f.key })}
+            aria-label={t('project_list.delete_flag_aria', { key: f.key })}
             className="text-[var(--color-text-muted)] hover:text-[var(--color-status-error)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-status-error)] rounded p-0.5"
           >
             <svg
@@ -223,7 +222,7 @@ function FlagListPage() {
         ),
       },
     ],
-    [t, slug, envSlug, toggleMutation.isPending, toggleMutation.variables, toggleMutation.mutate, toggleErrorKey],
+    [t, slug, firstEnvSlug, sortedEnvs, setPendingDelete],
   )
 
   const flags = data ?? []
@@ -236,22 +235,19 @@ function FlagListPage() {
     )
   }, [flags, debouncedTerm, isSearching])
 
-  if (isLoading) return <FlagListSkeleton />
-  if (isError) return <FlagListError onRetry={() => void refetch()} />
+  if (isLoading) return <ProjectFlagListSkeleton />
+  if (isError) return <ProjectFlagListError onRetry={() => void refetch()} />
 
   return (
     <div className="p-6">
-      <PageHeading
-        ancestors={[{ label: t('nav.environments', { ns: 'common' }), to: `/projects/${slug}/environments` }]}
-        current={envName}
-      />
+      <PageHeading ancestors={[]} current={t('project_list.title')} />
       <div className="flex items-center justify-between mb-6">
         <p className="text-sm text-[var(--color-text-muted)]">
           {isSearching
-            ? t('list.search_count', { filtered: filteredFlags.length, total: flags.length })
-            : t('list.flag_count', { count: flags.length })}
+            ? t('project_list.search_count', { filtered: filteredFlags.length, total: flags.length })
+            : t('project_list.flag_count', { count: flags.length })}
         </p>
-        <Button onClick={() => setShowCreate(true)}>{t('list.new_flag')}</Button>
+        <Button onClick={() => setShowCreate(true)}>{t('project_list.new_flag')}</Button>
       </div>
 
       {flags.length > 0 && (
@@ -259,14 +255,14 @@ function FlagListPage() {
           <Input
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder={t('list.search_placeholder')}
-            aria-label={t('list.search_aria')}
+            placeholder={t('project_list.search_placeholder')}
+            aria-label={t('project_list.search_aria')}
             className="py-1.5 px-3 pr-8"
           />
           {searchTerm.length > 0 && (
             <button
               onClick={() => setSearchTerm('')}
-              aria-label={t('list.search_clear_aria')}
+              aria-label={t('project_list.search_clear_aria')}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded p-0.5"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -280,7 +276,7 @@ function FlagListPage() {
       <DataTable
         columns={columns}
         data={filteredFlags}
-        aria-label={envName}
+        aria-label={t('project_list.title')}
         emptyState={
           isSearching
             ? <SearchEmptyState onClear={() => setSearchTerm('')} />
@@ -316,32 +312,80 @@ function FlagListPage() {
   )
 }
 
-function LastEvaluatedCell({ slug, envSlug, flagKey }: { slug: string; envSlug: string; flagKey: string }) {
-  const { t } = useTranslation('flags')
-  const { data } = useFlagStats(slug, envSlug, flagKey)
+// --- Environment status badges (supplementary, loaded independently) ---
 
-  if (!data) {
-    return <span className="text-xs text-[var(--color-text-muted)]">—</span>
-  }
-
-  if (!data.last_evaluated_at || data.evaluation_count === 0) {
-    return <span className="text-xs text-[var(--color-text-muted)]">{t('stats.never_evaluated')}</span>
-  }
-
+function EnvironmentStatusBadges({
+  slug,
+  flagKey,
+  environments,
+}: {
+  slug: string
+  flagKey: string
+  environments: Environment[]
+}) {
   return (
-    <span className="text-xs text-[var(--color-text-secondary)]">{formatRelativeDate(data.last_evaluated_at)}</span>
+    <div className="flex flex-wrap gap-1">
+      {environments.map((env) => (
+        <EnvBadge key={env.id} slug={slug} envSlug={env.slug} envName={env.name} flagKey={flagKey} />
+      ))}
+    </div>
   )
 }
+
+function EnvBadge({
+  slug,
+  envSlug,
+  envName,
+  flagKey,
+}: {
+  slug: string
+  envSlug: string
+  envName: string
+  flagKey: string
+}) {
+  const { t } = useTranslation('flags')
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['env-flags', slug, envSlug],
+    queryFn: () =>
+      fetchJSON<{ flags: EnvFlagItem[] }>(
+        `/api/v1/projects/${slug}/environments/${envSlug}/flags`,
+      ).then((d) => d.flags),
+    staleTime: 30_000,
+  })
+
+  if (isLoading) {
+    return (
+      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] bg-[var(--color-surface-elevated)] text-[var(--color-text-muted)] border border-[var(--color-border)] animate-pulse">
+        {envName}
+      </span>
+    )
+  }
+
+  if (isError || !data) return null
+
+  const envFlag = data.find((f) => f.key === flagKey)
+  if (!envFlag) return null
+
+  const status = envFlag.enabled ? 'enabled' : 'disabled'
+  const label = envFlag.enabled
+    ? t('project_list.env_badge_enabled', { env: envName })
+    : t('project_list.env_badge_disabled', { env: envName })
+
+  return <StatusBadge status={status} label={label} className="text-[10px] px-1.5 py-0" />
+}
+
+// --- Empty states ---
 
 function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
   const { t } = useTranslation('flags')
   return (
     <div className="text-center py-16 px-6">
       <p className="text-sm text-[var(--color-text-secondary)]">
-        {t('list.empty_state')}
+        {t('project_list.empty_state')}
       </p>
       <Button onClick={onCreateClick} size="lg" className="mt-4">
-        {t('list.new_flag')}
+        {t('project_list.new_flag')}
       </Button>
     </div>
   )
@@ -352,16 +396,18 @@ function SearchEmptyState({ onClear }: { onClear: () => void }) {
   return (
     <div className="text-center py-16 px-6">
       <p className="text-sm text-[var(--color-text-secondary)]">
-        {t('list.search_no_results')}
+        {t('project_list.search_no_results')}
       </p>
       <Button onClick={onClear} variant="secondary" size="lg" className="mt-4">
-        {t('list.search_clear_aria')}
+        {t('project_list.search_clear_aria')}
       </Button>
     </div>
   )
 }
 
-function FlagListSkeleton() {
+// --- Skeleton & Error ---
+
+function ProjectFlagListSkeleton() {
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
@@ -377,7 +423,7 @@ function FlagListSkeleton() {
               <div className="h-5 w-16 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
             </div>
             <div className="flex items-center gap-3">
-              <div className="h-6 w-20 bg-[var(--color-surface-elevated)] rounded-full animate-pulse" />
+              <div className="h-4 w-16 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
               <div className="h-4 w-4 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
             </div>
           </li>
@@ -387,11 +433,11 @@ function FlagListSkeleton() {
   )
 }
 
-function FlagListError({ onRetry }: { onRetry: () => void }) {
+function ProjectFlagListError({ onRetry }: { onRetry: () => void }) {
   const { t } = useTranslation('flags')
   return (
     <div className="p-6">
-      <span className="text-sm text-[var(--color-status-error)]">{t('list.error')} </span>
+      <span className="text-sm text-[var(--color-status-error)]">{t('project_list.error')} </span>
       <button
         onClick={onRetry}
         className="text-sm text-[var(--color-status-error)] underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-[var(--color-status-error)] rounded"

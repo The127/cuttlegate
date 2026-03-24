@@ -123,7 +123,7 @@ export function Sidebar({ projectSlug, envSlug }: SidebarProps) {
 
   const flagsPath = envSlug
     ? `/projects/${projectSlug}/environments/${envSlug}/flags`
-    : `/projects/${projectSlug}`
+    : `/projects/${projectSlug}/flags`
 
   const envScopedItems: NavItemProps[] = [
     {
