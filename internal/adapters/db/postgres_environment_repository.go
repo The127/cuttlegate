@@ -77,6 +77,21 @@ func (r *PostgresEnvironmentRepository) ListByProject(ctx context.Context, proje
 	return envs, rows.Err()
 }
 
+func (r *PostgresEnvironmentRepository) UpdateName(ctx context.Context, id, name string) error {
+	res, err := r.db.ExecContext(ctx, `UPDATE environments SET name = $1 WHERE id = $2`, name, id)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return domain.ErrNotFound
+	}
+	return nil
+}
+
 func (r *PostgresEnvironmentRepository) Delete(ctx context.Context, id string) error {
 	res, err := r.db.ExecContext(ctx, `DELETE FROM environments WHERE id = $1`, id)
 	if err != nil {

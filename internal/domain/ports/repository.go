@@ -29,6 +29,7 @@ type EnvironmentRepository interface {
 	Create(ctx context.Context, env domain.Environment) error
 	GetBySlug(ctx context.Context, projectID, slug string) (*domain.Environment, error)
 	ListByProject(ctx context.Context, projectID string) ([]*domain.Environment, error)
+	UpdateName(ctx context.Context, id, name string) error
 	Delete(ctx context.Context, id string) error
 }
 

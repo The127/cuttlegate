@@ -14,6 +14,7 @@ type environmentService interface {
 	Create(ctx context.Context, projectSlug, name, envSlug string) (*domain.Environment, error)
 	GetBySlug(ctx context.Context, projectID, slug string) (*domain.Environment, error)
 	ListByProject(ctx context.Context, projectID string) ([]*domain.Environment, error)
+	UpdateName(ctx context.Context, projectID, slug, name string) (*domain.Environment, error)
 	DeleteBySlug(ctx context.Context, projectID, slug string) error
 }
 
@@ -33,6 +34,7 @@ func (h *EnvironmentHandler) RegisterRoutes(mux *http.ServeMux, auth func(http.H
 	mux.Handle("GET /api/v1/projects/{slug}/environments", auth(http.HandlerFunc(h.list)))
 	mux.Handle("POST /api/v1/projects/{slug}/environments", auth(http.HandlerFunc(h.create)))
 	mux.Handle("GET /api/v1/projects/{slug}/environments/{env_slug}", auth(http.HandlerFunc(h.get)))
+	mux.Handle("PATCH /api/v1/projects/{slug}/environments/{env_slug}", auth(http.HandlerFunc(h.update)))
 	mux.Handle("DELETE /api/v1/projects/{slug}/environments/{env_slug}", auth(http.HandlerFunc(h.delete)))
 }
 
@@ -101,6 +103,45 @@ func (h *EnvironmentHandler) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	e, err := h.svc.GetBySlug(r.Context(), proj.ID, r.PathValue("env_slug"))
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, toEnvironmentResponse(e))
+}
+
+func (h *EnvironmentHandler) update(w http.ResponseWriter, r *http.Request) {
+	proj, err := h.projects.GetBySlug(r.Context(), r.PathValue("slug"))
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	var body struct {
+		Name *string `json:"name"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		WriteError(w, newBadRequest("invalid request body"))
+		return
+	}
+
+	// No name field in body — no-op: return current state.
+	if body.Name == nil {
+		e, err := h.svc.GetBySlug(r.Context(), proj.ID, r.PathValue("env_slug"))
+		if err != nil {
+			WriteError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, toEnvironmentResponse(e))
+		return
+	}
+
+	if *body.Name == "" {
+		WriteError(w, newBadRequest("name must not be empty"))
+		return
+	}
+
+	e, err := h.svc.UpdateName(r.Context(), proj.ID, r.PathValue("env_slug"), *body.Name)
 	if err != nil {
 		WriteError(w, err)
 		return

@@ -1,9 +1,9 @@
 import { createRoute, useLocation, useNavigate } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { projectRoute } from './$slug'
-import { fetchJSON, deleteRequest } from '../../api'
+import { fetchJSON, deleteRequest, patchJSON } from '../../api'
 import { formatRelativeDate } from '../../utils/date'
 import { Button } from '../../components/ui/Button'
 import {
@@ -16,6 +16,7 @@ import {
 } from '../../components/ui/Dialog'
 import { CreateEnvironmentDialog } from '../../components/CreateEnvironmentDialog'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'
+import { useProjectRole } from '../../hooks/useProjectRole'
 
 interface Environment {
   id: string
@@ -45,6 +46,8 @@ function EnvironmentSettingsPage() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const activeEnvSlug = useActiveEnvSlug()
+  const { data: role } = useProjectRole(slug)
+  const canEdit = role === 'admin'
   const queryKey = ['environments', slug]
 
   const { data, isLoading, isError, refetch } = useQuery({
@@ -102,6 +105,8 @@ function EnvironmentSettingsPage() {
             <EnvironmentRow
               key={env.id}
               environment={env}
+              projectSlug={slug}
+              canEdit={canEdit}
               onDeleteIntent={() => setPendingDelete(env)}
             />
           ))}
@@ -134,19 +139,118 @@ function EnvironmentSettingsPage() {
 
 function EnvironmentRow({
   environment,
+  projectSlug,
+  canEdit,
   onDeleteIntent,
 }: {
   environment: Environment
+  projectSlug: string
+  canEdit: boolean
   onDeleteIntent: () => void
 }) {
   const { t } = useTranslation('projects')
+  const queryClient = useQueryClient()
+  const [isEditing, setIsEditing] = useState(false)
+  const [editValue, setEditValue] = useState(environment.name)
+  const [validationError, setValidationError] = useState(false)
+  const [renameError, setRenameError] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus()
+      inputRef.current.select()
+    }
+  }, [isEditing])
+
+  const renameMutation = useMutation({
+    mutationFn: (name: string) =>
+      patchJSON<Environment>(
+        `/api/v1/projects/${projectSlug}/environments/${environment.slug}`,
+        { name },
+      ),
+    onSuccess: () => {
+      setIsEditing(false)
+      setRenameError(false)
+      void queryClient.invalidateQueries({ queryKey: ['environments', projectSlug] })
+    },
+    onError: () => {
+      setIsEditing(false)
+      setRenameError(true)
+      setEditValue(environment.name)
+      setTimeout(() => setRenameError(false), 3000)
+    },
+  })
+
+  function startEdit() {
+    setEditValue(environment.name)
+    setValidationError(false)
+    setRenameError(false)
+    setIsEditing(true)
+  }
+
+  function saveEdit() {
+    const trimmed = editValue.trim()
+    if (trimmed === '') {
+      setValidationError(true)
+      return
+    }
+    if (trimmed === environment.name) {
+      setIsEditing(false)
+      return
+    }
+    renameMutation.mutate(trimmed)
+  }
+
+  function cancelEdit() {
+    setEditValue(environment.name)
+    setValidationError(false)
+    setIsEditing(false)
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      saveEdit()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      cancelEdit()
+    }
+  }
+
   return (
     <li className="flex items-center justify-between px-4 py-3 gap-4">
       <div className="flex items-center gap-3 min-w-0">
         <span className="font-mono text-sm text-[var(--color-text-primary)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-2 py-0.5 shrink-0">
           {environment.slug}
         </span>
-        <span className="text-sm text-[var(--color-text-primary)] truncate">{environment.name}</span>
+        {isEditing ? (
+          <input
+            ref={inputRef}
+            type="text"
+            value={editValue}
+            onChange={(e) => {
+              setEditValue(e.target.value)
+              if (validationError && e.target.value.trim() !== '') {
+                setValidationError(false)
+              }
+            }}
+            onBlur={saveEdit}
+            onKeyDown={handleKeyDown}
+            className={`text-sm text-[var(--color-text-primary)] bg-[var(--color-surface)] border rounded px-2 py-0.5 min-w-0 focus:outline-none focus:ring-2 ${
+              validationError
+                ? 'border-[var(--color-status-error)] focus:ring-[var(--color-status-error)]'
+                : 'border-[var(--color-border)] focus:ring-[var(--color-accent)]'
+            }`}
+            aria-invalid={validationError}
+            aria-label={t('environments.edit_aria', { slug: environment.slug })}
+          />
+        ) : (
+          <span className="text-sm text-[var(--color-text-primary)] truncate">{environment.name}</span>
+        )}
+        {renameError && (
+          <span className="text-xs text-[var(--color-status-error)]">{t('environments.rename_failed')}</span>
+        )}
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <time
@@ -156,6 +260,23 @@ function EnvironmentRow({
         >
           {formatRelativeDate(environment.created_at)}
         </time>
+        {canEdit && !isEditing && (
+          <button
+            onClick={startEdit}
+            aria-label={t('environments.edit_aria', { slug: environment.slug })}
+            className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded p-0.5"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-4 h-4"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+            </svg>
+          </button>
+        )}
         <button
           onClick={onDeleteIntent}
           aria-label={t('environments.delete_aria', { slug: environment.slug })}

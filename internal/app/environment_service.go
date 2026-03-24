@@ -58,6 +58,27 @@ func (s *EnvironmentService) ListByProject(ctx context.Context, projectID string
 	return s.repo.ListByProject(ctx, projectID)
 }
 
+// UpdateName changes the name of an environment identified by project ID and slug.
+// Slug is immutable — only the display name is editable.
+// Requires admin role.
+func (s *EnvironmentService) UpdateName(ctx context.Context, projectID, slug, name string) (*domain.Environment, error) {
+	if _, err := requireRole(ctx, domain.RoleAdmin); err != nil {
+		return nil, err
+	}
+	if name == "" {
+		return nil, &domain.ValidationError{Field: "name", Message: "must not be empty"}
+	}
+	e, err := s.repo.GetBySlug(ctx, projectID, slug)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.repo.UpdateName(ctx, e.ID, name); err != nil {
+		return nil, err
+	}
+	e.Name = name
+	return e, nil
+}
+
 // DeleteBySlug removes an environment identified by project ID and slug.
 // Requires at least editor role.
 func (s *EnvironmentService) DeleteBySlug(ctx context.Context, projectID, slug string) error {
