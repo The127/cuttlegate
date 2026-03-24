@@ -23,6 +23,7 @@ Public exports:
     SDKError                  — base class for all SDK-specific errors
 """
 
+from .async_client import AsyncCuttlegateClient
 from .cached import CachedClient
 from .client import CuttlegateClient
 from .errors import (
@@ -35,12 +36,16 @@ from .errors import (
     ServerError,
 )
 from .streaming import FlagChangeEvent, StreamConnection, connect_stream
+from .openfeature import CuttlegateProvider
 from .testing import MockCuttlegateClient
-from .types import CuttlegateClientProtocol, CuttlegateConfig, EvalContext, EvalResult
+from .types import AsyncCuttlegateClientProtocol, CuttlegateClientProtocol, CuttlegateConfig, EvalContext, EvalResult
 
 __all__ = [
+    "AsyncCuttlegateClient",
+    "AsyncCuttlegateClientProtocol",
     "CachedClient",
     "CuttlegateClient",
+    "CuttlegateProvider",
     "MockCuttlegateClient",
     "CuttlegateClientProtocol",
     "CuttlegateConfig",

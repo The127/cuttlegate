@@ -629,3 +629,63 @@ describe('convenience methods', () => {
     client.close();
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────
+// Context-aware hydration
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('context-aware hydration', () => {
+  it('sends provided context in the hydration POST body', async () => {
+    const fetchFn = vi.fn(buildFetch({}));
+    const userContext = { user_id: 'alice', attributes: { plan: 'pro' } };
+    const client = createCachedClient(
+      { ...validConfig, fetch: fetchFn },
+      { context: userContext },
+    );
+    await client.ready;
+
+    const evaluateCalls = (fetchFn.mock.calls as unknown[][]).filter(
+      (args) => typeof args[0] === 'string' && (args[0] as string).endsWith('/evaluate'),
+    );
+    expect(evaluateCalls.length).toBeGreaterThanOrEqual(1);
+    const body = JSON.parse((evaluateCalls[0][1] as { body: string }).body);
+    expect(body.context).toEqual(userContext);
+
+    client.close();
+  });
+
+  it('sends empty context when no context option is provided', async () => {
+    const fetchFn = vi.fn(buildFetch({}));
+    const client = createCachedClient({ ...validConfig, fetch: fetchFn });
+    await client.ready;
+
+    const evaluateCalls = (fetchFn.mock.calls as unknown[][]).filter(
+      (args) => typeof args[0] === 'string' && (args[0] as string).endsWith('/evaluate'),
+    );
+    const body = JSON.parse((evaluateCalls[0][1] as { body: string }).body);
+    expect(body.context).toEqual({ user_id: '', attributes: {} });
+
+    client.close();
+  });
+
+  it('all hydration calls use the provided context (initial + any reconnects)', async () => {
+    const userContext = { user_id: 'bob', attributes: { tier: 'enterprise' } };
+    const fetchFn = vi.fn(buildFetch({}));
+    const client = createCachedClient(
+      { ...validConfig, fetch: fetchFn },
+      { context: userContext },
+    );
+    await client.ready;
+
+    // Every /evaluate call should use the provided context
+    const evaluateCalls = (fetchFn.mock.calls as unknown[][]).filter(
+      (args) => typeof args[0] === 'string' && (args[0] as string).endsWith('/evaluate'),
+    );
+    for (const call of evaluateCalls) {
+      const body = JSON.parse((call[1] as { body: string }).body);
+      expect(body.context).toEqual(userContext);
+    }
+
+    client.close();
+  });
+});

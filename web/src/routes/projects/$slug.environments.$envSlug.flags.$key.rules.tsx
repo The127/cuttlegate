@@ -1,7 +1,23 @@
 import { createRoute } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { projectEnvRoute } from './$slug.environments.$envSlug'
 import { fetchJSON, postJSON, patchJSON, deleteRequest, APIError } from '../../api'
 import { Button, Input, Select, SelectItem } from '../../components/ui'
@@ -124,9 +140,61 @@ function RulesPage() {
 
   const [addingNew, setAddingNew] = useState(false)
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
+
+  const [optimisticOrder, setOptimisticOrder] = useState<Rule[] | null>(null)
+
   const variants = flagQuery.data?.variants ?? []
   const segments = segmentsQuery.data ?? []
-  const rules = rulesQuery.data ?? []
+  const serverRules = rulesQuery.data ?? []
+  const rules = optimisticOrder ?? serverRules
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event
+      if (!over || active.id === over.id) return
+
+      const oldIndex = rules.findIndex((r) => r.id === active.id)
+      const newIndex = rules.findIndex((r) => r.id === over.id)
+      if (oldIndex === -1 || newIndex === -1) return
+
+      // Reorder optimistically.
+      const reordered = [...rules]
+      const [moved] = reordered.splice(oldIndex, 1)
+      reordered.splice(newIndex, 0, moved)
+
+      // Assign new priorities (1-based, sequential).
+      const updated = reordered.map((r, i) => ({ ...r, priority: i + 1 }))
+      setOptimisticOrder(updated)
+
+      // PATCH only the rules whose priority changed.
+      const changed = updated.filter((r) => {
+        const orig = serverRules.find((s) => s.id === r.id)
+        return orig && orig.priority !== r.priority
+      })
+
+      Promise.all(
+        changed.map((r) =>
+          patchJSON(
+            `/api/v1/projects/${slug}/flags/${key}/environments/${envSlug}/rules/${r.id}`,
+            { priority: r.priority },
+          ),
+        ),
+      )
+        .then(() => {
+          void queryClient.invalidateQueries({ queryKey: rulesKey })
+          setOptimisticOrder(null)
+        })
+        .catch(() => {
+          // Rollback on failure.
+          setOptimisticOrder(null)
+        })
+    },
+    [rules, serverRules, slug, key, envSlug, queryClient, rulesKey],
+  )
 
   if (rulesQuery.isLoading) return <RulesSkeleton />
 
@@ -187,31 +255,35 @@ function RulesPage() {
       {rules.length === 0 && !addingNew ? (
         <EmptyState onAdd={() => setAddingNew(true)} />
       ) : (
-        <div className="space-y-3">
-          {rules.map((rule) => (
-            <RuleRow
-              key={rule.id}
-              rule={rule}
-              variants={variants}
-              segments={segments}
-              onSave={(r, opts) => handleUpdate(r, opts)}
-              onDelete={handleDelete}
-              isSaving={updateMutation.isPending && updateMutation.variables?.id === rule.id}
-              isDeleting={deleteMutation.isPending && deleteMutation.variables === rule.id}
-            />
-          ))}
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={rules.map((r) => r.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-3">
+              {rules.map((rule) => (
+                <SortableRuleRow
+                  key={rule.id}
+                  rule={rule}
+                  variants={variants}
+                  segments={segments}
+                  onSave={(r, opts) => handleUpdate(r, opts)}
+                  onDelete={handleDelete}
+                  isSaving={updateMutation.isPending && updateMutation.variables?.id === rule.id}
+                  isDeleting={deleteMutation.isPending && deleteMutation.variables === rule.id}
+                />
+              ))}
 
-          {addingNew && (
-            <NewRuleRow
-              variants={variants}
-              segments={segments}
-              nextPriority={rules.length > 0 ? Math.max(...rules.map((r) => r.priority)) + 1 : 1}
-              onSave={(r, opts) => handleAdd(r, opts)}
-              onCancel={() => setAddingNew(false)}
-              isSaving={createMutation.isPending}
-            />
-          )}
-        </div>
+              {addingNew && (
+                <NewRuleRow
+                  variants={variants}
+                  segments={segments}
+                  nextPriority={rules.length > 0 ? Math.max(...rules.map((r) => r.priority)) + 1 : 1}
+                  onSave={(r, opts) => handleAdd(r, opts)}
+                  onCancel={() => setAddingNew(false)}
+                  isSaving={createMutation.isPending}
+                />
+              )}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
     </div>
   )
@@ -234,6 +306,36 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
   )
 }
 
+// ── Sortable wrapper ─────────────────────────────────────────────────────
+
+function SortableRuleRow(props: {
+  rule: Rule
+  variants: { key: string; name: string }[]
+  segments: Segment[]
+  onSave: (rule: Omit<Rule, 'createdAt'>, opts?: { onSuccess?: () => void; onError?: (err: Error) => void }) => void
+  onDelete: (id: string) => void
+  isSaving: boolean
+  isDeleting: boolean
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: props.rule.id,
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : undefined,
+    position: 'relative' as const,
+    zIndex: isDragging ? 10 : undefined,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <RuleRow {...props} dragHandleProps={{ ...attributes, ...listeners }} />
+    </div>
+  )
+}
+
 // ── Existing rule row ──────────────────────────────────────────────────────
 
 function RuleRow({
@@ -244,6 +346,7 @@ function RuleRow({
   onDelete,
   isSaving,
   isDeleting,
+  dragHandleProps,
 }: {
   rule: Rule
   variants: { key: string; name: string }[]
@@ -252,6 +355,7 @@ function RuleRow({
   onDelete: (id: string) => void
   isSaving: boolean
   isDeleting: boolean
+  dragHandleProps?: Record<string, unknown>
 }) {
   const { t } = useTranslation('rules')
   const [editing, setEditing] = useState(false)
@@ -299,12 +403,18 @@ function RuleRow({
     <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg">
       {/* Summary row */}
       <div className="flex items-start gap-3 px-4 py-3">
-        <span
-          className="mt-0.5 shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-[var(--color-surface-elevated)] text-xs font-mono text-[var(--color-text-secondary)]"
-          title="Priority"
+        <button
+          {...dragHandleProps}
+          className="mt-0.5 shrink-0 w-6 h-6 flex items-center justify-center rounded bg-[var(--color-surface-elevated)] text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] cursor-grab active:cursor-grabbing focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+          title={`Priority ${rule.priority} — drag to reorder`}
+          aria-label={`Drag to reorder rule ${rule.name || rule.priority}`}
         >
-          {rule.priority}
-        </span>
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <circle cx="6" cy="4" r="1.2" /><circle cx="10" cy="4" r="1.2" />
+            <circle cx="6" cy="8" r="1.2" /><circle cx="10" cy="8" r="1.2" />
+            <circle cx="6" cy="12" r="1.2" /><circle cx="10" cy="12" r="1.2" />
+          </svg>
+        </button>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-[var(--color-text-primary)] mb-1">
             {rule.name ? rule.name : t('fallback_name', { priority: rule.priority })}

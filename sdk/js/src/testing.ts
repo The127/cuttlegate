@@ -116,7 +116,7 @@ export function createMockClient(): MockCuttlegateClient {
     },
 
     disable(key: string): void {
-      flags.delete(key);
+      flags.set(key, { enabled: false, value: null, variant: 'false' });
     },
 
     setVariant(key: string, value: string): void {

@@ -8,7 +8,7 @@ can type-hint against it and write test doubles without subclassing.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Protocol
+from typing import Any, Awaitable, Protocol
 
 
 @dataclass
@@ -26,6 +26,7 @@ class CuttlegateConfig:
     project: str
     environment: str
     timeout_ms: int = 10_000
+    defaults: dict[str, dict[str, Any]] | None = None  # e.g. {"flag-key": {"enabled": True, "variant": "true"}}
 
 
 @dataclass
@@ -83,3 +84,13 @@ class CuttlegateClientProtocol(Protocol):
         single HTTP request regardless of flag count.
         """
         ...
+
+
+class AsyncCuttlegateClientProtocol(Protocol):
+    """PEP 544 structural protocol for async Cuttlegate clients."""
+
+    async def bool(self, key: str, ctx: EvalContext) -> bool: ...
+    async def string(self, key: str, ctx: EvalContext) -> str: ...
+    async def evaluate(self, key: str, ctx: EvalContext) -> EvalResult: ...
+    async def evaluate_all(self, ctx: EvalContext) -> dict[str, EvalResult]: ...
+    async def aclose(self) -> None: ...

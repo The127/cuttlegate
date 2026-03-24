@@ -47,6 +47,12 @@ type FlagResult struct {
 	Reason  string
 }
 
+// FlagDefault specifies fallback state for a flag when the server is unreachable.
+type FlagDefault struct {
+	Enabled bool
+	Variant string
+}
+
 // FlagUpdate is a real-time flag state change received from the SSE stream.
 // It is delivered on the updates channel returned by Client.Subscribe.
 type FlagUpdate struct {

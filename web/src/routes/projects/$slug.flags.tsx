@@ -11,7 +11,7 @@ import {
   CopyableCode,
   StatusBadge,
 } from '../../components/ui'
-import type { ColumnDef } from '../../components/ui'
+import type { ColumnDef, SortState } from '../../components/ui'
 import { formatRelativeDate } from '../../utils/date'
 import { DeleteConfirmModal } from '../../components/DeleteConfirmModal'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'
@@ -63,14 +63,49 @@ function ProjectFlagListPage() {
   const project = projectRoute.useLoaderData()
   useDocumentTitle(t('project_list.page_title'), project.name)
   const queryClient = useQueryClient()
-  const queryKey = ['project-flags', slug]
+  const PER_PAGE = 50
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  // Search / filter
+  const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 200)
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
+  // Pagination & sorting
+  const [page, setPage] = useState(1)
+  const [sortState, setSortState] = useState<SortState | null>(null)
+
+  // Reset page when search changes
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedSearch])
+
+  const queryKey = ['project-flags', slug, page, PER_PAGE, debouncedSearch, sortState?.key, sortState?.dir]
+
+  const sortByMap: Record<string, string> = { key: 'key', name: 'name', created: 'created_at' }
+
+  const { data, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey,
-    queryFn: () =>
-      fetchJSON<{ flags: ProjectFlagItem[] }>(
-        `/api/v1/projects/${slug}/flags`,
-      ).then((d) => d.flags),
+    queryFn: () => {
+      const params = new URLSearchParams()
+      params.set('page', String(page))
+      params.set('per_page', String(PER_PAGE))
+      if (debouncedSearch) params.set('search', debouncedSearch)
+      if (sortState) {
+        const apiCol = sortByMap[sortState.key]
+        if (apiCol) {
+          params.set('sort_by', apiCol)
+          params.set('sort_dir', sortState.dir)
+        }
+      }
+      return fetchJSON<{ flags: ProjectFlagItem[]; total: number; page: number; per_page: number }>(
+        `/api/v1/projects/${slug}/flags?${params.toString()}`,
+      )
+    },
+    placeholderData: (prev) => prev,
   })
 
   const { data: environments } = useQuery({
@@ -92,14 +127,6 @@ function ProjectFlagListPage() {
 
   const firstEnvSlug = sortedEnvs.length > 0 ? sortedEnvs[0].slug : null
 
-  // Search / filter (reuse #365 pattern)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [debouncedTerm, setDebouncedTerm] = useState('')
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedTerm(searchTerm), 200)
-    return () => clearTimeout(timer)
-  }, [searchTerm])
 
   const deleteMutation = useMutation({
     mutationFn: (key: string) => deleteRequest(`/api/v1/projects/${slug}/flags/${key}`),
@@ -162,8 +189,6 @@ function ProjectFlagListPage() {
       {
         key: 'variants',
         header: t('project_list.col_variants'),
-        sortable: true,
-        sortValue: (f) => f.variants.length,
         cell: (f) => (
           <span className="text-sm text-[var(--color-text-secondary)]">
             {f.variants.length}
@@ -225,15 +250,9 @@ function ProjectFlagListPage() {
     [t, slug, firstEnvSlug, sortedEnvs, setPendingDelete],
   )
 
-  const flags = data ?? []
-  const isSearching = debouncedTerm.length > 0
-  const filteredFlags = useMemo(() => {
-    if (!isSearching) return flags
-    const term = debouncedTerm.toLowerCase()
-    return flags.filter(
-      (f) => f.key.toLowerCase().includes(term) || f.name.toLowerCase().includes(term),
-    )
-  }, [flags, debouncedTerm, isSearching])
+  const flags = data?.flags ?? []
+  const total = data?.total ?? 0
+  const isSearching = debouncedSearch.length > 0
 
   if (isLoading) return <ProjectFlagListSkeleton />
   if (isError) return <ProjectFlagListError onRetry={() => void refetch()} />
@@ -244,39 +263,44 @@ function ProjectFlagListPage() {
       <div className="flex items-center justify-between mb-6">
         <p className="text-sm text-[var(--color-text-muted)]">
           {isSearching
-            ? t('project_list.search_count', { filtered: filteredFlags.length, total: flags.length })
-            : t('project_list.flag_count', { count: flags.length })}
+            ? t('project_list.search_count', { filtered: flags.length, total })
+            : t('project_list.flag_count', { count: total })}
         </p>
         <Button onClick={() => setShowCreate(true)}>{t('project_list.new_flag')}</Button>
       </div>
 
-      {flags.length > 0 && (
-        <div className="relative mb-4">
-          <Input
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder={t('project_list.search_placeholder')}
-            aria-label={t('project_list.search_aria')}
-            className="py-1.5 px-3 pr-8"
-          />
-          {searchTerm.length > 0 && (
-            <button
-              onClick={() => setSearchTerm('')}
-              aria-label={t('project_list.search_clear_aria')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded p-0.5"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </button>
-          )}
-        </div>
-      )}
+      <div className="relative mb-4">
+        <Input
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder={t('project_list.search_placeholder')}
+          aria-label={t('project_list.search_aria')}
+          className="py-1.5 px-3 pr-8"
+        />
+        {searchTerm.length > 0 && (
+          <button
+            onClick={() => setSearchTerm('')}
+            aria-label={t('project_list.search_clear_aria')}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded p-0.5"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        )}
+      </div>
 
       <DataTable
         columns={columns}
-        data={filteredFlags}
+        data={flags}
         aria-label={t('project_list.title')}
+        loading={isFetching}
+        totalRows={total}
+        currentPage={page}
+        perPage={PER_PAGE}
+        onPageChange={setPage}
+        onSortChange={setSortState}
+        serverSort={sortState}
         emptyState={
           isSearching
             ? <SearchEmptyState onClear={() => setSearchTerm('')} />

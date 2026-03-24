@@ -76,6 +76,11 @@ func (h *EnvironmentHandler) list(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *EnvironmentHandler) create(w http.ResponseWriter, r *http.Request) {
+	proj, err := h.projects.GetBySlug(r.Context(), r.PathValue("slug"))
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
 	var body struct {
 		Name string `json:"name"`
 		Slug string `json:"slug"`
@@ -84,7 +89,7 @@ func (h *EnvironmentHandler) create(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, newBadRequest("invalid request body"))
 		return
 	}
-	e, err := h.svc.Create(r.Context(), r.PathValue("slug"), body.Name, body.Slug)
+	e, err := h.svc.Create(r.Context(), proj.ID, body.Name, body.Slug)
 	if err != nil {
 		WriteError(w, err)
 		return

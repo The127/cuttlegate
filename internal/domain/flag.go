@@ -45,10 +45,6 @@ func (f *Flag) Validate() error {
 	default:
 		return &ValidationError{Field: "type", Message: "invalid flag type: " + string(f.Type)}
 	}
-	// name
-	if f.Name == "" {
-		return &ValidationError{Field: "name", Message: "must not be empty"}
-	}
 	// key
 	if len(f.Key) > MaxKeyLength {
 		return &ValidationError{Field: "key", Message: "flag key must be 128 characters or fewer"}
@@ -81,6 +77,10 @@ func (f *Flag) Validate() error {
 	// default variant key present
 	if !seen.Contains(f.DefaultVariantKey) {
 		return &ValidationError{Field: "default_variant_key", Message: "default_variant_key does not match any variant key"}
+	}
+	// name
+	if f.Name == "" {
+		return &ValidationError{Field: "name", Message: "must not be empty"}
 	}
 	return nil
 }

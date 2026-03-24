@@ -97,8 +97,20 @@ export function createClient(config: CuttlegateConfig): CuttlegateClient {
   const environment = config.environment;
   const timeout = config.timeout ?? DEFAULT_TIMEOUT;
   const fetchFn = config.fetch ?? globalThis.fetch;
+  const defaults = config.defaults ?? {};
 
   const evaluateUrl = `${baseUrl}/api/v1/projects/${encodeURIComponent(project)}/environments/${encodeURIComponent(environment)}/evaluate`;
+
+  function defaultFallbacks(): EvalResult[] {
+    return Object.entries(defaults).map(([key, def]) => ({
+      key,
+      enabled: def.enabled,
+      value: null,
+      variant: def.variant,
+      reason: 'default_fallback',
+      evaluatedAt: '',
+    }));
+  }
 
   async function evaluateAll(context: EvalContext): Promise<EvalResult[]> {
     const controller = new AbortController();
@@ -117,6 +129,10 @@ export function createClient(config: CuttlegateConfig): CuttlegateClient {
       });
     } catch (err: unknown) {
       clearTimeout(timer);
+      // Fall back to defaults on network/timeout errors (if defaults are configured).
+      if (Object.keys(defaults).length > 0) {
+        return defaultFallbacks();
+      }
       if (err instanceof DOMException && err.name === 'AbortError') {
         throw new CuttlegateError('timeout', `Request timed out after ${timeout}ms`);
       }
@@ -132,6 +148,10 @@ export function createClient(config: CuttlegateConfig): CuttlegateClient {
       throw new CuttlegateError('forbidden', 'Server returned 403 Forbidden');
     }
     if (!res.ok) {
+      // Fall back on server errors if defaults are configured.
+      if (Object.keys(defaults).length > 0 && res.status >= 500) {
+        return defaultFallbacks();
+      }
       throw new CuttlegateError('network_error', `Server returned ${res.status}`);
     }
 

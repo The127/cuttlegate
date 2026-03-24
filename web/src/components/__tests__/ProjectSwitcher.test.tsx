@@ -281,7 +281,7 @@ describe('ProjectSwitcher', () => {
     renderSwitcher()
 
     await waitFor(() => {
-      const link = screen.getByRole('link', { name: 'Cuttlegate' })
+      const link = screen.getByRole('link', { name: /Cuttlegate/i })
       expect(link).toBeInTheDocument()
       expect(link).toHaveAttribute('href', '/')
     })
@@ -294,7 +294,7 @@ describe('ProjectSwitcher', () => {
     renderSwitcher()
 
     await waitFor(() => {
-      const link = screen.getByRole('link', { name: 'Cuttlegate' })
+      const link = screen.getByRole('link', { name: /Cuttlegate/i })
       expect(link).toBeInTheDocument()
       expect(link).toHaveAttribute('href', '/')
     })

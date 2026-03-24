@@ -35,24 +35,20 @@ func newFakeEnvironmentService(projectSlugs ...string) *fakeEnvironmentService {
 
 func ek(projectID, slug string) string { return projectID + "/" + slug }
 
-func (f *fakeEnvironmentService) Create(_ context.Context, projectSlug, name, envSlug string) (*domain.Environment, error) {
+func (f *fakeEnvironmentService) Create(_ context.Context, projectID, name, envSlug string) (*domain.Environment, error) {
 	if f.mutateErr != nil {
 		return nil, f.mutateErr
-	}
-	projID, ok := f.projects[projectSlug]
-	if !ok {
-		return nil, domain.ErrNotFound
 	}
 	env := domain.Environment{Name: name, Slug: envSlug}
 	if err := env.Validate(); err != nil {
 		return nil, err
 	}
-	k := ek(projID, envSlug)
+	k := ek(projectID, envSlug)
 	if _, exists := f.envs[k]; exists {
 		return nil, domain.ErrConflict
 	}
 	env.ID = "env-" + envSlug
-	env.ProjectID = projID
+	env.ProjectID = projectID
 	env.CreatedAt = time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC)
 	f.envs[k] = &env
 	f.byID[env.ID] = &env
@@ -204,6 +200,31 @@ func TestEnvironmentHandler_Create_SameSlugDifferentProjects_Returns201(t *testi
 		if rec.Code != http.StatusCreated {
 			t.Errorf("project %s: got %d, want 201", project, rec.Code)
 		}
+	}
+}
+
+func TestEnvironmentHandler_Create_UsesProjectIDNotSlug(t *testing.T) {
+	mux := newEnvMux(newFakeEnvironmentService("acme"), newFakeResolver("acme"), noopAuth)
+	body := `{"name":"Staging","slug":"staging"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/projects/acme/environments", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status: got %d, want 201", rec.Code)
+	}
+	var e map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&e); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	// The project_id must be the resolved UUID, not the URL slug.
+	pid, _ := e["project_id"].(string)
+	if pid == "acme" {
+		t.Error("project_id is the URL slug 'acme' instead of the resolved project ID")
+	}
+	if pid != "proj-acme" {
+		t.Errorf("project_id: got %q, want %q", pid, "proj-acme")
 	}
 }
 

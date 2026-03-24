@@ -91,7 +91,14 @@ func (m *mockClient) Evaluate(ctx context.Context, key string, _ cuttlegate.Eval
 	m.evaluated[key] = struct{}{}
 	cfg, ok := m.flags[key]
 	if !ok {
-		return cuttlegate.EvalResult{}, &cuttlegate.NotFoundError{Resource: "flag", Key: key}
+		return cuttlegate.EvalResult{
+			Key:         key,
+			Enabled:     false,
+			Value:       "",
+			Variant:     "",
+			Reason:      "mock_default",
+			EvaluatedAt: mockEvaluatedAt,
+		}, nil
 	}
 	return cuttlegate.EvalResult{
 		Key:         key,
@@ -116,7 +123,7 @@ func (m *mockClient) String(ctx context.Context, key string, evalCtx cuttlegate.
 	if err != nil {
 		return "", err
 	}
-	return result.Value, nil
+	return result.Variant, nil
 }
 
 func (m *mockClient) EvaluateFlag(ctx context.Context, key string, _ cuttlegate.EvalContext) (cuttlegate.FlagResult, error) {
@@ -140,7 +147,7 @@ func (m *mockClient) Enable(key string) {
 func (m *mockClient) Disable(key string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	delete(m.flags, key)
+	m.flags[key] = flagConfig{enabled: false, value: "", variant: "false"}
 }
 
 func (m *mockClient) SetVariant(key, value string) {

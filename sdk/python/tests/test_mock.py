@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from cuttlegate import MockCuttlegateClient, NotFoundError
+from cuttlegate import MockCuttlegateClient
 from cuttlegate.types import EvalContext
 
 
@@ -96,34 +96,33 @@ def test_happy_set_flag_mutation_reflected_in_calls():
 # @edge — unknown key raises NotFoundError on bool()
 # ---------------------------------------------------------------------------
 
-def test_edge_bool_unknown_key_raises_not_found_error():
-    """@edge: bool() raises NotFoundError for an absent key; error message contains the key."""
+def test_edge_bool_unknown_key_returns_false():
+    """@edge: bool() returns False for an absent key (mock_default)."""
     client = MockCuttlegateClient()
-    with pytest.raises(NotFoundError) as exc_info:
-        client.bool("absent-flag", _CTX)
-    assert "absent-flag" in str(exc_info.value)
+    assert client.bool("absent-flag", _CTX) is False
 
 
 # ---------------------------------------------------------------------------
-# @edge — unknown key raises NotFoundError on string()
+# @edge — unknown key returns empty string on string()
 # ---------------------------------------------------------------------------
 
-def test_edge_string_unknown_key_raises_not_found_error():
-    """@edge: string() raises NotFoundError for an absent key."""
+def test_edge_string_unknown_key_returns_empty():
+    """@edge: string() returns '' for an absent key (mock_default)."""
     client = MockCuttlegateClient()
-    with pytest.raises(NotFoundError):
-        client.string("absent-flag", _CTX)
+    assert client.string("absent-flag", _CTX) == ""
 
 
 # ---------------------------------------------------------------------------
-# @edge — unknown key raises NotFoundError on evaluate()
+# @edge — unknown key returns mock_default EvalResult on evaluate()
 # ---------------------------------------------------------------------------
 
-def test_edge_evaluate_unknown_key_raises_not_found_error():
-    """@edge: evaluate() raises NotFoundError for an absent key."""
+def test_edge_evaluate_unknown_key_returns_mock_default():
+    """@edge: evaluate() returns mock_default result for an absent key."""
     client = MockCuttlegateClient()
-    with pytest.raises(NotFoundError):
-        client.evaluate("absent-flag", _CTX)
+    result = client.evaluate("absent-flag", _CTX)
+    assert result.enabled is False
+    assert result.reason == "mock_default"
+    assert result.variant == ""
 
 
 # ---------------------------------------------------------------------------
@@ -183,8 +182,12 @@ def test_happy_reset_clears_flag_state_and_evaluation_history():
     client.bool("my-flag", _CTX)
     client.reset()
 
-    with pytest.raises(NotFoundError):
-        client.evaluate("my-flag", _CTX)
-
+    # Evaluation history is cleared — assert_evaluated should fail for a key
+    # that was evaluated before reset but not after.
     with pytest.raises(AssertionError):
         client.assert_evaluated("my-flag")
+
+    # Flag state is cleared — evaluate returns mock_default.
+    result = client.evaluate("my-flag", _CTX)
+    assert result.reason == "mock_default"
+    assert result.enabled is False

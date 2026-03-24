@@ -9,6 +9,17 @@ import type { FlagStateChangedEvent, StreamConnection } from './streaming.js';
  */
 export interface CachedClientOptions {
   /**
+   * Evaluation context used for hydration and re-hydration requests.
+   * The server evaluates all flags against this context, so percentage
+   * rollouts and user-targeted rules return correct results.
+   *
+   * Defaults to `{ user_id: '', attributes: {} }` (anonymous context).
+   *
+   * One CachedClient instance = one evaluation context. Create separate
+   * instances for different users or contexts.
+   */
+  context?: EvalContext;
+  /**
    * Called on terminal SSE auth errors (401/403) that occur after successful
    * hydration. The cache retains its last-known values. No reconnect is
    * attempted after a terminal error.
@@ -110,6 +121,7 @@ export function createCachedClient(
   const fetchFn = config.fetch ?? globalThis.fetch;
   // token is captured in the closure only — not on any property
   const token = config.token;
+  const evalContext: EvalContext = options?.context ?? { user_id: '', attributes: {} };
 
   const evalUrl = `${baseUrl}/api/v1/projects/${encodeURIComponent(project)}/environments/${encodeURIComponent(environment)}/evaluate`;
 
@@ -191,7 +203,7 @@ export function createCachedClient(
     fetchFn(evalUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ context: { user_id: '', attributes: {} } }),
+      body: JSON.stringify({ context: evalContext }),
       signal: controller.signal,
     })
       .then(async (res) => {
@@ -230,7 +242,7 @@ export function createCachedClient(
   fetchFn(evalUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ context: { user_id: '', attributes: {} } }),
+    body: JSON.stringify({ context: evalContext }),
     signal: hydrationController.signal,
   })
     .then(async (res) => {
@@ -328,7 +340,7 @@ export function createCachedClient(
   }
 
   // context is accepted for CuttlegateClient interface compatibility; results are
-  // always served from cache — the cache is not keyed per-user context.
+  // always served from cache seeded with options.context at construction time.
   function evaluateAll(_context: EvalContext): Promise<EvalResult[]> {
     return Promise.resolve(Array.from(cache.values()));
   }

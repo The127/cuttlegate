@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { OpenFeature } from '@openfeature/server-sdk';
 import { CuttlegateOpenFeatureProvider } from './openfeature.js';
 import { createMockClient } from './testing.js';

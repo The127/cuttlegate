@@ -20,13 +20,13 @@ const client = createClient({
   environment: 'production',
 });
 
-const result = await client.evaluateFlag('dark-mode', {
+const result = await client.evaluate('dark-mode', {
   user_id: 'user-123',
   attributes: { plan: 'pro' },
 });
 
 console.log('dark-mode enabled:', result.enabled);
-console.log('variant key:', result.valueKey);
+console.log('variant key:', result.variant);
 ```
 
 `createClient` validates the configuration synchronously — it throws a `CuttlegateError` with `code: 'invalid_config'` if any required field is missing. No network calls are made at construction time.
@@ -46,14 +46,18 @@ console.log('variant key:', result.valueKey);
 
 ## Evaluation methods
 
-`CuttlegateClient` has two evaluation methods:
+`CuttlegateClient` has four evaluation methods:
 
 | Method | Returns | Notes |
 |---|---|---|
-| `evaluate(context)` | `Promise<EvaluationResult[]>` | All flags in one HTTP request |
-| `evaluateFlag(key, context)` | `Promise<FlagResult>` | Single flag by key |
+| `evaluate(key, context)` | `Promise<EvalResult>` | Single flag by key |
+| `evaluateAll(context)` | `Promise<EvalResult[]>` | All flags in one HTTP request |
+| `bool(key, context)` | `Promise<boolean>` | Convenience — returns `result.enabled` |
+| `string(key, context)` | `Promise<string>` | Convenience — returns `result.variant` |
 
-`evaluate` is the most efficient option when you need multiple flags — one HTTP round trip regardless of how many flags exist.
+`evaluateAll` is the most efficient option when you need multiple flags — one HTTP round trip regardless of how many flags exist.
+
+> **Deprecated:** `evaluateFlag(key, context)` still exists as an alias for `evaluate()` but will be removed in a future major version.
 
 ### EvalContext
 
@@ -64,42 +68,20 @@ Both methods accept an `EvalContext`:
 | `user_id` | `string` | User identifier for targeting rules. Empty string is valid but will not match user-specific rules. |
 | `attributes` | `Record<string, string>` | Arbitrary key-value pairs used in targeting rules. |
 
-### EvaluationResult
+### EvalResult
 
-`evaluate` returns `EvaluationResult[]`:
+`evaluate` and `evaluateAll` return `EvalResult`:
 
 | Field | Type | Notes |
 |---|---|---|
 | `key` | `string` | Flag key |
 | `enabled` | `boolean` | Whether the flag is enabled for this context |
-| `valueKey` | `string` | **Primary field.** `"true"` or `"false"` for bool flags; the variant key string for all other types. Always present. |
-| `value` | `string \| null` | **Deprecated.** `null` for bool flags. Use `valueKey` instead. |
+| `variant` | `string` | **Primary field.** `"true"` or `"false"` for bool flags; the variant key string for all other types. Always present. |
+| `value` | `string \| null` | **Deprecated.** `null` for bool flags. Use `variant` instead. |
 | `reason` | `string` | Why this result was returned: `"targeting_rule"`, `"default"`, `"disabled"`, or `"percentage_rollout"` |
 | `evaluatedAt` | `string` | ISO 8601 evaluation timestamp |
 
-### FlagResult
-
-`evaluateFlag` returns `FlagResult`:
-
-| Field | Type | Notes |
-|---|---|---|
-| `enabled` | `boolean` | Whether the flag is enabled |
-| `valueKey` | `string` | **Primary field.** Always present. |
-| `value` | `string \| null` | **Deprecated.** `null` for bool flags. Use `valueKey`. |
-| `reason` | `string` | Reason string, or `"not_found"` if the key does not exist in the project |
-
-### Migrating from `value` to `valueKey`
-
-```ts
-// Before (deprecated — null for bool flags):
-console.log(result.value);
-
-// After (primary field — always present):
-console.log(result.valueKey);
-
-// For bool flags, read enabled directly:
-const isOn = result.enabled;
-```
+> **Deprecated alias:** `EvaluationResult` is a type alias for `EvalResult`. Use `EvalResult` in new code.
 
 ## Real-time streaming
 
@@ -175,6 +157,9 @@ const client = createCachedClient(
     environment: 'production',
   },
   {
+    // Evaluation context for hydration — percentage rollouts and user-targeted
+    // rules are evaluated against this context.
+    context: { user_id: 'user-123', attributes: { plan: 'pro' } },
     onError(err) {
       // Called on terminal SSE auth errors after hydration (401/403).
       // The cache retains its last-known values.
@@ -187,8 +172,8 @@ const client = createCachedClient(
 // succeeds and the cache is seeded.
 await client.ready;
 
-// evaluateFlag and evaluate serve from cache — no HTTP round trip.
-const result = await client.evaluateFlag('dark-mode', {
+// evaluate serves from cache — no HTTP round trip.
+const result = await client.evaluate('dark-mode', {
   user_id: 'user-123',
   attributes: {},
 });
@@ -202,10 +187,10 @@ client.close();
 
 - `createCachedClient` validates config synchronously — throws `CuttlegateError` with `code: 'invalid_config'` on missing fields.
 - On construction, the SSE connection opens immediately (before hydration), buffering events that arrive during the HTTP fetch.
-- `client.ready` resolves when the HTTP hydration completes and the cache is seeded. Await it before calling `evaluateFlag` or `evaluate`. Calls made before `ready` resolves return `{ enabled: false, reason: 'not_found' }` from an empty cache.
+- `client.ready` resolves when the HTTP hydration completes and the cache is seeded. Await it before calling `evaluate` or `evaluateAll`. Calls made before `ready` resolves return `{ enabled: false, reason: 'not_found' }` from an empty cache.
 - `client.ready` rejects with `CuttlegateError` if hydration fails: `code: 'unauthorized'`, `'forbidden'`, `'timeout'`, or `'network_error'`.
-- `evaluateFlag` and `evaluate` always serve from cache — no live HTTP calls. Unknown flag keys return `{ enabled: false, valueKey: '', reason: 'not_found' }`.
-- The cache is not user-specific. `evaluateFlag(key, context)` accepts a context for interface compatibility, but the cached result is the same for all users.
+- `evaluate` and `evaluateAll` always serve from cache — no live HTTP calls. Unknown flag keys return `{ enabled: false, variant: '', reason: 'not_found' }`.
+- The cache is scoped to the `context` provided in options. One `CachedClient` instance = one evaluation context. For different users, create separate instances. If no context is provided, an anonymous context (`user_id: ''`) is used.
 - On SSE reconnect, the SDK re-fetches all flags to close the missed-events gap.
 - `close()` stops the SSE connection. Cached values are retained after close.
 
@@ -229,8 +214,8 @@ mock.enable('dark-mode');
 mock.setVariant('banner-text', 'holiday');
 
 // Inject mock as CuttlegateClient wherever your code expects it
-const result = await mock.evaluateFlag('dark-mode', { user_id: 'u1', attributes: {} });
-// { enabled: true, valueKey: 'true', reason: 'mock' }
+const result = await mock.evaluate('dark-mode', { user_id: 'u1', attributes: {} });
+// { enabled: true, variant: 'true', reason: 'mock' }
 
 mock.assertEvaluated('dark-mode');
 mock.assertNotEvaluated('other-flag');
@@ -240,14 +225,14 @@ mock.assertNotEvaluated('other-flag');
 
 | Method | Description |
 |---|---|
-| `enable(key)` | Sets the flag to `enabled: true`, `valueKey: 'true'` |
-| `disable(key)` | **Removes** the key from the mock — see gotcha below |
-| `setVariant(key, value)` | Sets the flag to enabled with the given variant string as `valueKey` |
+| `enable(key)` | Sets the flag to `enabled: true`, `variant: 'true'` |
+| `disable(key)` | Sets the flag to `enabled: false`, `variant: 'false'` |
+| `setVariant(key, value)` | Sets the flag to enabled with the given variant string as `variant` |
 | `assertEvaluated(key)` | Throws if the key was not evaluated since the last `reset()` |
 | `assertNotEvaluated(key)` | Throws if the key was evaluated since the last `reset()` |
 | `reset()` | Clears all flag state and evaluation history |
 
-**`disable()` gotcha:** `disable(key)` removes the key from the mock — it does not set `enabled: false`. A subsequent `evaluateFlag(key, ctx)` returns `{ enabled: false, reason: 'mock_default' }`, not a `CuttlegateError`. To test that a flag is off with a specific reason, use `setVariant` or leave the key absent and assert on `reason === 'mock_default'`.
+Unknown flags return `{ enabled: false, variant: '', reason: 'mock_default' }` — no error is thrown. This behavior is consistent across all three SDKs (Go, JS, Python).
 
 `MockCuttlegateClient` implements `CuttlegateClient` — inject it wherever a `CuttlegateClient` is expected.
 
@@ -259,7 +244,7 @@ All errors thrown by the SDK are instances of `CuttlegateError`:
 import { CuttlegateError } from '@cuttlegate/sdk';
 
 try {
-  const result = await client.evaluateFlag('my-flag', { user_id: 'u1', attributes: {} });
+  const result = await client.evaluate('my-flag', { user_id: 'u1', attributes: {} });
 } catch (err) {
   if (err instanceof CuttlegateError) {
     console.error(err.code, err.message);
@@ -326,7 +311,7 @@ function App() {
 
 `CuttlegateProvider` fetches all flags on mount using an empty user context and opens an SSE connection for real-time updates. It closes the connection on unmount.
 
-**User-specific targeting:** `CuttlegateProvider` and the hooks evaluate without a user context (`user_id: ''`). Targeting rules that match on a specific user ID will not apply. For user-specific flag evaluation, call `client.evaluateFlag(key, { user_id: '...', attributes: {} })` directly from your component.
+**User-specific targeting:** `CuttlegateProvider` and the hooks evaluate without a user context (`user_id: ''`). Targeting rules that match on a specific user ID will not apply. For user-specific flag evaluation, call `client.evaluate(key, { user_id: '...', attributes: {} })` directly from your component.
 
 ### useFlag
 
@@ -350,13 +335,13 @@ Must be used inside a `CuttlegateProvider`.
 import { useFlagVariant } from '@cuttlegate/sdk';
 
 function Banner() {
-  const { value, loading } = useFlagVariant('banner-text');
-  if (loading || value === null) return null;
-  return <p>{value}</p>;
+  const { variant, loading } = useFlagVariant('banner-text');
+  if (loading || variant === null) return null;
+  return <p>{variant}</p>;
 }
 ```
 
-`useFlagVariant(key)` returns `{ value: string | null; loading: boolean }`. `value` is the raw variant string from `EvaluationResult.value` — it is `null` while loading, if the flag is not found, or for bool flags. For bool flags, use `useFlag` instead.
+`useFlagVariant(key)` returns `{ variant: string | null; loading: boolean }`. `variant` is the raw variant string from `EvalResult.variant` — it is `null` while loading, if the flag is not found, or for bool flags. For bool flags, use `useFlag` instead.
 
 Must be used inside a `CuttlegateProvider`.
 
@@ -396,7 +381,7 @@ try {
   }
 }
 
-// server is ready — client.evaluateFlag() serves from cache
+// server is ready — client.evaluate() serves from cache
 ```
 
 For low-volume applications or scripts, use `createClient` — one HTTP request per evaluation call, no setup required.

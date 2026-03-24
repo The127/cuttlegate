@@ -21,7 +21,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from .errors import FlagNotFoundError as NotFoundError
 from .types import EvalContext, EvalResult
 
 _MOCK_EVALUATED_AT = "1970-01-01T00:00:00Z"
@@ -82,6 +81,22 @@ class MockCuttlegateClient:
         """Set or update a flag value. value is typically bool or str."""
         self._flags[key] = value
 
+    def enable(self, key: str) -> None:
+        """Enable a flag with variant='true'."""
+        self._flags[key] = True
+
+    def disable(self, key: str) -> None:
+        """Disable a flag. Sets enabled=False with variant='false'.
+
+        Unlike reset(), the flag key remains in the mock — evaluate() returns
+        a result with enabled=False rather than raising NotFoundError.
+        """
+        self._flags[key] = False
+
+    def set_variant(self, key: str, value: str) -> None:
+        """Enable a flag and set its variant string."""
+        self._flags[key] = value
+
     # ------------------------------------------------------------------
     # Assertion helpers
     # ------------------------------------------------------------------
@@ -110,9 +125,16 @@ class MockCuttlegateClient:
     # ------------------------------------------------------------------
 
     def _require(self, key: str) -> EvalResult:
-        """Look up key and return its EvalResult, or raise NotFoundError."""
+        """Look up key and return its EvalResult, or a mock_default result."""
         if key not in self._flags:
-            raise NotFoundError(key)
+            return EvalResult(
+                key=key,
+                enabled=False,
+                variant="",
+                reason="mock_default",
+                evaluated_at=_MOCK_EVALUATED_AT,
+                value="",
+            )
         return _to_eval_result(key, self._flags[key])
 
 

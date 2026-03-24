@@ -82,6 +82,13 @@ type Config struct {
 	// Timeout is the request timeout applied to evaluation requests when HTTPClient is nil.
 	// Defaults to 10s. Does not apply to SSE streaming connections.
 	Timeout time.Duration
+
+	// Defaults provides fallback flag values when the server is unreachable.
+	// On network errors, timeouts, or 5xx responses, the client returns these
+	// defaults with Reason "default_fallback" instead of returning an error.
+	// Auth errors (401/403) still return an error — defaults are not applied.
+	// Keys are flag keys; values provide the fallback state.
+	Defaults map[string]FlagDefault
 }
 
 // NewClient constructs an authenticated Cuttlegate client.
@@ -122,6 +129,7 @@ func NewClient(cfg Config) (Client, error) {
 		environment:      cfg.Environment,
 		httpClient:       httpClient,
 		streamHTTPClient: streamHTTPClient,
+		defaults:         cfg.Defaults,
 	}, nil
 }
 
@@ -133,6 +141,7 @@ type client struct {
 	environment      string
 	httpClient       *http.Client
 	streamHTTPClient *http.Client
+	defaults         map[string]FlagDefault
 }
 
 type bulkEvalRequest struct {
@@ -222,7 +231,27 @@ func (c *client) doBulkEval(ctx context.Context, evalCtx EvalContext) (map[strin
 }
 
 func (c *client) EvaluateAll(ctx context.Context, evalCtx EvalContext) (map[string]EvalResult, error) {
-	return c.doBulkEval(ctx, evalCtx)
+	results, err := c.doBulkEval(ctx, evalCtx)
+	if err != nil && len(c.defaults) > 0 {
+		// Fall back to defaults on non-auth errors.
+		if _, ok := err.(*AuthError); !ok {
+			return c.defaultResults(), nil
+		}
+	}
+	return results, err
+}
+
+func (c *client) defaultResults() map[string]EvalResult {
+	results := make(map[string]EvalResult, len(c.defaults))
+	for key, def := range c.defaults {
+		results[key] = EvalResult{
+			Key:     key,
+			Enabled: def.Enabled,
+			Variant: def.Variant,
+			Reason:  "default_fallback",
+		}
+	}
+	return results
 }
 
 func (c *client) Evaluate(ctx context.Context, key string, evalCtx EvalContext) (EvalResult, error) {
@@ -250,7 +279,7 @@ func (c *client) String(ctx context.Context, key string, evalCtx EvalContext) (s
 	if err != nil {
 		return "", err
 	}
-	return result.Value, nil
+	return result.Variant, nil
 }
 
 func (c *client) EvaluateFlag(ctx context.Context, key string, evalCtx EvalContext) (FlagResult, error) {

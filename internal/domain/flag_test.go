@@ -182,6 +182,7 @@ func TestFlagValidate(t *testing.T) {
 			name: "key_exactly_max_length",
 			flag: Flag{
 				Key:               strings.Repeat("a", MaxKeyLength),
+				Name:              "Valid Flag",
 				Type:              FlagTypeString,
 				Variants:          []Variant{{Key: "a", Name: "A"}},
 				DefaultVariantKey: "a",

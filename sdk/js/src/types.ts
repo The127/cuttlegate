@@ -57,6 +57,15 @@ export interface CuttlegateConfig {
   timeout?: number;
   /** Custom fetch implementation. Defaults to the global `fetch`. */
   fetch?: typeof fetch;
+  /**
+   * Default flag values to use when the server is unreachable.
+   * Keys are flag keys; values specify the fallback state.
+   *
+   * When a network error or timeout occurs, the SDK returns these defaults
+   * with `reason: 'default_fallback'` instead of throwing.
+   * Auth errors (401/403) still throw — defaults are not applied for auth failures.
+   */
+  defaults?: Record<string, { enabled: boolean; variant: string }>;
 }
 
 /** Standard error shape returned by the Cuttlegate API. */

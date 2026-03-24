@@ -41,8 +41,8 @@ func TestMockClient_Disable(t *testing.T) {
 	if result.Enabled {
 		t.Error("expected Enabled=false after Disable")
 	}
-	if result.Reason != "mock_default" {
-		t.Errorf("expected Reason=mock_default, got %q", result.Reason)
+	if result.Reason != "mock" {
+		t.Errorf("expected Reason=mock, got %q", result.Reason)
 	}
 }
 
@@ -149,20 +149,19 @@ func TestMockClient_EvaluateAll_ReturnsBulk(t *testing.T) {
 	}
 }
 
-func TestMockClient_Evaluate_ReturnsNotFoundError(t *testing.T) {
-	// @error-path
+func TestMockClient_Evaluate_ReturnsMockDefault(t *testing.T) {
+	// @edge — unknown flags return mock_default, not an error
 	mock := cuttlegatetesting.NewMockClient()
 
-	_, err := mock.Evaluate(ctx, "unknown-flag", evalCtx)
-	if err == nil {
-		t.Fatal("expected NotFoundError for unknown flag")
+	result, err := mock.Evaluate(ctx, "unknown-flag", evalCtx)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
-	nfErr, ok := err.(*cuttlegate.NotFoundError)
-	if !ok {
-		t.Fatalf("expected *NotFoundError, got %T: %v", err, err)
+	if result.Enabled {
+		t.Error("expected Enabled=false for unknown flag")
 	}
-	if nfErr.Resource != "flag" {
-		t.Errorf("expected Resource=flag, got %q", nfErr.Resource)
+	if result.Reason != "mock_default" {
+		t.Errorf("expected Reason=mock_default, got %q", result.Reason)
 	}
 }
 

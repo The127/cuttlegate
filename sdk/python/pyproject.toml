@@ -12,8 +12,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+openfeature = [
+    "openfeature-sdk>=0.7",
+]
 dev = [
     "pytest>=8.0",
+    "openfeature-sdk>=0.7",
 ]
 
 [tool.setuptools.packages.find]
