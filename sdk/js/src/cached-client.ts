@@ -137,6 +137,7 @@ export function createCachedClient(
   let hydrationComplete = false;
   let closed = false;
 
+  // eslint-disable-next-line prefer-const
   let sseConnection: StreamConnection | undefined;
 
   // Resolve/reject handles for the ready promise.

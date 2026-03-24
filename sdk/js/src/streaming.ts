@@ -161,7 +161,7 @@ async function attemptStream(
       },
       signal,
     });
-  } catch (err: unknown) {
+  } catch {
     if (signal.aborted) return 'closed';
     return 'reconnect';
   }
@@ -188,7 +188,7 @@ async function attemptStream(
 
   try {
     await readSSEStream(res.body, signal, options);
-  } catch (err: unknown) {
+  } catch {
     if (signal.aborted) return 'closed';
   }
 
