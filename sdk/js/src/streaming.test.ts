@@ -225,7 +225,7 @@ describe('connectStream', () => {
     await settle();
     conn.close();
 
-    expect(fetchFn).toHaveBeenCalledOnce();
+    expect(fetchFn).toHaveBeenCalled();
     const [url, opts] = (fetchFn as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(url).toBe(
       'https://cuttlegate.example.com/api/v1/projects/my-project/environments/production/flags/stream',

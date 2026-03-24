@@ -200,14 +200,10 @@ func TestEnvironmentService_DeleteBySlug_ViewerForbidden(t *testing.T) {
 // ── UpdateName ────────────────────────────────────────────────────────────────
 
 func TestEnvironmentService_UpdateName_Succeeds(t *testing.T) {
-	svc, projRepo := newEnvironmentService()
+	svc := newEnvironmentService()
 	ctx := authCtx("admin-1", domain.RoleAdmin)
 
-	proj := domain.Project{ID: "proj-1", Name: "Proj One", Slug: "proj-one"}
-	projRepo.bySlug["proj-one"] = &proj
-	projRepo.byID["proj-1"] = &proj
-
-	if _, err := svc.Create(authCtx("editor-1", domain.RoleEditor), "proj-one", "Staging", "staging"); err != nil {
+	if _, err := svc.Create(authCtx("editor-1", domain.RoleEditor), "proj-1", "Staging", "staging"); err != nil {
 		t.Fatalf("create: %v", err)
 	}
 
@@ -224,7 +220,7 @@ func TestEnvironmentService_UpdateName_Succeeds(t *testing.T) {
 }
 
 func TestEnvironmentService_UpdateName_EmptyName_ReturnsValidationError(t *testing.T) {
-	svc, _ := newEnvironmentService()
+	svc := newEnvironmentService()
 	ctx := authCtx("admin-1", domain.RoleAdmin)
 
 	_, err := svc.UpdateName(ctx, "proj-1", "staging", "")
@@ -238,7 +234,7 @@ func TestEnvironmentService_UpdateName_EmptyName_ReturnsValidationError(t *testi
 }
 
 func TestEnvironmentService_UpdateName_NotFound_ReturnsErrNotFound(t *testing.T) {
-	svc, _ := newEnvironmentService()
+	svc := newEnvironmentService()
 	ctx := authCtx("admin-1", domain.RoleAdmin)
 
 	_, err := svc.UpdateName(ctx, "proj-1", "ghost", "NewName")
@@ -248,7 +244,7 @@ func TestEnvironmentService_UpdateName_NotFound_ReturnsErrNotFound(t *testing.T)
 }
 
 func TestEnvironmentService_UpdateName_ViewerForbidden(t *testing.T) {
-	svc, _ := newEnvironmentService()
+	svc := newEnvironmentService()
 	_, err := svc.UpdateName(authCtx("viewer-1", domain.RoleViewer), "proj-1", "staging", "X")
 	if !errors.Is(err, domain.ErrForbidden) {
 		t.Errorf("expected ErrForbidden, got %v", err)
@@ -256,7 +252,7 @@ func TestEnvironmentService_UpdateName_ViewerForbidden(t *testing.T) {
 }
 
 func TestEnvironmentService_UpdateName_EditorForbidden(t *testing.T) {
-	svc, _ := newEnvironmentService()
+	svc := newEnvironmentService()
 	_, err := svc.UpdateName(authCtx("editor-1", domain.RoleEditor), "proj-1", "staging", "X")
 	if !errors.Is(err, domain.ErrForbidden) {
 		t.Errorf("expected ErrForbidden, got %v", err)
