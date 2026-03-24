@@ -19,7 +19,7 @@ type PostgresUnitOfWork struct {
 var _ ports.UnitOfWork = (*PostgresUnitOfWork)(nil)
 
 func (u *PostgresUnitOfWork) FlagEnvironmentStateRepository() ports.FlagEnvironmentStateRepository {
-	return NewPostgresFlagEnvironmentStateRepository(u.tx)
+	return newFlagEnvStateRepoFromTx(u.tx)
 }
 
 func (u *PostgresUnitOfWork) RuleRepository() ports.RuleRepository {

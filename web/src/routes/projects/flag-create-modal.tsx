@@ -159,6 +159,7 @@ export function CreateFlagModal({ slug, onCreated, onCancel }: CreateFlagModalPr
   const { t } = useTranslation('flags')
   const [key, setKey] = useState('')
   const [name, setName] = useState('')
+  const [nameTouched, setNameTouched] = useState(false)
   const [type, setType] = useState('bool')
   const [keyError, setKeyError] = useState<string | null>(null)
   const [serverError, setServerError] = useState<string | null>(null)
@@ -200,6 +201,7 @@ export function CreateFlagModal({ slug, onCreated, onCancel }: CreateFlagModalPr
 
   function handleKeyChange(value: string) {
     setKey(value)
+    if (!nameTouched) setName(value)
     setKeyError(null)
     setServerError(null)
     if (keyTouched) {
@@ -285,7 +287,7 @@ export function CreateFlagModal({ slug, onCreated, onCancel }: CreateFlagModalPr
                   id="flag-name"
                   type="text"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => { setNameTouched(true); setName(e.target.value) }}
                   placeholder={t('create.name_placeholder')}
                   className="py-1.5 px-2"
                 />

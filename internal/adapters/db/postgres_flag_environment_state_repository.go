@@ -11,19 +11,32 @@ import (
 
 // PostgresFlagEnvironmentStateRepository implements ports.FlagEnvironmentStateRepository using PostgreSQL.
 type PostgresFlagEnvironmentStateRepository struct {
-	db DBTX
+	db       *sql.DB
+	explicit DBTX // non-nil when constructed with an explicit tx (e.g. UnitOfWork)
 }
 
 // NewPostgresFlagEnvironmentStateRepository constructs a PostgresFlagEnvironmentStateRepository.
-func NewPostgresFlagEnvironmentStateRepository(db DBTX) *PostgresFlagEnvironmentStateRepository {
+func NewPostgresFlagEnvironmentStateRepository(db *sql.DB) *PostgresFlagEnvironmentStateRepository {
 	return &PostgresFlagEnvironmentStateRepository{db: db}
+}
+
+// newFlagEnvStateRepoFromTx constructs a repo scoped to an explicit transaction (used by UnitOfWork).
+func newFlagEnvStateRepoFromTx(tx *sql.Tx) *PostgresFlagEnvironmentStateRepository {
+	return &PostgresFlagEnvironmentStateRepository{explicit: tx}
 }
 
 var _ ports.FlagEnvironmentStateRepository = (*PostgresFlagEnvironmentStateRepository)(nil)
 
+func (r *PostgresFlagEnvironmentStateRepository) conn(ctx context.Context) DBTX {
+	if r.explicit != nil {
+		return r.explicit
+	}
+	return TenantDBTX(ctx, r.db)
+}
+
 func (r *PostgresFlagEnvironmentStateRepository) CreateBatch(ctx context.Context, states []*domain.FlagEnvironmentState) error {
 	for _, s := range states {
-		if _, err := r.db.ExecContext(ctx,
+		if _, err := r.conn(ctx).ExecContext(ctx,
 			`INSERT INTO flag_environment_states (flag_id, environment_id, enabled) VALUES ($1, $2, $3)`,
 			s.FlagID, s.EnvironmentID, s.Enabled,
 		); err != nil {
@@ -34,7 +47,7 @@ func (r *PostgresFlagEnvironmentStateRepository) CreateBatch(ctx context.Context
 }
 
 func (r *PostgresFlagEnvironmentStateRepository) ListByEnvironment(ctx context.Context, environmentID string) ([]*domain.FlagEnvironmentState, error) {
-	rows, err := r.db.QueryContext(ctx,
+	rows, err := r.conn(ctx).QueryContext(ctx,
 		`SELECT flag_id, environment_id, enabled FROM flag_environment_states WHERE environment_id = $1`,
 		environmentID,
 	)
@@ -56,7 +69,7 @@ func (r *PostgresFlagEnvironmentStateRepository) ListByEnvironment(ctx context.C
 
 func (r *PostgresFlagEnvironmentStateRepository) GetByFlagAndEnvironment(ctx context.Context, flagID, environmentID string) (*domain.FlagEnvironmentState, error) {
 	var s domain.FlagEnvironmentState
-	err := r.db.QueryRowContext(ctx,
+	err := r.conn(ctx).QueryRowContext(ctx,
 		`SELECT flag_id, environment_id, enabled FROM flag_environment_states WHERE flag_id = $1 AND environment_id = $2`,
 		flagID, environmentID,
 	).Scan(&s.FlagID, &s.EnvironmentID, &s.Enabled)
@@ -70,7 +83,7 @@ func (r *PostgresFlagEnvironmentStateRepository) GetByFlagAndEnvironment(ctx con
 }
 
 func (r *PostgresFlagEnvironmentStateRepository) Upsert(ctx context.Context, state *domain.FlagEnvironmentState) error {
-	_, err := r.db.ExecContext(ctx,
+	_, err := r.conn(ctx).ExecContext(ctx,
 		`INSERT INTO flag_environment_states (flag_id, environment_id, enabled) VALUES ($1, $2, $3)
 		 ON CONFLICT (flag_id, environment_id) DO UPDATE SET enabled = EXCLUDED.enabled`,
 		state.FlagID, state.EnvironmentID, state.Enabled,
@@ -79,7 +92,7 @@ func (r *PostgresFlagEnvironmentStateRepository) Upsert(ctx context.Context, sta
 }
 
 func (r *PostgresFlagEnvironmentStateRepository) SetEnabled(ctx context.Context, flagID, environmentID string, enabled bool) error {
-	res, err := r.db.ExecContext(ctx,
+	res, err := r.conn(ctx).ExecContext(ctx,
 		`UPDATE flag_environment_states SET enabled = $1 WHERE flag_id = $2 AND environment_id = $3`,
 		enabled, flagID, environmentID,
 	)

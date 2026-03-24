@@ -180,10 +180,15 @@ func (h *FlagHandler) create(w http.ResponseWriter, r *http.Request) {
 		variants[i] = domain.Variant{Key: v.Key, Name: v.Name}
 	}
 
+	name := body.Name
+	if name == "" {
+		name = body.Key
+	}
+
 	flag := &domain.Flag{
 		ProjectID:         proj.ID,
 		Key:               body.Key,
-		Name:              body.Name,
+		Name:              name,
 		Type:              domain.FlagType(body.Type),
 		Variants:          variants,
 		DefaultVariantKey: body.DefaultVariantKey,
