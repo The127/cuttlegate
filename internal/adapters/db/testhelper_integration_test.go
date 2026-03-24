@@ -87,3 +87,53 @@ func newTestDB(t *testing.T) *sql.DB {
 
 	return db
 }
+
+// newTestDBWithDSN is like newTestDB but also returns the connection DSN,
+// needed for creating additional connections as different roles (e.g. RLS tests).
+func newTestDBWithDSN(t *testing.T) (*sql.DB, string) {
+	t.Helper()
+	ctx := context.Background()
+
+	ctr, err := testcontainerspg.Run(ctx, "postgres:16-alpine",
+		testcontainerspg.WithDatabase("cuttlegate"),
+		testcontainerspg.WithUsername("cuttlegate"),
+		testcontainerspg.WithPassword("cuttlegate"),
+		testcontainerspg.BasicWaitStrategies(),
+	)
+	if err != nil {
+		t.Fatalf("start postgres container: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := ctr.Terminate(ctx); err != nil {
+			t.Logf("terminate postgres container: %v", err)
+		}
+	})
+
+	dsn, err := ctr.ConnectionString(ctx, "sslmode=disable")
+	if err != nil {
+		t.Fatalf("postgres connection string: %v", err)
+	}
+
+	src, err := iofs.New(dbmigrations.FS, "migrations")
+	if err != nil {
+		t.Fatalf("migrations source: %v", err)
+	}
+
+	m, err := migrate.NewWithSourceInstance("iofs", src, dsn)
+	if err != nil {
+		t.Fatalf("migrate init: %v", err)
+	}
+	defer m.Close() //nolint:errcheck
+
+	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		t.Fatalf("migrate up: %v", err)
+	}
+
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+
+	return db, dsn
+}

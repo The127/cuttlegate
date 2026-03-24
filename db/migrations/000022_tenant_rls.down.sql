@@ -1,0 +1,29 @@
+-- Reverse tenant RLS policies and disable RLS on all tables.
+
+DROP POLICY IF EXISTS tenant_flags ON flags;
+ALTER TABLE flags NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE flags DISABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS tenant_environments ON environments;
+ALTER TABLE environments NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE environments DISABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS tenant_project_members ON project_members;
+ALTER TABLE project_members NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE project_members DISABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS tenant_segments ON segments;
+ALTER TABLE segments NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE segments DISABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS tenant_api_keys ON api_keys;
+ALTER TABLE api_keys NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE api_keys DISABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS tenant_audit_events ON audit_events;
+ALTER TABLE audit_events NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE audit_events DISABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS tenant_eval_events ON evaluation_events;
+ALTER TABLE evaluation_events NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE evaluation_events DISABLE ROW LEVEL SECURITY;
