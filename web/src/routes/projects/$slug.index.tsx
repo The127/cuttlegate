@@ -75,7 +75,7 @@ function ProjectDashboard() {
       <ProjectHeader name={project.name} slug={project.slug} />
 
       <div className="mt-4 flex items-center gap-2">
-        <Button variant="secondary" size="sm" onClick={() => setShowCreateEnv(true)}>
+        <Button variant="primary" size="sm" onClick={() => setShowCreateEnv(true)}>
           {t('dashboard.quick_create_environment')}
         </Button>
         <Button
@@ -89,16 +89,9 @@ function ProjectDashboard() {
       </div>
 
       <section className="mt-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-medium text-[var(--color-text-secondary)]">
-            {t('dashboard.environments_section')}
-          </h2>
-          {envsQuery.data && envsQuery.data.length > 0 && (
-            <Button size="sm" variant="secondary" onClick={() => setShowCreateEnv(true)}>
-              {t('dashboard.create_environment_cta')}
-            </Button>
-          )}
-        </div>
+        <h2 className="text-sm font-medium text-[var(--color-text-secondary)] mb-3">
+          {t('dashboard.environments_section')}
+        </h2>
         {envsQuery.isLoading ? (
           <EnvironmentCardsSkeleton />
         ) : envsQuery.isError ? (
