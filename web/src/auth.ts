@@ -1,4 +1,38 @@
-import { UserManager } from 'oidc-client-ts'
+import { UserManager, WebStorageStateStore } from 'oidc-client-ts'
+
+/**
+ * In-memory storage adapter for OIDC tokens.
+ * Tokens must never touch sessionStorage or localStorage (XSS risk).
+ * When the tab closes, the user re-authenticates — this is acceptable.
+ */
+class InMemoryStorage implements Storage {
+  private data = new Map<string, string>()
+
+  get length(): number {
+    return this.data.size
+  }
+
+  clear(): void {
+    this.data.clear()
+  }
+
+  getItem(key: string): string | null {
+    return this.data.get(key) ?? null
+  }
+
+  key(index: number): string | null {
+    const keys = Array.from(this.data.keys())
+    return keys[index] ?? null
+  }
+
+  removeItem(key: string): void {
+    this.data.delete(key)
+  }
+
+  setItem(key: string, value: string): void {
+    this.data.set(key, value)
+  }
+}
 
 let _userManager: UserManager | null = null
 
@@ -16,6 +50,7 @@ export function initUserManager(config: OIDCConfig): UserManager {
     response_type: 'code',
     scope: 'openid profile email offline_access',
     automaticSilentRenew: true,
+    userStore: new WebStorageStateStore({ store: new InMemoryStorage() }),
   })
   return _userManager
 }

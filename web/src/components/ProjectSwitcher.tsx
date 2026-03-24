@@ -1,12 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { useLocation, useNavigate } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fetchJSON } from '../api'
 import { useOpenCreateProjectDialog } from './CreateProjectDialog'
 import { useBrand } from '../brand'
-import { getUserManager } from '../auth'
 import { Select, SelectItem } from './ui/Select'
+import { UserMenu } from './UserMenu'
 
 interface Project {
   id: string
@@ -33,15 +32,6 @@ function useActiveParams() {
   }
 }
 
-/** Derive up to two initials from a full name string. Returns "?" if name is absent. */
-function deriveInitials(name: string | undefined): string {
-  if (!name) return '?'
-  const words = name.trim().split(/\s+/).filter(Boolean)
-  if (words.length === 0) return '?'
-  if (words.length === 1) return words[0].charAt(0).toUpperCase()
-  return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase()
-}
-
 const NEW_PROJECT_SENTINEL = '__new__'
 
 export function ProjectSwitcher() {
@@ -50,17 +40,6 @@ export function ProjectSwitcher() {
   const { projectSlug, envSlug } = useActiveParams()
   const openCreateDialog = useOpenCreateProjectDialog()
   const { app_name, logo_url } = useBrand()
-  const [initials, setInitials] = useState<string>('?')
-
-  useEffect(() => {
-    void getUserManager()
-      .getUser()
-      .then((user) => {
-        if (user) {
-          setInitials(deriveInitials(user.profile.name))
-        }
-      })
-  }, [])
 
   const projectsQuery = useQuery({
     queryKey: ['projects'],
@@ -207,16 +186,7 @@ export function ProjectSwitcher() {
       {/* Spacer */}
       <div className="flex-1" aria-hidden="true" />
 
-      {/* User avatar — initials derived from OIDC profile.name; no API call */}
-      <div
-        className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold text-[var(--color-text-primary)] select-none shrink-0"
-        style={{
-          background: 'linear-gradient(135deg, var(--color-accent-start), var(--color-accent-end))',
-        }}
-        aria-label={`User avatar: ${initials}`}
-      >
-        {initials}
-      </div>
+      <UserMenu />
     </header>
   )
 }
