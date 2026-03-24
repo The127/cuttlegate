@@ -113,7 +113,17 @@
     "add_button": "Add member",
     "adding": "Adding…",
     "remove": "Remove",
-    "removing": "Removing…"
+    "removing": "Removing…",
+    "empty_nonadmin": "Members who have access to this project will appear here.",
+    "empty_nonadmin_hint": "Ask a project admin to invite team members.",
+    "role_admin": "Admin",
+    "role_editor": "Editor",
+    "role_viewer": "Viewer",
+    "role_admin_description": "Full access — manage members, settings, and all resources.",
+    "role_editor_description": "Can create and edit flags, rules, and segments.",
+    "role_viewer_description": "Read-only access to all project resources.",
+    "roles_explanation_title": "Available roles",
+    "user_id_helper": "The member's OIDC subject identifier — find it in your identity provider's user directory."
   },
   "api_keys": {
     "title": "API Keys",

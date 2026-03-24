@@ -250,7 +250,7 @@ function MemberRow({
             >
               {ROLES.map((r) => (
                 <SelectItem key={r} value={r}>
-                  {r}
+                  {t(ROLE_I18N_KEYS[r])}
                 </SelectItem>
               ))}
             </Select>
@@ -298,12 +298,19 @@ function MemberRow({
   )
 }
 
+const ROLE_I18N_KEYS: Record<Role, string> = {
+  admin: 'members.role_admin',
+  editor: 'members.role_editor',
+  viewer: 'members.role_viewer',
+}
+
 function RoleBadge({ role }: { role: Role }) {
+  const { t } = useTranslation('projects')
   return (
     <span
       className={`inline-block text-xs font-medium border rounded px-2 py-0.5 ${ROLE_STYLES[role]}`}
     >
-      {role}
+      {t(ROLE_I18N_KEYS[role])}
     </span>
   )
 }
@@ -359,9 +366,12 @@ function AddMemberForm({ slug }: { slug: string }) {
             }}
             placeholder={t('members.user_id_placeholder')}
             hasError={!!error}
-            aria-describedby={error ? 'add-member-error' : undefined}
+            aria-describedby={error ? 'add-member-error' : 'member-user-id-helper'}
             className="font-mono"
           />
+          <p id="member-user-id-helper" className="mt-1 text-xs text-[var(--color-text-muted)]">
+            {t('members.user_id_helper')}
+          </p>
         </div>
         <div>
           <Select
@@ -371,7 +381,7 @@ function AddMemberForm({ slug }: { slug: string }) {
           >
             {ROLES.map((r) => (
               <SelectItem key={r} value={r}>
-                {r}
+                {t(ROLE_I18N_KEYS[r])}
               </SelectItem>
             ))}
           </Select>
@@ -467,14 +477,50 @@ function MemberEmptyState({
   const { t } = useTranslation('projects')
   return (
     <div className="text-center py-16 px-6 border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)]">
-      <p className="text-sm text-[var(--color-text-secondary)]">
-        {t('members.empty')}
-      </p>
-      {isAdmin && (
-        <Button size="lg" className="mt-4" onClick={onAddClick}>
-          {t('members.add_button')}
-        </Button>
+      {isAdmin ? (
+        <>
+          <p className="text-sm text-[var(--color-text-secondary)]">
+            {t('members.empty')}
+          </p>
+          <Button size="lg" className="mt-4" onClick={onAddClick}>
+            {t('members.add_button')}
+          </Button>
+          <RoleExplanation />
+        </>
+      ) : (
+        <>
+          <p className="text-sm text-[var(--color-text-secondary)]">
+            {t('members.empty_nonadmin')}
+          </p>
+          <p className="text-sm text-[var(--color-text-muted)] mt-2">
+            {t('members.empty_nonadmin_hint')}
+          </p>
+        </>
       )}
+    </div>
+  )
+}
+
+function RoleExplanation() {
+  const { t } = useTranslation('projects')
+  const ROLE_DESCRIPTIONS: Record<Role, string> = {
+    admin: 'members.role_admin_description',
+    editor: 'members.role_editor_description',
+    viewer: 'members.role_viewer_description',
+  }
+  return (
+    <div className="mt-6 text-left max-w-sm mx-auto">
+      <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-2">
+        {t('members.roles_explanation_title')}
+      </p>
+      <ul className="space-y-1.5">
+        {ROLES.map((r) => (
+          <li key={r} className="flex items-start gap-2">
+            <RoleBadge role={r} />
+            <span className="text-xs text-[var(--color-text-muted)]">{t(ROLE_DESCRIPTIONS[r])}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }
