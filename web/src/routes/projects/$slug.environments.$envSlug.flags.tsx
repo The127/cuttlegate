@@ -1,6 +1,6 @@
 import { createRoute, Link } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useTranslation, Trans } from 'react-i18next'
 import { projectEnvRoute } from './$slug.environments.$envSlug'
 import { projectRoute } from './$slug'
@@ -95,6 +95,14 @@ function FlagListPage() {
     staleTime: 5 * 60_000,
   })
   const envName = environments?.find((e) => e.slug === envSlug)?.name ?? envSlug
+
+  const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedTerm, setDebouncedTerm] = useState('')
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedTerm(searchTerm), 200)
+    return () => clearTimeout(timer)
+  }, [searchTerm])
 
   const [toggleErrorKey, setToggleErrorKey] = useState<string | null>(null)
 
@@ -226,10 +234,18 @@ function FlagListPage() {
     [t, slug, envSlug, toggleMutation.isPending, toggleMutation.variables, toggleMutation.mutate, toggleErrorKey],
   )
 
+  const flags = data ?? []
+  const isSearching = debouncedTerm.length > 0
+  const filteredFlags = useMemo(() => {
+    if (!isSearching) return flags
+    const term = debouncedTerm.toLowerCase()
+    return flags.filter(
+      (f) => f.key.toLowerCase().includes(term) || f.name.toLowerCase().includes(term),
+    )
+  }, [flags, debouncedTerm, isSearching])
+
   if (isLoading) return <FlagListSkeleton />
   if (isError) return <FlagListError onRetry={() => void refetch()} />
-
-  const flags = data ?? []
 
   return (
     <div className="p-6">
@@ -237,17 +253,46 @@ function FlagListPage() {
         <div>
           <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">{envName}</h1>
           <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
-            {t('list.flag_count', { count: flags.length })}
+            {isSearching
+              ? t('list.search_count', { filtered: filteredFlags.length, total: flags.length })
+              : t('list.flag_count', { count: flags.length })}
           </p>
         </div>
         <Button onClick={() => setShowCreate(true)}>{t('list.new_flag')}</Button>
       </div>
 
+      {flags.length > 0 && (
+        <div className="relative mb-4">
+          <Input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder={t('list.search_placeholder')}
+            aria-label={t('list.search_aria')}
+            className="py-1.5 px-3 pr-8"
+          />
+          {searchTerm.length > 0 && (
+            <button
+              onClick={() => setSearchTerm('')}
+              aria-label={t('list.search_clear_aria')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded p-0.5"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
+
       <DataTable
         columns={columns}
-        data={flags}
+        data={filteredFlags}
         aria-label={envName}
-        emptyState={<EmptyState onCreateClick={() => setShowCreate(true)} />}
+        emptyState={
+          isSearching
+            ? <SearchEmptyState onClear={() => setSearchTerm('')} />
+            : <EmptyState onCreateClick={() => setShowCreate(true)} />
+        }
       />
 
       {showCreate && (
@@ -304,6 +349,20 @@ function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
       </p>
       <Button onClick={onCreateClick} size="lg" className="mt-4">
         {t('list.new_flag')}
+      </Button>
+    </div>
+  )
+}
+
+function SearchEmptyState({ onClear }: { onClear: () => void }) {
+  const { t } = useTranslation('flags')
+  return (
+    <div className="text-center py-16 px-6">
+      <p className="text-sm text-[var(--color-text-secondary)]">
+        {t('list.search_no_results')}
+      </p>
+      <Button onClick={onClear} variant="secondary" size="lg" className="mt-4">
+        {t('list.search_clear_aria')}
       </Button>
     </div>
   )

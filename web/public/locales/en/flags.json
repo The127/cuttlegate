@@ -11,7 +11,12 @@
     "copy_key_aria": "Copy flag key {{key}}",
     "delete_flag_aria": "Delete flag {{key}}",
     "flag_count_one": "{{count}} flag",
-    "flag_count_other": "{{count}} flags"
+    "flag_count_other": "{{count}} flags",
+    "search_placeholder": "Search flags...",
+    "search_aria": "Filter flags by key or name",
+    "search_count": "{{filtered}} of {{total}} flags",
+    "search_no_results": "No flags match your search",
+    "search_clear_aria": "Clear search"
   },
   "toggle": {
     "enable": "Enable flag",
