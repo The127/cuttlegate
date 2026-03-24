@@ -35,11 +35,8 @@
     "creating": "Creating…"
   },
   "dashboard": {
-    "environments_section": "Environments",
     "quick_links_section": "Quick Links",
     "recent_flags_section": "Recently Created Flags",
-    "no_environments": "Create your first environment to start managing flags.",
-    "create_environment_cta": "Create environment",
     "create_first_environment_cta": "Create your first environment",
     "flags_need_environment": "Flags live inside environments. Create your first environment to get started.",
     "no_flags": "Create your first flag to start shipping features.",
@@ -51,9 +48,7 @@
     "api_keys": "API Keys",
     "copy_slug_aria": "Copy project slug {{slug}}",
     "failed_to_load": "Failed to load {{resource}}.",
-    "failed_to_load_env": "Failed to load",
     "audit_log": "Audit Log",
-    "quick_create_environment": "Create Environment",
     "quick_create_flag": "Create Flag"
   },
   "settings": {

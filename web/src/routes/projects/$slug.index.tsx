@@ -23,13 +23,6 @@ interface Environment {
   slug: string
 }
 
-interface EnvFlag {
-  id: string
-  key: string
-  name: string
-  enabled: boolean
-}
-
 interface ProjectFlag {
   id: string
   key: string
@@ -75,9 +68,6 @@ function ProjectDashboard() {
       <ProjectHeader name={project.name} slug={project.slug} />
 
       <div className="mt-4 flex items-center gap-2">
-        <Button variant="primary" size="sm" onClick={() => setShowCreateEnv(true)}>
-          {t('dashboard.quick_create_environment')}
-        </Button>
         <Button
           variant="secondary"
           size="sm"
@@ -89,25 +79,6 @@ function ProjectDashboard() {
       </div>
 
       <section className="mt-6">
-        <h2 className="text-sm font-medium text-[var(--color-text-secondary)] mb-3">
-          {t('dashboard.environments_section')}
-        </h2>
-        {envsQuery.isLoading ? (
-          <EnvironmentCardsSkeleton />
-        ) : envsQuery.isError ? (
-          <SectionError label="environments" onRetry={() => void envsQuery.refetch()} />
-        ) : envsQuery.data!.length === 0 ? (
-          <EnvironmentsEmptyState onCreateClick={() => setShowCreateEnv(true)} />
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {envsQuery.data!.map((env) => (
-              <EnvironmentCard key={env.id} env={env} projectSlug={project.slug} />
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section className="mt-8">
         <h2 className="text-sm font-medium text-[var(--color-text-secondary)] mb-3">
           {t('dashboard.recent_flags_section')}
         </h2>
@@ -148,20 +119,6 @@ function ProjectDashboard() {
 }
 
 // --- Empty states ---
-
-function EnvironmentsEmptyState({ onCreateClick }: { onCreateClick: () => void }) {
-  const { t } = useTranslation('projects')
-  return (
-    <div className="text-center py-12 px-6">
-      <p className="text-sm text-[var(--color-text-secondary)]">
-        {t('dashboard.no_environments')}
-      </p>
-      <Button size="lg" variant="primary" className="mt-4" onClick={onCreateClick}>
-        {t('dashboard.create_first_environment_cta')}
-      </Button>
-    </div>
-  )
-}
 
 function FlagsNeedEnvironmentState({ onCreateClick }: { onCreateClick: () => void }) {
   const { t } = useTranslation('projects')
@@ -445,42 +402,6 @@ function ProjectHeader({ name, slug }: { name: string; slug: string }) {
   )
 }
 
-function EnvironmentCard({ env, projectSlug }: { env: Environment; projectSlug: string }) {
-  const { t } = useTranslation('projects')
-  const flagsQuery = useQuery({
-    queryKey: ['flags', projectSlug, env.slug],
-    queryFn: () =>
-      fetchJSON<{ flags: EnvFlag[] }>(
-        `/api/v1/projects/${projectSlug}/environments/${env.slug}/flags`,
-      ).then((d) => d.flags),
-  })
-
-  const total = flagsQuery.data?.length ?? 0
-  const enabled = flagsQuery.data?.filter((f) => f.enabled).length ?? 0
-
-  return (
-    <Link
-      to="/projects/$slug/environments/$envSlug/flags"
-      params={{ slug: projectSlug, envSlug: env.slug }}
-      className="block border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] p-4 hover:border-[var(--color-border-hover)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.3)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
-    >
-      <h3 className="font-mono text-sm font-medium text-[var(--color-text-primary)]">{env.name}</h3>
-      {flagsQuery.isLoading ? (
-        <div className="mt-2 h-4 w-20 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
-      ) : flagsQuery.isError ? (
-        <p className="mt-2 text-xs text-[var(--color-status-error)]">{t('dashboard.failed_to_load_env')}</p>
-      ) : (
-        <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-          <span className="font-medium text-[var(--color-text-primary)]">{enabled}</span>
-          <span className="text-[var(--color-text-muted)]"> / </span>
-          <span>{total}</span>
-          <span className="text-[var(--color-text-muted)]"> {t('toggle.enabled', { ns: 'flags' }).toLowerCase()}</span>
-        </p>
-      )}
-    </Link>
-  )
-}
-
 function RecentFlagsList({ flags, projectSlug, firstEnvSlug }: { flags: ProjectFlag[]; projectSlug: string; firstEnvSlug: string }) {
   const recent = [...flags]
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -512,19 +433,6 @@ function RecentFlagsList({ flags, projectSlug, firstEnvSlug }: { flags: ProjectF
         </li>
       ))}
     </ul>
-  )
-}
-
-function EnvironmentCardsSkeleton() {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] p-4">
-          <div className="h-4 w-20 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
-          <div className="mt-2 h-4 w-24 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
-        </div>
-      ))}
-    </div>
   )
 }
 
