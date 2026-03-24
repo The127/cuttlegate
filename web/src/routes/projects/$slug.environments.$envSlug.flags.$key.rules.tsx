@@ -496,7 +496,7 @@ function RuleEditor({
                 onChange={(e) => updateCondition(i, { attribute: e.target.value })}
                 placeholder={t('attribute_placeholder')}
                 aria-label={t('condition_attribute_aria', { n: i + 1 })}
-                className="w-32 font-mono py-1.5 px-2"
+                className="flex-1 font-mono py-1.5 px-2"
               />
               {/* Operator */}
               <Select
