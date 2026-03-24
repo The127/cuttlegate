@@ -33,6 +33,9 @@ type Flag struct {
 // slugRe validates slugs and flag keys: lowercase alphanumeric with internal hyphens.
 var slugRe = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
 
+// keyRe is an alias for slugRe — flag keys use the same format.
+var keyRe = slugRe
+
 const MaxKeyLength = 128
 
 func (f *Flag) Validate() error {
