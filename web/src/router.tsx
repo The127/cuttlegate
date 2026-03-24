@@ -10,6 +10,7 @@ import { flagListRoute } from './routes/projects/$slug.environments.$envSlug.fla
 import { flagDetailRoute } from './routes/projects/$slug.environments.$envSlug.flags.$key'
 import { flagRulesRoute } from './routes/projects/$slug.environments.$envSlug.flags.$key.rules'
 import { flagEvaluationsRoute } from './routes/projects/$slug.environments.$envSlug.flags.$key.evaluations'
+import { environmentsOverviewRoute } from './routes/projects/$slug.environments'
 import { segmentListRoute } from './routes/projects/$slug.segments'
 import { environmentSettingsRoute } from './routes/projects/$slug.settings.environments'
 import { compareRoute } from './routes/projects/$slug.compare'
@@ -23,6 +24,7 @@ const routeTree = rootRoute.addChildren([
     indexRoute,
     projectRoute.addChildren([
       projectIndexRoute,
+      environmentsOverviewRoute,
       segmentListRoute,
       projectSettingsRoute,
       environmentSettingsRoute,

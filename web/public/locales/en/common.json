@@ -37,6 +37,7 @@
     "return_to_home": "Return to home"
   },
   "nav": {
+    "environments": "Environments",
     "flags": "Flags",
     "segments": "Segments",
     "api_keys": "API Keys",
