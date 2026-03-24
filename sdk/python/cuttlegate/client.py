@@ -6,15 +6,11 @@ Async support is deferred to a follow-on issue.
 
 from __future__ import annotations
 
-from urllib.parse import urlparse
-
 import httpx
 
-from .errors import AuthError, ConfigError, FlagNotFoundError, SDKError, ServerError
+from ._internal import defaults_as_results, parse_bulk_response, require_context, validate_config
+from .errors import AuthError, FlagNotFoundError, SDKError, ServerError
 from .types import CuttlegateConfig, EvalContext, EvalResult
-
-# Required fields in each flag entry of the bulk evaluate response.
-_REQUIRED_FLAG_FIELDS = ("key", "enabled", "value_key", "reason")
 
 
 class CuttlegateClient:
@@ -29,7 +25,7 @@ class CuttlegateClient:
     """
 
     def __init__(self, config: CuttlegateConfig) -> None:
-        _validate_config(config)
+        validate_config(config)
         # api_key is stored as a private attribute — never exposed on the
         # public interface, never referenced in __repr__ or error messages.
         self._api_key = config.api_key
@@ -37,6 +33,7 @@ class CuttlegateClient:
         self._project = config.project
         self._environment = config.environment
         self._http = httpx.Client(timeout=config.timeout_ms / 1000)
+        self._defaults = config.defaults or {}
 
     # ------------------------------------------------------------------
     # Public API
@@ -45,22 +42,32 @@ class CuttlegateClient:
     def evaluate_all(self, ctx: EvalContext) -> dict[str, EvalResult]:
         """Evaluate all flags for ctx. One HTTP round trip.
 
-        Prefer this method when evaluating multiple flags — it makes a
-        single HTTP request regardless of flag count.
+        If ``defaults`` are configured and the server is unreachable (network
+        error, timeout, or 5xx), returns the defaults with reason
+        ``"default_fallback"`` instead of raising. Auth errors (401/403) still
+        raise.
 
         Raises:
             ValueError: if ctx is None.
             AuthError: on HTTP 401 or 403.
-            SDKError: on HTTP 404, 5xx, network error, or malformed response.
+            SDKError: on HTTP 404, 5xx, network error, or malformed response (when no defaults).
         """
-        _require_context(ctx)
+        require_context(ctx)
         url = (
             f"{self._server_url}/api/v1/projects/{self._project}"
             f"/environments/{self._environment}/evaluate"
         )
         payload = {"context": {"user_id": ctx.user_id, "attributes": ctx.attributes}}
-        body = self._do_post(url, payload)
-        return _parse_bulk_response(body)
+        try:
+            body = self._do_post(url, payload)
+            return parse_bulk_response(body)
+        except (SDKError, ServerError) as exc:
+            # Don't fall back on auth errors.
+            if isinstance(exc, AuthError):
+                raise
+            if self._defaults:
+                return defaults_as_results(self._defaults)
+            raise
 
     def evaluate(self, key: str, ctx: EvalContext) -> EvalResult:
         """Evaluate a single flag by key.
@@ -144,52 +151,3 @@ class CuttlegateClient:
         except Exception as exc:
             raise SDKError(f"cuttlegate: malformed response: {exc}") from exc
 
-
-# ------------------------------------------------------------------
-# Module-private helpers
-# ------------------------------------------------------------------
-
-def _require_context(ctx: EvalContext | None) -> None:
-    if ctx is None:
-        raise ValueError("context must not be None")
-
-
-def _validate_config(config: CuttlegateConfig) -> None:
-    if not config.api_key:
-        raise ConfigError("api_key is required")
-    if not config.server_url:
-        raise ConfigError("server_url is required")
-    parsed = urlparse(config.server_url)
-    if parsed.scheme not in ("http", "https") or not parsed.netloc:
-        raise ConfigError("server_url must be an http or https URL")
-    if not config.project:
-        raise ConfigError("project is required")
-    if not config.environment:
-        raise ConfigError("environment is required")
-
-
-def _parse_bulk_response(body: dict) -> dict[str, EvalResult]:
-    """Parse the bulk evaluate response body into a dict of EvalResult.
-
-    Validates that each flag entry contains all required fields before
-    constructing EvalResult — raises SDKError (not KeyError) on missing
-    fields.
-    """
-    evaluated_at = body.get("evaluated_at", "")
-    results: dict[str, EvalResult] = {}
-    for flag in body.get("flags", []):
-        for field_name in _REQUIRED_FLAG_FIELDS:
-            if field_name not in flag:
-                raise SDKError(
-                    f"cuttlegate: malformed response: missing field {field_name!r}"
-                )
-        key = flag["key"]
-        results[key] = EvalResult(
-            key=key,
-            enabled=flag["enabled"],
-            variant=flag["value_key"],     # primary — maps from JSON value_key
-            reason=flag["reason"],
-            evaluated_at=evaluated_at,
-            value=flag.get("value") or "",  # deprecated; JSON null → ""
-        )
-    return results
