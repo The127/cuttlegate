@@ -30,6 +30,9 @@ describe('createClient', () => {
     const client = createClient({ ...validConfig, fetch: mockFetchResponse({}) });
     expect(client).toBeDefined();
     expect(typeof client.evaluate).toBe('function');
+    expect(typeof client.evaluateAll).toBe('function');
+    expect(typeof client.bool).toBe('function');
+    expect(typeof client.string).toBe('function');
     expect(typeof client.evaluateFlag).toBe('function');
   });
 
@@ -74,7 +77,7 @@ describe('createClient', () => {
 
   it('is usable as a CuttlegateClient type', () => {
     function useClient(c: CuttlegateClient): boolean {
-      return typeof c.evaluate === 'function' && typeof c.evaluateFlag === 'function';
+      return typeof c.evaluate === 'function' && typeof c.evaluateAll === 'function';
     }
     const client = createClient({ ...validConfig, fetch: mockFetchResponse({}) });
     expect(useClient(client)).toBe(true);
@@ -115,12 +118,12 @@ describe('createClient', () => {
   });
 });
 
-describe('evaluate', () => {
+describe('evaluateAll', () => {
   it('returns all flags for a user context', async () => {
     const fetchFn = mockFetchResponse(bulkResponse);
     const client = createClient({ ...validConfig, fetch: fetchFn });
 
-    const results = await client.evaluate({ user_id: 'u1', attributes: { plan: 'pro' } });
+    const results = await client.evaluateAll({ user_id: 'u1', attributes: { plan: 'pro' } });
 
     expect(fetchFn).toHaveBeenCalledOnce();
     const [url, opts] = (fetchFn as ReturnType<typeof vi.fn>).mock.calls[0];
@@ -134,7 +137,7 @@ describe('evaluate', () => {
       key: 'dark-mode',
       enabled: true,
       value: null,
-      valueKey: 'true',
+      variant: 'true',
       reason: 'rule_match',
       evaluatedAt: '2026-03-21T10:00:00Z',
     });
@@ -142,7 +145,7 @@ describe('evaluate', () => {
       key: 'banner-text',
       enabled: true,
       value: 'holiday',
-      valueKey: 'holiday',
+      variant: 'holiday',
       reason: 'default',
       evaluatedAt: '2026-03-21T10:00:00Z',
     });
@@ -152,7 +155,7 @@ describe('evaluate', () => {
     const fetchFn = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
     const client = createClient({ ...validConfig, fetch: fetchFn });
 
-    await expect(client.evaluate({ user_id: 'u1', attributes: {} })).rejects.toSatisfy(
+    await expect(client.evaluateAll({ user_id: 'u1', attributes: {} })).rejects.toSatisfy(
       (err: unknown) => err instanceof CuttlegateError && err.code === 'network_error' && err.message === 'Failed to fetch',
     );
   });
@@ -167,7 +170,7 @@ describe('evaluate', () => {
     });
     const client = createClient({ ...validConfig, timeout: 50, fetch: fetchFn });
 
-    await expect(client.evaluate({ user_id: 'u1', attributes: {} })).rejects.toSatisfy(
+    await expect(client.evaluateAll({ user_id: 'u1', attributes: {} })).rejects.toSatisfy(
       (err: unknown) => err instanceof CuttlegateError && err.code === 'timeout',
     );
   });
@@ -176,7 +179,7 @@ describe('evaluate', () => {
     const fetchFn = mockFetchResponse({}, 401);
     const client = createClient({ ...validConfig, fetch: fetchFn });
 
-    await expect(client.evaluate({ user_id: 'u1', attributes: {} })).rejects.toSatisfy(
+    await expect(client.evaluateAll({ user_id: 'u1', attributes: {} })).rejects.toSatisfy(
       (err: unknown) => err instanceof CuttlegateError && err.code === 'unauthorized',
     );
   });
@@ -185,7 +188,7 @@ describe('evaluate', () => {
     const fetchFn = mockFetchResponse({}, 403);
     const client = createClient({ ...validConfig, fetch: fetchFn });
 
-    await expect(client.evaluate({ user_id: 'u1', attributes: {} })).rejects.toSatisfy(
+    await expect(client.evaluateAll({ user_id: 'u1', attributes: {} })).rejects.toSatisfy(
       (err: unknown) => err instanceof CuttlegateError && err.code === 'forbidden',
     );
   });
@@ -194,7 +197,7 @@ describe('evaluate', () => {
     const fetchFn = mockFetchResponse({ unexpected: 'shape' });
     const client = createClient({ ...validConfig, fetch: fetchFn });
 
-    await expect(client.evaluate({ user_id: 'u1', attributes: {} })).rejects.toSatisfy(
+    await expect(client.evaluateAll({ user_id: 'u1', attributes: {} })).rejects.toSatisfy(
       (err: unknown) =>
         err instanceof CuttlegateError &&
         err.code === 'invalid_response' &&
@@ -203,23 +206,90 @@ describe('evaluate', () => {
   });
 });
 
-describe('evaluateFlag', () => {
+describe('evaluate', () => {
+  it('returns a single EvalResult by key', async () => {
+    const client = createClient({ ...validConfig, fetch: mockFetchResponse(bulkResponse) });
+
+    const result = await client.evaluate('dark-mode', { user_id: 'u1', attributes: {} });
+    expect(result).toEqual({
+      key: 'dark-mode',
+      enabled: true,
+      value: null,
+      variant: 'true',
+      reason: 'rule_match',
+      evaluatedAt: '2026-03-21T10:00:00Z',
+    });
+  });
+
+  it('throws CuttlegateError with code="not_found" for unknown key', async () => {
+    const client = createClient({ ...validConfig, fetch: mockFetchResponse(bulkResponse) });
+
+    await expect(client.evaluate('beta-feature', { user_id: 'u1', attributes: {} })).rejects.toSatisfy(
+      (err: unknown) => err instanceof CuttlegateError && err.code === 'not_found',
+    );
+  });
+
+  it('makes only one HTTP call (wraps evaluateAll)', async () => {
+    const fetchFn = mockFetchResponse(bulkResponse);
+    const client = createClient({ ...validConfig, fetch: fetchFn });
+
+    await client.evaluate('dark-mode', { user_id: 'u1', attributes: {} });
+    expect(fetchFn).toHaveBeenCalledOnce();
+  });
+});
+
+describe('bool', () => {
+  it('returns true for an enabled bool flag', async () => {
+    const client = createClient({ ...validConfig, fetch: mockFetchResponse(bulkResponse) });
+    const result = await client.bool('dark-mode', { user_id: 'u1', attributes: {} });
+    expect(result).toBe(true);
+  });
+
+  it('returns false for a non-bool flag', async () => {
+    const client = createClient({ ...validConfig, fetch: mockFetchResponse(bulkResponse) });
+    // banner-text has variant "holiday", not "true"
+    const result = await client.bool('banner-text', { user_id: 'u1', attributes: {} });
+    expect(result).toBe(false);
+  });
+
+  it('throws CuttlegateError with code="not_found" for unknown key', async () => {
+    const client = createClient({ ...validConfig, fetch: mockFetchResponse(bulkResponse) });
+    await expect(client.bool('nonexistent', { user_id: 'u1', attributes: {} })).rejects.toSatisfy(
+      (err: unknown) => err instanceof CuttlegateError && err.code === 'not_found',
+    );
+  });
+});
+
+describe('string', () => {
+  it('returns variant string for a string flag', async () => {
+    const client = createClient({ ...validConfig, fetch: mockFetchResponse(bulkResponse) });
+    const result = await client.string('banner-text', { user_id: 'u1', attributes: {} });
+    expect(result).toBe('holiday');
+  });
+
+  it('returns "true" for a bool flag', async () => {
+    const client = createClient({ ...validConfig, fetch: mockFetchResponse(bulkResponse) });
+    const result = await client.string('dark-mode', { user_id: 'u1', attributes: {} });
+    expect(result).toBe('true');
+  });
+});
+
+describe('evaluateFlag (deprecated)', () => {
   it('returns a single flag result from bulk response', async () => {
     const client = createClient({ ...validConfig, fetch: mockFetchResponse(bulkResponse) });
 
     const result = await client.evaluateFlag('dark-mode', { user_id: 'u1', attributes: {} });
-    // @happy: valueKey is "true" for bool flag; value remains null (v1 compat)
-    expect(result).toEqual({ enabled: true, value: null, valueKey: 'true', reason: 'rule_match' });
+    expect(result).toEqual({ enabled: true, value: null, variant: 'true', reason: 'rule_match' });
   });
 
   it('returns not_found for unknown key without throwing', async () => {
     const client = createClient({ ...validConfig, fetch: mockFetchResponse(bulkResponse) });
 
     const result = await client.evaluateFlag('beta-feature', { user_id: 'u1', attributes: {} });
-    expect(result).toEqual({ enabled: false, value: null, valueKey: '', reason: 'not_found' });
+    expect(result).toEqual({ enabled: false, value: null, variant: '', reason: 'not_found' });
   });
 
-  it('makes only one HTTP call (wraps evaluate)', async () => {
+  it('makes only one HTTP call (wraps evaluateAll)', async () => {
     const fetchFn = mockFetchResponse(bulkResponse);
     const client = createClient({ ...validConfig, fetch: fetchFn });
 

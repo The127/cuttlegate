@@ -4,7 +4,7 @@ import { render, screen, act, waitFor, cleanup } from '@testing-library/react';
 import { CuttlegateProvider, useFlag, useFlagVariant, useCachedFlag } from './react.js';
 import type { CuttlegateConfig } from './types.js';
 import type { StreamOptions, StreamConnection } from './streaming.js';
-import type { EvaluationResult, CuttlegateClient, FlagResult } from './client.js';
+import type { EvalResult, CuttlegateClient, FlagResult } from './client.js';
 import type { CachedClient } from './cached-client.js';
 
 // Mock createClient and connectStream so tests don't make real HTTP calls.
@@ -37,8 +37,8 @@ function makeEvalResult(
   key: string,
   enabled: boolean,
   value: string | null = null,
-): EvaluationResult {
-  return { key, enabled, value, valueKey: value ?? '', reason: 'default', evaluatedAt: '2026-03-21T12:00:00Z' };
+): EvalResult {
+  return { key, enabled, value, variant: value ?? '', reason: 'default', evaluatedAt: '2026-03-21T12:00:00Z' };
 }
 
 /** Test component that renders useFlag output. */
@@ -53,17 +53,17 @@ function FlagConsumer({ flagKey }: { flagKey: string }) {
 
 /** Test component that renders useFlagVariant output. */
 function VariantConsumer({ flagKey }: { flagKey: string }) {
-  const { value, loading } = useFlagVariant(flagKey);
+  const { variant, loading } = useFlagVariant(flagKey);
   return (
     <div data-testid={`variant-${flagKey}`}>
-      {loading ? 'loading' : value ?? 'null'}
+      {loading ? 'loading' : variant ?? 'null'}
     </div>
   );
 }
 
 let capturedStreamOptions: StreamOptions;
 let mockClose: ReturnType<typeof vi.fn>;
-let resolveEvaluate: (results: EvaluationResult[]) => void;
+let resolveEvaluate: (results: EvalResult[]) => void;
 
 afterEach(() => {
   cleanup();
@@ -73,11 +73,11 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockClose = vi.fn();
 
-  // Default: evaluate returns a promise we control.
-  const evaluatePromise = new Promise<EvaluationResult[]>((resolve) => {
+  // Default: evaluateAll returns a promise we control.
+  const evaluateAllPromise = new Promise<EvalResult[]>((resolve) => {
     resolveEvaluate = resolve;
   });
-  const mockClient = { evaluate: vi.fn().mockReturnValue(evaluatePromise) } as unknown as CuttlegateClient;
+  const mockClient = { evaluateAll: vi.fn().mockReturnValue(evaluateAllPromise) } as unknown as CuttlegateClient;
   mockedCreateClient.mockReturnValue(mockClient);
 
   // Capture stream options so tests can fire SSE events.
@@ -315,11 +315,29 @@ function makeCachedClient(initialFlags: Record<string, boolean> = {}) {
   const client: CachedClient = {
     ready,
     close: vi.fn(),
-    evaluate: vi.fn().mockResolvedValue([]),
+    evaluate: vi.fn().mockImplementation((key: string): Promise<EvalResult> => {
+      const enabled = initialFlags[key] ?? false;
+      const reason = key in initialFlags ? 'default' : 'not_found';
+      return Promise.resolve({
+        key,
+        enabled,
+        value: null,
+        variant: enabled ? 'true' : '',
+        reason,
+        evaluatedAt: '2026-03-21T12:00:00Z',
+      });
+    }),
+    evaluateAll: vi.fn().mockResolvedValue([]),
+    bool: vi.fn().mockImplementation((key: string): Promise<boolean> => {
+      return Promise.resolve(initialFlags[key] ?? false);
+    }),
+    string: vi.fn().mockImplementation((key: string): Promise<string> => {
+      return Promise.resolve(initialFlags[key] ? 'true' : '');
+    }),
     evaluateFlag: vi.fn().mockImplementation((key: string): Promise<FlagResult> => {
       const enabled = initialFlags[key] ?? false;
       const reason = key in initialFlags ? 'default' : 'not_found';
-      return Promise.resolve({ enabled, value: null, valueKey: '', reason });
+      return Promise.resolve({ enabled, value: null, variant: '', reason });
     }),
     subscribe: vi.fn().mockImplementation((key: string, cb: (enabled: boolean) => void) => {
       subscribeCalls.push([key, cb]);

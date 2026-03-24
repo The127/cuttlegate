@@ -11,8 +11,8 @@
  * const mock = createMockClient();
  * mock.enable('dark-mode');
  *
- * const result = await mock.evaluateFlag('dark-mode', { user_id: 'u1', attributes: {} });
- * // { enabled: true, value: null, reason: 'mock' }
+ * const result = await mock.evaluate('dark-mode', { user_id: 'u1', attributes: {} });
+ * // { key: 'dark-mode', enabled: true, variant: 'true', reason: 'mock', ... }
  *
  * mock.assertEvaluated('dark-mode');
  * ```
@@ -21,7 +21,7 @@
 import type { EvalContext } from './types.js';
 import type {
   CuttlegateClient,
-  EvaluationResult,
+  EvalResult,
   FlagResult,
 } from './client.js';
 
@@ -30,7 +30,7 @@ const MOCK_EVALUATED_AT = '1970-01-01T00:00:00Z';
 interface FlagConfig {
   enabled: boolean;
   value: string | null;
-  valueKey: string;
+  variant: string;
 }
 
 export interface MockCuttlegateClient extends CuttlegateClient {
@@ -47,15 +47,38 @@ export function createMockClient(): MockCuttlegateClient {
   const evaluated = new Set<string>();
 
   return {
-    async evaluate(_context: EvalContext): Promise<EvaluationResult[]> {
-      const results: EvaluationResult[] = [];
+    async evaluate(key: string, _context: EvalContext): Promise<EvalResult> {
+      evaluated.add(key);
+      const config = flags.get(key);
+      if (!config) {
+        return {
+          key,
+          enabled: false,
+          value: null,
+          variant: '',
+          reason: 'mock_default',
+          evaluatedAt: MOCK_EVALUATED_AT,
+        };
+      }
+      return {
+        key,
+        enabled: config.enabled,
+        value: config.value,
+        variant: config.variant,
+        reason: 'mock',
+        evaluatedAt: MOCK_EVALUATED_AT,
+      };
+    },
+
+    async evaluateAll(_context: EvalContext): Promise<EvalResult[]> {
+      const results: EvalResult[] = [];
       for (const [key, config] of flags) {
         evaluated.add(key);
         results.push({
           key,
           enabled: config.enabled,
           value: config.value,
-          valueKey: config.valueKey,
+          variant: config.variant,
           reason: 'mock',
           evaluatedAt: MOCK_EVALUATED_AT,
         });
@@ -63,22 +86,33 @@ export function createMockClient(): MockCuttlegateClient {
       return results;
     },
 
+    async bool(key: string, context: EvalContext): Promise<boolean> {
+      const result = await this.evaluate(key, context);
+      return result.variant === 'true';
+    },
+
+    async string(key: string, context: EvalContext): Promise<string> {
+      const result = await this.evaluate(key, context);
+      return result.variant;
+    },
+
+    /** @deprecated Use evaluate() instead. */
     async evaluateFlag(key: string, _context: EvalContext): Promise<FlagResult> {
       evaluated.add(key);
       const config = flags.get(key);
       if (!config) {
-        return { enabled: false, value: null, valueKey: '', reason: 'mock_default' };
+        return { enabled: false, value: null, variant: '', reason: 'mock_default' };
       }
       return {
         enabled: config.enabled,
         value: config.value,
-        valueKey: config.valueKey,
+        variant: config.variant,
         reason: 'mock',
       };
     },
 
     enable(key: string): void {
-      flags.set(key, { enabled: true, value: null, valueKey: 'true' });
+      flags.set(key, { enabled: true, value: null, variant: 'true' });
     },
 
     disable(key: string): void {
@@ -86,7 +120,7 @@ export function createMockClient(): MockCuttlegateClient {
     },
 
     setVariant(key: string, value: string): void {
-      flags.set(key, { enabled: true, value, valueKey: value });
+      flags.set(key, { enabled: true, value, variant: value });
     },
 
     assertEvaluated(key: string): void {

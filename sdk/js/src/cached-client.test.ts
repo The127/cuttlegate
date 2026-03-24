@@ -13,7 +13,7 @@ const defaultContext = { user_id: 'u1', attributes: {} };
 
 /** Build a bulk-evaluate JSON response body. */
 function bulkResponse(
-  flags: Array<{ key: string; enabled: boolean; valueKey?: string; reason?: string }>,
+  flags: Array<{ key: string; enabled: boolean; variant?: string; reason?: string }>,
   evaluatedAt = '2026-03-23T12:00:00Z',
 ): string {
   return JSON.stringify({
@@ -21,7 +21,7 @@ function bulkResponse(
       key: f.key,
       enabled: f.enabled,
       value: null,
-      value_key: f.valueKey ?? (f.enabled ? 'true' : 'false'),
+      value_key: f.variant ?? (f.enabled ? 'true' : 'false'),
       reason: f.reason ?? 'default',
       type: 'bool',
     })),
@@ -131,11 +131,11 @@ function buildFetch(options: {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('cache hit after hydration', () => {
-  it('evaluateFlag returns cached value without HTTP call after ready resolves', async () => {
+  it('evaluate returns cached value without HTTP call after ready resolves', async () => {
     const fetchFn = vi.fn(
       buildFetch({
         hydrationBody: bulkResponse([
-          { key: 'my-flag', enabled: true, valueKey: 'true', reason: 'rule_match' },
+          { key: 'my-flag', enabled: true, variant: 'true', reason: 'rule_match' },
         ]),
       }),
     );
@@ -143,9 +143,9 @@ describe('cache hit after hydration', () => {
     const client = createCachedClient({ ...validConfig, fetch: fetchFn as unknown as typeof fetch });
     await client.ready;
 
-    const result = await client.evaluateFlag('my-flag', defaultContext);
+    const result = await client.evaluate('my-flag', defaultContext);
     expect(result.enabled).toBe(true);
-    expect(result.valueKey).toBe('true');
+    expect(result.variant).toBe('true');
     expect(result.reason).toBe('rule_match');
 
     // Only one call to the evaluate endpoint (initial hydration)
@@ -154,7 +154,7 @@ describe('cache hit after hydration', () => {
     client.close();
   });
 
-  it('evaluate() returns all cached flags without HTTP call', async () => {
+  it('evaluateAll() returns all cached flags without HTTP call', async () => {
     const fetchFn = vi.fn(
       buildFetch({
         hydrationBody: bulkResponse([
@@ -168,7 +168,7 @@ describe('cache hit after hydration', () => {
     const client = createCachedClient({ ...validConfig, fetch: fetchFn as unknown as typeof fetch });
     await client.ready;
 
-    const results = await client.evaluate(defaultContext);
+    const results = await client.evaluateAll(defaultContext);
     expect(results).toHaveLength(3);
     expect(evaluateCallCount(fetchFn)).toBe(1);
 
@@ -181,10 +181,10 @@ describe('cache hit after hydration', () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('SSE update behaviour', () => {
-  it('SSE update applies enabled; preserves valueKey from hydration; sets reason to "default"', async () => {
+  it('SSE update applies enabled; preserves variant from hydration; sets reason to "default"', async () => {
     const fetchFn = buildFetch({
       hydrationBody: bulkResponse([
-        { key: 'my-flag', enabled: false, valueKey: 'false', reason: 'disabled' },
+        { key: 'my-flag', enabled: false, variant: 'false', reason: 'disabled' },
       ]),
       sseChunks: [wireSSEEvent('my-flag', true)],
     });
@@ -193,9 +193,9 @@ describe('SSE update behaviour', () => {
     await client.ready;
     await settle();
 
-    const result = await client.evaluateFlag('my-flag', defaultContext);
+    const result = await client.evaluate('my-flag', defaultContext);
     expect(result.enabled).toBe(true);
-    expect(result.valueKey).toBe('false'); // preserved from hydration
+    expect(result.variant).toBe('false'); // preserved from hydration
     expect(result.reason).toBe('default'); // set to "default" after SSE update
 
     client.close();
@@ -211,7 +211,7 @@ describe('SSE update behaviour', () => {
     await client.ready;
     await settle();
 
-    const result = await client.evaluateFlag('unknown-flag', defaultContext);
+    const result = await client.evaluate('unknown-flag', defaultContext);
     expect(result.enabled).toBe(false);
     expect(result.reason).toBe('not_found');
 
@@ -232,7 +232,7 @@ describe('SSE update behaviour', () => {
     await client.ready;
     await settle();
 
-    const result = await client.evaluateFlag('my-flag', defaultContext);
+    const result = await client.evaluate('my-flag', defaultContext);
     expect(result.enabled).toBe(false); // last event wins
 
     client.close();
@@ -332,7 +332,7 @@ describe('SSE-first ordering — buffer drain', () => {
                   Promise.resolve(
                     JSON.parse(
                       bulkResponse([
-                        { key: 'my-flag', enabled: false, valueKey: 'false', reason: 'disabled' },
+                        { key: 'my-flag', enabled: false, variant: 'false', reason: 'disabled' },
                       ]),
                     ),
                   ),
@@ -360,7 +360,7 @@ describe('SSE-first ordering — buffer drain', () => {
 
     // The SSE event (enabled: true) was buffered, then applied on top of
     // the hydration result (enabled: false). Buffer drain wins.
-    const result = await client.evaluateFlag('my-flag', defaultContext);
+    const result = await client.evaluate('my-flag', defaultContext);
     expect(result.enabled).toBe(true);
 
     client.close();
@@ -384,7 +384,7 @@ describe('close()', () => {
     await settle();
 
     // Cache should still be accessible after close
-    const result = await client.evaluateFlag('my-flag', defaultContext);
+    const result = await client.evaluate('my-flag', defaultContext);
     expect(result.enabled).toBe(true);
   });
 
@@ -416,10 +416,10 @@ describe('cache miss', () => {
     const client = createCachedClient({ ...validConfig, fetch: fetchFn as unknown as typeof fetch });
     await client.ready;
 
-    const result = await client.evaluateFlag('flag-not-in-cache', defaultContext);
+    const result = await client.evaluate('flag-not-in-cache', defaultContext);
     expect(result.enabled).toBe(false);
     expect(result.value).toBeNull();
-    expect(result.valueKey).toBe('');
+    expect(result.variant).toBe('');
     expect(result.reason).toBe('not_found');
 
     // No extra HTTP calls after hydration
@@ -428,12 +428,12 @@ describe('cache miss', () => {
     client.close();
   });
 
-  it('evaluateFlag before ready resolves returns not_found (empty cache)', async () => {
+  it('evaluate before ready resolves returns not_found (empty cache)', async () => {
     const fetchFn = buildFetch({});
     const client = createCachedClient({ ...validConfig, fetch: fetchFn });
 
     // Call before ready resolves — cache is empty
-    const result = await client.evaluateFlag('my-flag', defaultContext);
+    const result = await client.evaluate('my-flag', defaultContext);
     expect(result.reason).toBe('not_found');
 
     await client.ready;
@@ -451,7 +451,7 @@ describe('edge cases', () => {
     const client = createCachedClient({ ...validConfig, fetch: fetchFn });
     await client.ready;
 
-    const results = await client.evaluate(defaultContext);
+    const results = await client.evaluateAll(defaultContext);
     expect(results).toHaveLength(0);
 
     client.close();
@@ -593,6 +593,38 @@ describe('reconnect re-hydration', () => {
 
     // At least two hydration calls: initial + one re-hydration after reconnect
     expect(hydrateCallCount).toBeGreaterThanOrEqual(2);
+
+    client.close();
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Convenience methods (bool / string)
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('convenience methods', () => {
+  it('bool returns true for a flag with variant "true"', async () => {
+    const fetchFn = buildFetch({
+      hydrationBody: bulkResponse([{ key: 'dark-mode', enabled: true, variant: 'true' }]),
+    });
+    const client = createCachedClient({ ...validConfig, fetch: fetchFn });
+    await client.ready;
+
+    const result = await client.bool('dark-mode', defaultContext);
+    expect(result).toBe(true);
+
+    client.close();
+  });
+
+  it('string returns the variant string', async () => {
+    const fetchFn = buildFetch({
+      hydrationBody: bulkResponse([{ key: 'theme', enabled: true, variant: 'ocean' }]),
+    });
+    const client = createCachedClient({ ...validConfig, fetch: fetchFn });
+    await client.ready;
+
+    const result = await client.string('theme', defaultContext);
+    expect(result).toBe('ocean');
 
     client.close();
   });

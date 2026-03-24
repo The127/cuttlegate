@@ -1,31 +1,46 @@
 import { z } from 'zod';
 import type { CuttlegateConfig, EvalContext } from './types.js';
 
-/** Result of evaluating all flags for a context. */
-export interface EvaluationResult {
+/** Result of evaluating a flag. Primary result type for evaluate() and evaluateAll(). */
+export interface EvalResult {
   key: string;
   enabled: boolean;
-  /** @deprecated Prefer valueKey — null for bool flags. */
+  /** @deprecated Prefer variant — null for bool flags. */
   value: string | null;
   /** Always present. "true"/"false" for bool flags, variant key for all others. */
-  valueKey: string;
+  variant: string;
   reason: string;
   evaluatedAt: string;
 }
 
-/** Result of evaluating a single flag by key. */
+/**
+ * @deprecated Use EvalResult instead. This alias will be removed in the next major version.
+ */
+export type EvaluationResult = EvalResult;
+
+/** Result of evaluating a single flag by key (deprecated shape — prefer EvalResult). */
 export interface FlagResult {
   enabled: boolean;
-  /** @deprecated Prefer valueKey — null for bool flags. */
+  /** @deprecated Prefer variant — null for bool flags. */
   value: string | null;
   /** Always present. "true"/"false" for bool flags, variant key for all others. */
-  valueKey: string;
+  variant: string;
   reason: string;
 }
 
 /** SDK client interface — implemented by both the real client and test mocks (#108). */
 export interface CuttlegateClient {
-  evaluate(context: EvalContext): Promise<EvaluationResult[]>;
+  /** Evaluate a single flag by key. Returns a full EvalResult. */
+  evaluate(key: string, context: EvalContext): Promise<EvalResult>;
+  /** Evaluate all flags in one HTTP request. */
+  evaluateAll(context: EvalContext): Promise<EvalResult[]>;
+  /** Convenience: evaluate a boolean flag. Returns true if variant is "true". */
+  bool(key: string, context: EvalContext): Promise<boolean>;
+  /** Convenience: evaluate a string flag. Returns the variant string. */
+  string(key: string, context: EvalContext): Promise<string>;
+  /**
+   * @deprecated Use evaluate() instead.
+   */
   evaluateFlag(key: string, context: EvalContext): Promise<FlagResult>;
 }
 
@@ -85,7 +100,7 @@ export function createClient(config: CuttlegateConfig): CuttlegateClient {
 
   const evaluateUrl = `${baseUrl}/api/v1/projects/${encodeURIComponent(project)}/environments/${encodeURIComponent(environment)}/evaluate`;
 
-  async function evaluate(context: EvalContext): Promise<EvaluationResult[]> {
+  async function evaluateAll(context: EvalContext): Promise<EvalResult[]> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeout);
 
@@ -137,20 +152,40 @@ export function createClient(config: CuttlegateConfig): CuttlegateClient {
       key: flag.key,
       enabled: flag.enabled,
       value: flag.value,
-      valueKey: flag.value_key || flag.value || '',
+      variant: flag.value_key || flag.value || '',
       reason: flag.reason,
       evaluatedAt,
     }));
   }
 
-  async function evaluateFlag(key: string, context: EvalContext): Promise<FlagResult> {
-    const results = await evaluate(context);
+  async function evaluate(key: string, context: EvalContext): Promise<EvalResult> {
+    const results = await evaluateAll(context);
     const match = results.find((r) => r.key === key);
     if (!match) {
-      return { enabled: false, value: null, valueKey: '', reason: 'not_found' };
+      throw new CuttlegateError('not_found', `Flag "${key}" not found`);
     }
-    return { enabled: match.enabled, value: match.value, valueKey: match.valueKey, reason: match.reason };
+    return match;
   }
 
-  return { evaluate, evaluateFlag };
+  async function bool(key: string, context: EvalContext): Promise<boolean> {
+    const result = await evaluate(key, context);
+    return result.variant === 'true';
+  }
+
+  async function string(key: string, context: EvalContext): Promise<string> {
+    const result = await evaluate(key, context);
+    return result.variant;
+  }
+
+  /** @deprecated Use evaluate() instead. */
+  async function evaluateFlag(key: string, context: EvalContext): Promise<FlagResult> {
+    const results = await evaluateAll(context);
+    const match = results.find((r) => r.key === key);
+    if (!match) {
+      return { enabled: false, value: null, variant: '', reason: 'not_found' };
+    }
+    return { enabled: match.enabled, value: match.value, variant: match.variant, reason: match.reason };
+  }
+
+  return { evaluate, evaluateAll, bool, string, evaluateFlag };
 }
