@@ -82,16 +82,13 @@ export function ProjectSwitcher() {
     <header className="h-14 shrink-0 flex items-center gap-3 px-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
       {/* Wordmark / logo */}
       <Link to="/" className="flex items-center gap-2 mr-2 no-underline">
-        {logo_url !== null ? (
-          <img src={logo_url} alt={app_name} className="h-6 w-auto" />
-        ) : (
-          <span
-            className="text-sm font-semibold text-[var(--color-text-primary)]"
-            style={{ fontFamily: 'var(--font-mono)' }}
-          >
-            {app_name}
-          </span>
-        )}
+        <img src={logo_url ?? '/logo.svg'} alt={app_name} className="h-6 w-auto" />
+        <span
+          className="text-sm font-semibold text-[var(--color-text-primary)]"
+          style={{ fontFamily: 'var(--font-mono)' }}
+        >
+          {app_name}
+        </span>
       </Link>
 
       <div className="w-px h-5 bg-[var(--color-border-hover)]" aria-hidden="true" />
