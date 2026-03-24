@@ -42,7 +42,8 @@
     "api_keys": "API Keys",
     "members": "Members",
     "audit": "Audit",
-    "settings": "Settings"
+    "settings": "Settings",
+    "heading_separator": ">"
   },
   "user_menu": {
     "logged_in_as": "Logged in as",

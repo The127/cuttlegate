@@ -68,9 +68,25 @@ function ProjectDashboard() {
   const [showCreateEnv, setShowCreateEnv] = useState(false)
   const [showCreateFlag, setShowCreateFlag] = useState(false)
 
+  const hasEnvironments = !envsQuery.isLoading && !envsQuery.isError && (envsQuery.data?.length ?? 0) > 0
+
   return (
     <div className="p-6 max-w-5xl">
       <ProjectHeader name={project.name} slug={project.slug} />
+
+      <div className="mt-4 flex items-center gap-2">
+        <Button variant="secondary" size="sm" onClick={() => setShowCreateEnv(true)}>
+          {t('dashboard.quick_create_environment')}
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => setShowCreateFlag(true)}
+          disabled={!hasEnvironments}
+        >
+          {t('dashboard.quick_create_flag')}
+        </Button>
+      </div>
 
       <section className="mt-6">
         <h2 className="text-sm font-medium text-[var(--color-text-secondary)] mb-3">

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { flagDetailRoute } from './$slug.environments.$envSlug.flags.$key'
 import { fetchJSON, APIError } from '../../api'
 import { Button } from '../../components/ui'
+import { PageHeading } from '../../components/PageHeading'
 
 interface MatchedRule {
   id: string
@@ -83,7 +84,15 @@ function FlagEvaluationsPage() {
   const allItems = data?.pages.flatMap((p) => p.items) ?? []
 
   return (
-    <div className="mt-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg overflow-hidden">
+    <div className="p-6">
+      <PageHeading
+        ancestors={[
+          { label: envSlug, to: `/projects/${slug}/environments/${envSlug}/flags` },
+          { label: key, to: `/projects/${slug}/environments/${envSlug}/flags/${key}` },
+        ]}
+        current={t('heading.evaluations')}
+      />
+    <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg overflow-hidden">
       <div className="px-5 py-3 border-b border-[var(--color-border)]">
         <h2 className="text-xs font-semibold text-[var(--color-text-secondary)] font-medium">
           {t('audit.tab_title')}
@@ -130,6 +139,7 @@ function FlagEvaluationsPage() {
           )}
         </>
       )}
+    </div>
     </div>
   )
 }

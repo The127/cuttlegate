@@ -87,6 +87,10 @@
     "reason_default": "No rules matched \u2014 default",
     "reason_rule_match": "Matched a targeting rule"
   },
+  "heading": {
+    "rules": "Rules",
+    "evaluations": "Evaluations"
+  },
   "audit": {
     "tab_title": "Evaluations",
     "loading": "Loading evaluations\u2026",
