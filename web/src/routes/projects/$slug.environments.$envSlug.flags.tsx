@@ -1,12 +1,7 @@
 import { createRoute, Link } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-<<<<<<< HEAD
-import { useState, useMemo } from 'react'
-import { useTranslation } from 'react-i18next'
-=======
 import { useState, useMemo, useEffect } from 'react'
-import { useTranslation, Trans } from 'react-i18next'
->>>>>>> issue/365-flag-search
+import { useTranslation } from 'react-i18next'
 import { projectEnvRoute } from './$slug.environments.$envSlug'
 import { projectRoute } from './$slug'
 import { fetchJSON, patchJSON, postJSON, deleteRequest, APIError } from '../../api'
