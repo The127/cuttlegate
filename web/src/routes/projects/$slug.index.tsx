@@ -99,10 +99,14 @@ function ProjectDashboard() {
           <RecentFlagsSkeleton />
         ) : flagsQuery.isError ? (
           <SectionError label="flags" onRetry={() => void flagsQuery.refetch()} />
+        ) : envsQuery.isLoading || envsQuery.isError ? (
+          <RecentFlagsSkeleton />
+        ) : envsQuery.data!.length === 0 ? (
+          <FlagsNeedEnvironmentState onCreateClick={() => setShowCreateEnv(true)} />
         ) : flagsQuery.data!.length === 0 ? (
           <FlagsEmptyState onCreateClick={() => setShowCreateFlag(true)} />
         ) : (
-          <RecentFlagsList flags={flagsQuery.data!} />
+          <RecentFlagsList flags={flagsQuery.data!} projectSlug={project.slug} firstEnvSlug={envsQuery.data![0].slug} />
         )}
       </section>
 
@@ -135,6 +139,20 @@ function EnvironmentsEmptyState({ onCreateClick }: { onCreateClick: () => void }
     <div className="text-center py-12 px-6">
       <p className="text-sm text-[var(--color-text-secondary)]">
         {t('dashboard.no_environments')}
+      </p>
+      <Button size="lg" variant="primary" className="mt-4" onClick={onCreateClick}>
+        {t('dashboard.create_first_environment_cta')}
+      </Button>
+    </div>
+  )
+}
+
+function FlagsNeedEnvironmentState({ onCreateClick }: { onCreateClick: () => void }) {
+  const { t } = useTranslation('projects')
+  return (
+    <div className="text-center py-12 px-6">
+      <p className="text-sm text-[var(--color-text-secondary)]">
+        {t('dashboard.flags_need_environment')}
       </p>
       <Button size="lg" variant="primary" className="mt-4" onClick={onCreateClick}>
         {t('dashboard.create_first_environment_cta')}
@@ -447,7 +465,7 @@ function EnvironmentCard({ env, projectSlug }: { env: Environment; projectSlug: 
   )
 }
 
-function RecentFlagsList({ flags }: { flags: ProjectFlag[] }) {
+function RecentFlagsList({ flags, projectSlug, firstEnvSlug }: { flags: ProjectFlag[]; projectSlug: string; firstEnvSlug: string }) {
   const recent = [...flags]
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 5)
@@ -455,20 +473,26 @@ function RecentFlagsList({ flags }: { flags: ProjectFlag[] }) {
   return (
     <ul className="divide-y divide-[var(--color-border)]">
       {recent.map((flag) => (
-        <li key={flag.id} className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="font-mono text-sm text-[var(--color-text-primary)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-2 py-0.5">
-              {flag.key}
-            </span>
-            <span className="text-sm text-[var(--color-text-secondary)] truncate">{flag.name}</span>
-          </div>
-          <time
-            dateTime={flag.created_at}
-            className="text-xs text-[var(--color-text-muted)] shrink-0 ml-4"
-            title={new Date(flag.created_at).toLocaleString()}
+        <li key={flag.id}>
+          <Link
+            to="/projects/$slug/environments/$envSlug/flags/$key"
+            params={{ slug: projectSlug, envSlug: firstEnvSlug, key: flag.key }}
+            className="flex items-center justify-between px-4 py-3 hover:bg-[var(--color-surface-elevated)] transition-colors rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
           >
-            {formatRelativeDate(flag.created_at)}
-          </time>
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="font-mono text-sm text-[var(--color-text-primary)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-2 py-0.5">
+                {flag.key}
+              </span>
+              <span className="text-sm text-[var(--color-text-secondary)] truncate">{flag.name}</span>
+            </div>
+            <time
+              dateTime={flag.created_at}
+              className="text-xs text-[var(--color-text-muted)] shrink-0 ml-4"
+              title={new Date(flag.created_at).toLocaleString()}
+            >
+              {formatRelativeDate(flag.created_at)}
+            </time>
+          </Link>
         </li>
       ))}
     </ul>
