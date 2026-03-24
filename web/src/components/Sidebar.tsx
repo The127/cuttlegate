@@ -115,7 +115,7 @@ export function Sidebar({ projectSlug, envSlug }: SidebarProps) {
     ? `/projects/${projectSlug}/environments/${envSlug}/flags`
     : `/projects/${projectSlug}`
 
-  const navItems: NavItemProps[] = [
+  const envScopedItems: NavItemProps[] = [
     {
       to: flagsPath,
       icon: <IconFlag />,
@@ -128,6 +128,9 @@ export function Sidebar({ projectSlug, envSlug }: SidebarProps) {
       label: t('nav.segments'),
       isActive: pathname.includes('/segments'),
     },
+  ]
+
+  const projectScopedItems: NavItemProps[] = [
     {
       to: `/projects/${projectSlug}/api-keys`,
       icon: <IconKey />,
@@ -161,7 +164,16 @@ export function Sidebar({ projectSlug, envSlug }: SidebarProps) {
     >
       <nav className="flex-1 px-2 py-4">
         <ul className="flex flex-col gap-0.5">
-          {navItems.map((item) => (
+          {envScopedItems.map((item) => (
+            <NavItem key={item.to} {...item} />
+          ))}
+        </ul>
+        <div
+          className="my-2 mx-3 h-px bg-[var(--color-border)]"
+          aria-hidden="true"
+        />
+        <ul className="flex flex-col gap-0.5">
+          {projectScopedItems.map((item) => (
             <NavItem key={item.to} {...item} />
           ))}
         </ul>

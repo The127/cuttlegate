@@ -101,9 +101,9 @@ describe('ProjectSwitcher', () => {
     })
   })
 
-  // @happy — environment Select renders when inside a project route
-  it('renders environment Select trigger with aria-label when on a project route', async () => {
-    mockUseLocation.mockReturnValue({ pathname: '/projects/alpha' })
+  // @happy — environment Select renders when on an environment-scoped route
+  it('renders environment Select trigger with aria-label when on an env-scoped route', async () => {
+    mockUseLocation.mockReturnValue({ pathname: '/projects/alpha/environments/production/flags' })
     mockFetchJSON.mockImplementation((url: string) => {
       if (url === '/api/v1/projects') return Promise.resolve({ projects: PROJECTS })
       if (url === '/api/v1/projects/alpha/environments')
@@ -119,9 +119,26 @@ describe('ProjectSwitcher', () => {
     })
   })
 
-  // @happy — no-environments nudge renders instead of Select when envs are empty
-  it('renders nudge button when environments array is empty', async () => {
-    mockUseLocation.mockReturnValue({ pathname: '/projects/alpha' })
+  // @happy — environment switcher is hidden on project-scoped pages (no envSlug in URL)
+  it('hides environment switcher on project-scoped pages', async () => {
+    mockUseLocation.mockReturnValue({ pathname: '/projects/alpha/members' })
+    mockFetchJSON.mockImplementation((url: string) => {
+      if (url === '/api/v1/projects') return Promise.resolve({ projects: PROJECTS })
+      return Promise.reject(new Error(`Unexpected URL: ${url}`))
+    })
+
+    renderSwitcher()
+
+    await waitFor(() => {
+      expect(screen.getByRole('combobox', { name: 'Project' })).toBeInTheDocument()
+    })
+
+    expect(screen.queryByRole('combobox', { name: 'Environment' })).not.toBeInTheDocument()
+  })
+
+  // @happy — no-environments nudge renders when on env-scoped route but envs are empty
+  it('renders nudge button when environments array is empty on env-scoped route', async () => {
+    mockUseLocation.mockReturnValue({ pathname: '/projects/alpha/environments/production/flags' })
     mockFetchJSON.mockImplementation((url: string) => {
       if (url === '/api/v1/projects') return Promise.resolve({ projects: PROJECTS })
       if (url === '/api/v1/projects/alpha/environments')
@@ -143,7 +160,7 @@ describe('ProjectSwitcher', () => {
 
   // @edge — nudge navigates to settings/environments (not project dashboard)
   it('nudge click navigates to /projects/$slug/settings/environments', async () => {
-    mockUseLocation.mockReturnValue({ pathname: '/projects/alpha' })
+    mockUseLocation.mockReturnValue({ pathname: '/projects/alpha/environments/production/flags' })
     mockFetchJSON.mockImplementation((url: string) => {
       if (url === '/api/v1/projects') return Promise.resolve({ projects: PROJECTS })
       if (url === '/api/v1/projects/alpha/environments')
@@ -166,9 +183,9 @@ describe('ProjectSwitcher', () => {
     )
   })
 
-  // @edge — nudge not shown while environments are loading (skeleton shown instead)
+  // @edge — skeleton shown while environments are loading on env-scoped route
   it('renders skeleton loader while environments are loading', async () => {
-    mockUseLocation.mockReturnValue({ pathname: '/projects/alpha' })
+    mockUseLocation.mockReturnValue({ pathname: '/projects/alpha/environments/production/flags' })
     // Environments query never resolves — stays loading
     mockFetchJSON.mockImplementation((url: string) => {
       if (url === '/api/v1/projects') return Promise.resolve({ projects: PROJECTS })
@@ -214,9 +231,9 @@ describe('ProjectSwitcher', () => {
     })
   })
 
-  // @error-path — environment fetch failure shows error + retry button
+  // @error-path — environment fetch failure shows error + retry button on env-scoped route
   it('shows error message and retry button when environments query fails', async () => {
-    mockUseLocation.mockReturnValue({ pathname: '/projects/alpha' })
+    mockUseLocation.mockReturnValue({ pathname: '/projects/alpha/environments/production/flags' })
     mockFetchJSON.mockImplementation((url: string) => {
       if (url === '/api/v1/projects') return Promise.resolve({ projects: PROJECTS })
       if (url === '/api/v1/projects/alpha/environments')

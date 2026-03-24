@@ -139,8 +139,8 @@ export function ProjectSwitcher() {
         )}
       </div>
 
-      {/* Environment switcher — only when inside a project */}
-      {projectSlug !== null && (
+      {/* Environment switcher — only on environment-scoped pages */}
+      {envSlug !== null && (
         <>
           <span className="text-[var(--color-text-muted)]" aria-hidden="true">/</span>
           <div className="flex items-center gap-2">

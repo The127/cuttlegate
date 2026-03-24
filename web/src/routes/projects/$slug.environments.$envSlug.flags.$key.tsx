@@ -9,6 +9,7 @@ import { useFlagSSE } from '../../hooks/useFlagSSE'
 import { Button, Input, Select, SelectItem, CopyableCode, Textarea } from '../../components/ui'
 import { PromoteDialog } from '../../components/PromoteDialog'
 import { FlagAnalyticsPanel } from '../../components/FlagAnalyticsPanel'
+import { PageHeading } from '../../components/PageHeading'
 import { formatAbsoluteDate, formatRelativeDate } from '../../utils/date'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 
@@ -120,6 +121,12 @@ function FlagDetailPage() {
 
   return (
     <div className="p-6 max-w-5xl">
+      <PageHeading
+        ancestors={[
+          { label: envSlug, to: `/projects/${slug}/environments/${envSlug}/flags` },
+        ]}
+        current={key}
+      />
       <FlagDetailCard
         flag={flag}
         slug={slug}

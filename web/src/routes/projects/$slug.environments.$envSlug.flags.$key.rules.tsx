@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { projectEnvRoute } from './$slug.environments.$envSlug'
 import { fetchJSON, postJSON, patchJSON, deleteRequest, APIError } from '../../api'
 import { Button, Input, Select, SelectItem } from '../../components/ui'
+import { PageHeading } from '../../components/PageHeading'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -169,6 +170,13 @@ function RulesPage() {
 
   return (
     <div className="p-6 max-w-5xl">
+      <PageHeading
+        ancestors={[
+          { label: envSlug, to: `/projects/${slug}/environments/${envSlug}/flags` },
+          { label: key, to: `/projects/${slug}/environments/${envSlug}/flags/${key}` },
+        ]}
+        current={t('heading.rules', { ns: 'flags' })}
+      />
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">{t('title')}</h2>
         {!addingNew && (

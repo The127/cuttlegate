@@ -52,7 +52,9 @@
     "copy_slug_aria": "Copy project slug {{slug}}",
     "failed_to_load": "Failed to load {{resource}}.",
     "failed_to_load_env": "Failed to load",
-    "audit_log": "Audit Log"
+    "audit_log": "Audit Log",
+    "quick_create_environment": "Create Environment",
+    "quick_create_flag": "Create Flag"
   },
   "settings": {
     "title": "Settings",
