@@ -42,7 +42,38 @@ function applyPreference(pref: ThemePreference): void {
   }
 }
 
-const OPTIONS: ThemePreference[] = ['system', 'light', 'dark']
+/** Inline SVG icons — 16×16, currentColor stroke, aria-hidden. */
+function MonitorIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="2" y="3" width="20" height="14" rx="2" />
+      <path d="M8 21h8M12 17v4" />
+    </svg>
+  )
+}
+
+function SunIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+    </svg>
+  )
+}
+
+function MoonIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    </svg>
+  )
+}
+
+const OPTIONS: { value: ThemePreference; icon: () => React.JSX.Element }[] = [
+  { value: 'system', icon: MonitorIcon },
+  { value: 'light', icon: SunIcon },
+  { value: 'dark', icon: MoonIcon },
+]
 
 export function ThemeToggle() {
   const { t } = useTranslation('common')
@@ -55,20 +86,22 @@ export function ThemeToggle() {
 
   return (
     <div className="flex items-center gap-1" role="radiogroup" aria-label={t('theme.label')}>
-      {OPTIONS.map((opt) => (
+      {OPTIONS.map(({ value, icon: Icon }) => (
         <button
-          key={opt}
+          key={value}
           type="button"
           role="radio"
-          aria-checked={current === opt}
-          onClick={() => setCurrent(opt)}
-          className={`px-2 py-1 text-xs rounded transition-colors ${
-            current === opt
-              ? 'bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] font-medium'
+          aria-checked={current === value}
+          aria-label={t(`theme.${value}`)}
+          title={t(`theme.${value}`)}
+          onClick={() => setCurrent(value)}
+          className={`p-1.5 rounded transition-colors ${
+            current === value
+              ? 'bg-[var(--color-surface-elevated)] text-[var(--color-accent)]'
               : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
           }`}
         >
-          {t(`theme.${opt}`)}
+          <Icon />
         </button>
       ))}
     </div>
