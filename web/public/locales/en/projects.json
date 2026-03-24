@@ -187,6 +187,16 @@
     "deleting": "Deleting…",
     "delete_button": "Delete"
   },
+  "environments_overview": {
+    "title": "Environments",
+    "error": "Failed to load environments.",
+    "empty_title": "No environments yet",
+    "empty_body": "Environments scope flag states, rules, and API keys for each stage of your workflow.",
+    "create_first_cta": "Create your first environment",
+    "create_button": "Create Environment",
+    "flag_count": "{{count}} flags",
+    "flag_count_error": "Failed to load"
+  },
   "compare": {
     "title": "Compare Environments",
     "page_title": "Compare",

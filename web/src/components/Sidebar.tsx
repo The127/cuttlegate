@@ -4,6 +4,16 @@ import { useTranslation } from 'react-i18next'
 
 // ── Nav icons (16px inline SVG) ───────────────────────────────────────────────
 
+function IconLayers() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polygon points="12 2 2 7 12 12 22 7 12 2" />
+      <polyline points="2 17 12 22 22 17" />
+      <polyline points="2 12 12 17 22 12" />
+    </svg>
+  )
+}
+
 function IconFlag() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -116,6 +126,12 @@ export function Sidebar({ projectSlug, envSlug }: SidebarProps) {
     : `/projects/${projectSlug}`
 
   const envScopedItems: NavItemProps[] = [
+    {
+      to: `/projects/${projectSlug}/environments`,
+      icon: <IconLayers />,
+      label: t('nav.environments'),
+      isActive: pathname === `/projects/${projectSlug}/environments`,
+    },
     {
       to: flagsPath,
       icon: <IconFlag />,
