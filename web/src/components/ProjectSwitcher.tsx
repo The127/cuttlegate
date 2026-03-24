@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useLocation, useNavigate } from '@tanstack/react-router'
+import { Link, useLocation, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { fetchJSON } from '../api'
 import { useOpenCreateProjectDialog } from './CreateProjectDialog'
@@ -81,7 +81,7 @@ export function ProjectSwitcher() {
   return (
     <header className="h-14 shrink-0 flex items-center gap-3 px-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
       {/* Wordmark / logo */}
-      <div className="flex items-center gap-2 mr-2">
+      <Link to="/" className="flex items-center gap-2 mr-2 no-underline">
         {logo_url !== null ? (
           <img src={logo_url} alt={app_name} className="h-6 w-auto" />
         ) : (
@@ -92,7 +92,7 @@ export function ProjectSwitcher() {
             {app_name}
           </span>
         )}
-      </div>
+      </Link>
 
       <div className="w-px h-5 bg-[var(--color-border-hover)]" aria-hidden="true" />
 
