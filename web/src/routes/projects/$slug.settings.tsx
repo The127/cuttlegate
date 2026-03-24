@@ -45,7 +45,7 @@ function ProjectSettingsPage() {
   const isAdmin = roleQuery.data === 'admin'
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-6 max-w-5xl">
       <h1 className="text-xl font-semibold text-[var(--color-text-primary)] mb-6">{t('settings.title')}</h1>
 
       <GeneralSection project={project} isAdmin={isAdmin} />
@@ -326,7 +326,7 @@ function DeleteProjectModal({
 
 function SettingsSkeleton() {
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-6 max-w-5xl">
       <div className="h-8 w-24 bg-[var(--color-surface-elevated)] rounded animate-pulse mb-6" />
       <div className="h-4 w-16 bg-[var(--color-surface-elevated)] rounded animate-pulse mb-4" />
       <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg divide-y divide-[var(--color-border)]">

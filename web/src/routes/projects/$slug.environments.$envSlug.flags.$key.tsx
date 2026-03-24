@@ -119,7 +119,7 @@ function FlagDetailPage() {
   if (!flag) return null
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-6 max-w-5xl">
       <FlagDetailCard
         flag={flag}
         slug={slug}
@@ -887,7 +887,7 @@ function HistoryEntryRow({ entry }: { entry: HistoryEntry }) {
 
 function FlagDetailSkeleton() {
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-6 max-w-5xl">
       <div className="h-4 w-16 bg-[var(--color-surface-elevated)] rounded animate-pulse mb-4" />
       <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg">
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">

@@ -86,7 +86,7 @@ function EnvironmentSettingsPage() {
   const environments = data ?? []
 
   return (
-    <div className="p-6 max-w-4xl">
+    <div className="p-6 max-w-5xl">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">{t('environments.title')}</h1>
         <Button onClick={() => setShowCreate(true)}>
@@ -258,7 +258,7 @@ function DeleteEnvironmentModal({
 
 function EnvironmentListSkeleton() {
   return (
-    <div className="p-6 max-w-4xl">
+    <div className="p-6 max-w-5xl">
       <div className="flex items-center justify-between mb-6">
         <div className="h-6 w-32 bg-[var(--color-surface-elevated)] rounded animate-pulse" />
         <div className="h-8 w-40 bg-[var(--color-surface-elevated)] rounded animate-pulse" />

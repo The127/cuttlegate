@@ -126,7 +126,7 @@ function MemberListPage() {
     )
 
   return (
-    <div className="p-6 max-w-4xl">
+    <div className="p-6 max-w-5xl">
       <h1 className="text-xl font-semibold text-[var(--color-text-primary)] mb-6">{t('members.title')}</h1>
 
       {members.length === 0 ? (
@@ -481,7 +481,7 @@ function MemberEmptyState({
 
 function MemberListSkeleton() {
   return (
-    <div className="p-6 max-w-4xl">
+    <div className="p-6 max-w-5xl">
       <div className="h-6 w-24 bg-[var(--color-surface-elevated)] rounded animate-pulse mb-6" />
       <div className="border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] overflow-hidden">
         <div className="bg-[var(--color-surface-elevated)] border-b border-[var(--color-border)] px-4 py-2 flex gap-8">
