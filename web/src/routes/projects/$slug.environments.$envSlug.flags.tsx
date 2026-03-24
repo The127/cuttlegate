@@ -26,6 +26,7 @@ import {
 import type { ColumnDef } from '../../components/ui'
 import { formatRelativeDate } from '../../utils/date'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'
+import { PageHeading } from '../../components/PageHeading'
 
 interface Environment {
   id: string
@@ -233,13 +234,14 @@ function FlagListPage() {
 
   return (
     <div className="p-6">
+      <PageHeading
+        ancestors={[{ label: t('nav.environments', { ns: 'common' }), to: `/projects/${slug}/environments` }]}
+        current={envName}
+      />
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">{envName}</h1>
-          <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
-            {t('list.flag_count', { count: flags.length })}
-          </p>
-        </div>
+        <p className="text-sm text-[var(--color-text-muted)]">
+          {t('list.flag_count', { count: flags.length })}
+        </p>
         <Button onClick={() => setShowCreate(true)}>{t('list.new_flag')}</Button>
       </div>
 
