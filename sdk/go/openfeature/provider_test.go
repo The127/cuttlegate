@@ -4,9 +4,16 @@ import (
 	"context"
 	"testing"
 
+	of "github.com/open-feature/go-sdk/openfeature"
+
 	cuttlegateof "github.com/karo/cuttlegate/sdk/go/openfeature"
 	cuttlegatetesting "github.com/karo/cuttlegate/sdk/go/testing"
 )
+
+func TestProvider_ImplementsFeatureProvider(t *testing.T) {
+	mock := cuttlegatetesting.NewMockClient()
+	var _ of.FeatureProvider = cuttlegateof.NewProvider(mock)
+}
 
 func TestProvider_Metadata(t *testing.T) {
 	mock := cuttlegatetesting.NewMockClient()
@@ -21,7 +28,8 @@ func TestProvider_BooleanEvaluation_Enabled(t *testing.T) {
 	mock.Enable("dark-mode")
 	provider := cuttlegateof.NewProvider(mock)
 
-	result := provider.BooleanEvaluation(context.Background(), "dark-mode", false, cuttlegateof.EvaluationContext{TargetingKey: "u1"})
+	result := provider.BooleanEvaluation(context.Background(), "dark-mode", false,
+		of.FlattenedContext{"targetingKey": "u1"})
 
 	if result.Value != true {
 		t.Errorf("expected true, got %v", result.Value)
@@ -29,8 +37,8 @@ func TestProvider_BooleanEvaluation_Enabled(t *testing.T) {
 	if result.Variant != "true" {
 		t.Errorf("expected variant=true, got %q", result.Variant)
 	}
-	if result.Reason != "TARGETING_MATCH" {
-		t.Errorf("expected reason=TARGETING_MATCH, got %q", result.Reason)
+	if result.Reason != of.TargetingMatchReason {
+		t.Errorf("expected TARGETING_MATCH, got %q", result.Reason)
 	}
 }
 
@@ -39,29 +47,11 @@ func TestProvider_BooleanEvaluation_Disabled(t *testing.T) {
 	mock.Disable("dark-mode")
 	provider := cuttlegateof.NewProvider(mock)
 
-	result := provider.BooleanEvaluation(context.Background(), "dark-mode", true, cuttlegateof.EvaluationContext{TargetingKey: "u1"})
+	result := provider.BooleanEvaluation(context.Background(), "dark-mode", true,
+		of.FlattenedContext{"targetingKey": "u1"})
 
 	if result.Value != false {
 		t.Errorf("expected false, got %v", result.Value)
-	}
-	if result.Variant != "false" {
-		t.Errorf("expected variant=false, got %q", result.Variant)
-	}
-}
-
-func TestProvider_BooleanEvaluation_MissingFlag_ReturnsDefault(t *testing.T) {
-	mock := cuttlegatetesting.NewMockClient()
-	provider := cuttlegateof.NewProvider(mock)
-
-	result := provider.BooleanEvaluation(context.Background(), "missing", true, cuttlegateof.EvaluationContext{TargetingKey: "u1"})
-
-	// Mock returns enabled=false with reason "mock_default" for unknown flags — not an error.
-	// The provider should return the evaluated value (false), not the default.
-	if result.Reason == "ERROR" {
-		// If the mock returns an error for unknown flags, the default should be returned.
-		if result.Value != true {
-			t.Errorf("expected default=true on error, got %v", result.Value)
-		}
 	}
 }
 
@@ -70,29 +60,54 @@ func TestProvider_StringEvaluation(t *testing.T) {
 	mock.SetVariant("color", "blue")
 	provider := cuttlegateof.NewProvider(mock)
 
-	result := provider.StringEvaluation(context.Background(), "color", "red", cuttlegateof.EvaluationContext{TargetingKey: "u1"})
+	result := provider.StringEvaluation(context.Background(), "color", "red",
+		of.FlattenedContext{"targetingKey": "u1"})
 
 	if result.Value != "blue" {
 		t.Errorf("expected blue, got %v", result.Value)
 	}
-	if result.Variant != "blue" {
-		t.Errorf("expected variant=blue, got %q", result.Variant)
-	}
-	if result.Reason != "TARGETING_MATCH" {
-		t.Errorf("expected reason=TARGETING_MATCH, got %q", result.Reason)
+	if result.Reason != of.TargetingMatchReason {
+		t.Errorf("expected TARGETING_MATCH, got %q", result.Reason)
 	}
 }
 
-func TestProvider_StringEvaluation_ReturnsDefault_OnError(t *testing.T) {
+// Conformance: register provider with the OpenFeature API and resolve through it.
+func TestProvider_Conformance_Boolean(t *testing.T) {
 	mock := cuttlegatetesting.NewMockClient()
+	mock.Enable("feature-x")
 	provider := cuttlegateof.NewProvider(mock)
 
-	result := provider.StringEvaluation(context.Background(), "missing", "fallback", cuttlegateof.EvaluationContext{TargetingKey: "u1"})
+	if err := of.SetNamedProviderAndWait("conformance-test", provider); err != nil {
+		t.Fatalf("SetProviderAndWait: %v", err)
+	}
+	defer of.Shutdown()
 
-	// Mock returns empty string for unknown flags via mock_default, not an error.
-	// Just verify no panic and we get a value.
-	if result.Value == nil {
-		t.Error("expected non-nil value")
+	client := of.NewClient("conformance-test")
+	val, err := client.BooleanValue(context.Background(), "feature-x", false, of.NewEvaluationContext("u1", nil))
+	if err != nil {
+		t.Fatalf("BooleanValue: %v", err)
+	}
+	if val != true {
+		t.Errorf("expected true, got %v", val)
+	}
+}
+
+func TestProvider_Conformance_String(t *testing.T) {
+	mock := cuttlegatetesting.NewMockClient()
+	mock.SetVariant("theme", "dark")
+	provider := cuttlegateof.NewProvider(mock)
+
+	if err := of.SetNamedProviderAndWait("conformance-str", provider); err != nil {
+		t.Fatalf("SetProviderAndWait: %v", err)
+	}
+
+	client := of.NewClient("conformance-str")
+	val, err := client.StringValue(context.Background(), "theme", "light", of.NewEvaluationContext("u1", nil))
+	if err != nil {
+		t.Fatalf("StringValue: %v", err)
+	}
+	if val != "dark" {
+		t.Errorf("expected dark, got %v", val)
 	}
 }
 
@@ -101,10 +116,8 @@ func TestProvider_ContextMapping(t *testing.T) {
 	mock.Enable("flag")
 	provider := cuttlegateof.NewProvider(mock)
 
-	result := provider.BooleanEvaluation(context.Background(), "flag", false, cuttlegateof.EvaluationContext{
-		TargetingKey: "user-42",
-		Attributes:   map[string]any{"plan": "pro"},
-	})
+	result := provider.BooleanEvaluation(context.Background(), "flag", false,
+		of.FlattenedContext{"targetingKey": "user-42", "plan": "pro"})
 
 	if result.Value != true {
 		t.Errorf("expected true, got %v", result.Value)

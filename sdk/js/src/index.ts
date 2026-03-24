@@ -21,3 +21,5 @@ export { createCachedClient } from './cached-client.js';
 export type { CachedClient, CachedClientOptions } from './cached-client.js';
 
 export { useCachedFlag } from './react.js';
+
+export { CuttlegateOpenFeatureProvider } from './openfeature.js';
