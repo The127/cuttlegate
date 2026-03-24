@@ -109,7 +109,7 @@ describe('FlagListPage', () => {
     const { container } = render(<Wrapper><FlagListPage /></Wrapper>)
 
     await waitFor(() => {
-      expect(screen.getByText(/No flags yet/)).toBeInTheDocument()
+      expect(screen.getByText(/Create your first flag/)).toBeInTheDocument()
     })
 
     const results = await axe(container)
@@ -355,7 +355,7 @@ describe('CreateFlagModal — post-create success state', () => {
 
     // Wait for empty state
     await waitFor(() => {
-      expect(screen.getByText(/No flags yet/)).toBeInTheDocument()
+      expect(screen.getByText(/Create your first flag/)).toBeInTheDocument()
     })
 
     // Click the header "New flag" button (first occurrence)
@@ -393,7 +393,7 @@ describe('CreateFlagModal — post-create success state', () => {
     render(<Wrapper><FlagListPage /></Wrapper>)
 
     await waitFor(() => {
-      expect(screen.getByText(/No flags yet/)).toBeInTheDocument()
+      expect(screen.getByText(/Create your first flag/)).toBeInTheDocument()
     })
 
     const newFlagBtns = screen.getAllByRole('button', { name: /new flag/i })
@@ -431,7 +431,7 @@ describe('CreateFlagModal — post-create success state', () => {
     render(<Wrapper><FlagListPage /></Wrapper>)
 
     await waitFor(() => {
-      expect(screen.getByText(/No flags yet/)).toBeInTheDocument()
+      expect(screen.getByText(/Create your first flag/)).toBeInTheDocument()
     })
 
     const newFlagBtns = screen.getAllByRole('button', { name: /new flag/i })

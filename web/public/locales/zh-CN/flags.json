@@ -2,7 +2,8 @@
   "list": {
     "title": "功能标志",
     "new_flag": "新建标志",
-    "empty_state": "暂无标志。创建您的第一个标志以开始定向用户。",
+    "empty_title": "创建您的第一个标志",
+    "empty_state": "为此环境创建标志以开始定向用户。",
     "error": "加载标志失败。",
     "not_found": "未找到标志。",
     "failed_to_load": "加载标志失败。",

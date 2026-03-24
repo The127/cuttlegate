@@ -1,7 +1,8 @@
 {
   "title": "Segments",
   "new_segment": "New segment",
-  "empty_state": "No segments yet — segments let you target feature flags to specific user groups.",
+  "empty_title": "Create your first segment",
+  "empty_state": "Group users into segments to target feature flags at specific audiences.",
   "error": "Failed to load segments.",
   "edit_aria": "Edit segment {{slug}}",
   "delete_aria": "Delete segment {{slug}}",

@@ -1,7 +1,8 @@
 {
   "title": "Segmente",
   "new_segment": "Neues Segment",
-  "empty_state": "Noch keine Segmente — mit Segmenten können Sie Feature-Flags auf bestimmte Benutzergruppen ausrichten.",
+  "empty_title": "Erstellen Sie Ihr erstes Segment",
+  "empty_state": "Gruppieren Sie Benutzer in Segmente, um Feature-Flags gezielt an bestimmte Zielgruppen zu richten.",
   "error": "Segmente konnten nicht geladen werden.",
   "edit_aria": "Segment {{slug}} bearbeiten",
   "delete_aria": "Segment {{slug}} löschen",

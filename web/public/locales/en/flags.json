@@ -3,7 +3,8 @@
   "list": {
     "title": "Feature Flags",
     "new_flag": "New flag",
-    "empty_state": "No flags yet. Create your first flag to start targeting users.",
+    "empty_title": "Create your first flag",
+    "empty_state": "Start targeting users by creating a flag for this environment.",
     "error": "Failed to load flags.",
     "not_found": "Flag not found.",
     "failed_to_load": "Failed to load flag.",

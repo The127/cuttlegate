@@ -125,7 +125,7 @@ describe('EnvironmentsOverviewPage', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText('Environments scope flag states, rules, and API keys for each stage of your workflow.'),
+        screen.getByText('Create an environment to scope flag states, rules, and API keys for each stage of your workflow.'),
       ).toBeInTheDocument()
     })
 

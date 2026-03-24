@@ -85,7 +85,7 @@ describe('SegmentListPage', () => {
     const { container } = render(<Wrapper><SegmentListPage /></Wrapper>)
 
     await waitFor(() => {
-      expect(screen.getByText(/No segments yet/)).toBeInTheDocument()
+      expect(screen.getByText(/Create your first segment/)).toBeInTheDocument()
     })
 
     const results = await axe(container)

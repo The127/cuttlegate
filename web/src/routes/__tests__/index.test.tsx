@@ -131,7 +131,7 @@ describe('HomePage', () => {
     await renderHome()
 
     await waitFor(() => {
-      expect(screen.getByText('No projects yet')).toBeInTheDocument()
+      expect(screen.getByText('Start your first project')).toBeInTheDocument()
       expect(screen.getByText('Create your first project')).toBeInTheDocument()
     })
   })
