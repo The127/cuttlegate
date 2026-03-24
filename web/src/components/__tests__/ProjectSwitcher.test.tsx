@@ -12,10 +12,15 @@ const mockUseLocation = vi.fn()
 
 vi.mock('@tanstack/react-router', async () => {
   const actual = await vi.importActual('@tanstack/react-router')
+  const React = await import('react')
   return {
     ...actual,
     useNavigate: () => mockNavigate,
     useLocation: () => mockUseLocation(),
+    Link: React.forwardRef(
+      ({ to, children, ...rest }: { to: string; children: React.ReactNode; [k: string]: unknown }, ref: React.Ref<HTMLAnchorElement>) =>
+        React.createElement('a', { href: to, ref, ...rest }, children),
+    ),
   }
 })
 
@@ -243,6 +248,38 @@ describe('ProjectSwitcher', () => {
     // "No projects yet —" text sourced from t('switcher.no_projects_prefix')
     await waitFor(() => {
       expect(screen.getByText(/No projects yet/i)).toBeInTheDocument()
+    })
+  })
+
+  // @happy — text wordmark renders as a link to home page
+  it('renders wordmark as a link with href="/"', async () => {
+    mockUseLocation.mockReturnValue({ pathname: '/projects/alpha' })
+    mockFetchJSON.mockImplementation((url: string) => {
+      if (url === '/api/v1/projects') return Promise.resolve({ projects: PROJECTS })
+      if (url === '/api/v1/projects/alpha/environments')
+        return Promise.resolve({ environments: ENVIRONMENTS })
+      return Promise.reject(new Error(`Unexpected URL: ${url}`))
+    })
+
+    renderSwitcher()
+
+    await waitFor(() => {
+      const link = screen.getByRole('link', { name: 'Cuttlegate' })
+      expect(link).toBeInTheDocument()
+      expect(link).toHaveAttribute('href', '/')
+    })
+  })
+
+  // @edge — clicking app name when already on home page causes no error
+  it('renders wordmark link even when already on home page', async () => {
+    mockUseLocation.mockReturnValue({ pathname: '/' })
+
+    renderSwitcher()
+
+    await waitFor(() => {
+      const link = screen.getByRole('link', { name: 'Cuttlegate' })
+      expect(link).toBeInTheDocument()
+      expect(link).toHaveAttribute('href', '/')
     })
   })
 
