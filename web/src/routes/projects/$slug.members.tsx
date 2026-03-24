@@ -503,21 +503,21 @@ function MemberEmptyState({
 
 function RoleExplanation() {
   const { t } = useTranslation('projects')
-  const roles: { key: Role; label: string; description: string }[] = [
-    { key: 'admin', label: t('members.role_admin'), description: t('members.role_admin_description') },
-    { key: 'editor', label: t('members.role_editor'), description: t('members.role_editor_description') },
-    { key: 'viewer', label: t('members.role_viewer'), description: t('members.role_viewer_description') },
-  ]
+  const ROLE_DESCRIPTIONS: Record<Role, string> = {
+    admin: 'members.role_admin_description',
+    editor: 'members.role_editor_description',
+    viewer: 'members.role_viewer_description',
+  }
   return (
     <div className="mt-6 text-left max-w-sm mx-auto">
       <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-2">
         {t('members.roles_explanation_title')}
       </p>
       <ul className="space-y-1.5">
-        {roles.map((r) => (
-          <li key={r.key} className="flex items-start gap-2">
-            <RoleBadge role={r.key} />
-            <span className="text-xs text-[var(--color-text-muted)]">{r.description}</span>
+        {ROLES.map((r) => (
+          <li key={r} className="flex items-start gap-2">
+            <RoleBadge role={r} />
+            <span className="text-xs text-[var(--color-text-muted)]">{t(ROLE_DESCRIPTIONS[r])}</span>
           </li>
         ))}
       </ul>
