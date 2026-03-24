@@ -15,7 +15,7 @@ export function PageHeading({ ancestors, current }: PageHeadingProps) {
   const { t } = useTranslation('common')
 
   return (
-    <nav aria-label="Page context" className="mb-4 flex items-center gap-1.5 text-sm flex-wrap">
+    <nav aria-label={t('nav.page_context_aria')} className="mb-4 flex items-center gap-1.5 text-sm flex-wrap">
       {ancestors.map((ancestor, i) => (
         <span key={i} className="flex items-center gap-1.5">
           <Link

@@ -43,7 +43,8 @@
     "members": "Members",
     "audit": "Audit",
     "settings": "Settings",
-    "heading_separator": ">"
+    "heading_separator": ">",
+    "page_context_aria": "Page context"
   },
   "user_menu": {
     "logged_in_as": "Logged in as",
