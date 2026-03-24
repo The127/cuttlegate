@@ -10,25 +10,19 @@ import (
 
 // EnvironmentService orchestrates environment use cases.
 type EnvironmentService struct {
-	repo    ports.EnvironmentRepository
-	project ports.ProjectRepository
+	repo ports.EnvironmentRepository
 }
 
 // NewEnvironmentService constructs an EnvironmentService.
-func NewEnvironmentService(repo ports.EnvironmentRepository, project ports.ProjectRepository) *EnvironmentService {
-	return &EnvironmentService{repo: repo, project: project}
+func NewEnvironmentService(repo ports.EnvironmentRepository) *EnvironmentService {
+	return &EnvironmentService{repo: repo}
 }
 
-// Create validates the project exists by slug, assigns a UUID and creation timestamp, then persists the environment.
-// Returns domain.ErrNotFound if the project slug does not exist.
+// Create assigns a UUID and creation timestamp, then persists the environment under projectID.
 // Returns domain.ErrConflict if the environment slug already exists under that project.
 // Requires at least editor role.
-func (s *EnvironmentService) Create(ctx context.Context, projectSlug, name, envSlug string) (*domain.Environment, error) {
+func (s *EnvironmentService) Create(ctx context.Context, projectID, name, envSlug string) (*domain.Environment, error) {
 	if _, err := requireRole(ctx, domain.RoleEditor); err != nil {
-		return nil, err
-	}
-	proj, err := s.project.GetBySlug(ctx, projectSlug)
-	if err != nil {
 		return nil, err
 	}
 	id, err := newUUID()
@@ -37,7 +31,7 @@ func (s *EnvironmentService) Create(ctx context.Context, projectSlug, name, envS
 	}
 	e := domain.Environment{
 		ID:        id,
-		ProjectID: proj.ID,
+		ProjectID: projectID,
 		Name:      name,
 		Slug:      envSlug,
 		CreatedAt: time.Now().UTC(),
