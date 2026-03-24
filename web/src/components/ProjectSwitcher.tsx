@@ -7,6 +7,7 @@ import { useOpenCreateProjectDialog } from './CreateProjectDialog'
 import { useBrand } from '../brand'
 import { getUserManager } from '../auth'
 import { Select, SelectItem } from './ui/Select'
+import { ThemeToggle } from './ui/ThemeToggle'
 
 interface Project {
   id: string
@@ -206,6 +207,9 @@ export function ProjectSwitcher() {
 
       {/* Spacer */}
       <div className="flex-1" aria-hidden="true" />
+
+      {/* Theme toggle — left of avatar */}
+      <ThemeToggle />
 
       {/* User avatar — initials derived from OIDC profile.name; no API call */}
       <div

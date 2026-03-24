@@ -4,6 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Cuttlegate</title>
+    <script>
+      // Flash-prevention: read theme preference from localStorage and apply
+      // the appropriate class on <html> before first paint.
+      // Values: "light", "dark", "system" (or absent). Invalid values → system.
+      ;(function () {
+        try {
+          var pref = localStorage.getItem('cg:theme.preference')
+          if (pref === 'light') document.documentElement.classList.add('theme-light')
+          else if (pref === 'dark') document.documentElement.classList.add('theme-dark')
+          // "system" or absent or invalid → no class; CSS @media governs.
+        } catch (_) {
+          // localStorage unavailable (private browsing) — graceful fallback.
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

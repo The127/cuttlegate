@@ -43,5 +43,11 @@
     "members": "Members",
     "audit": "Audit",
     "settings": "Settings"
+  },
+  "theme": {
+    "label": "Theme",
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
   }
 }
