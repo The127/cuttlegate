@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/karo/cuttlegate/internal/domain"
@@ -14,6 +15,7 @@ type flagService interface {
 	Create(ctx context.Context, flag *domain.Flag) error
 	GetByKey(ctx context.Context, projectID, key string) (*domain.Flag, error)
 	ListByProject(ctx context.Context, projectID string) ([]*domain.Flag, error)
+	ListByProjectPaginated(ctx context.Context, projectID string, filter domain.FlagListFilter) ([]*domain.Flag, int, error)
 	Update(ctx context.Context, flag *domain.Flag) error
 	DeleteByKey(ctx context.Context, projectID, key string) error
 }
@@ -87,16 +89,72 @@ func (h *FlagHandler) list(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	flags, err := h.svc.ListByProject(r.Context(), proj.ID)
+
+	q := r.URL.Query()
+
+	// Parse and validate page
+	page := 1
+	if raw := q.Get("page"); raw != "" {
+		p, err := strconv.Atoi(raw)
+		if err != nil || p < 1 {
+			WriteError(w, newBadRequest("page must be a positive integer"))
+			return
+		}
+		page = p
+	}
+
+	// Parse and validate per_page
+	perPage := domain.DefaultFlagPerPage
+	if raw := q.Get("per_page"); raw != "" {
+		pp, err := strconv.Atoi(raw)
+		if err != nil || pp < 1 {
+			WriteError(w, newBadRequest("per_page must be a positive integer"))
+			return
+		}
+		perPage = pp
+	}
+
+	// Validate sort_by
+	sortBy := q.Get("sort_by")
+	if sortBy != "" && !domain.AllowedFlagSortColumns[sortBy] {
+		WriteError(w, newBadRequest("sort_by must be one of: key, name, type, created_at"))
+		return
+	}
+
+	// Validate sort_dir
+	sortDir := q.Get("sort_dir")
+	if sortDir != "" && sortDir != "asc" && sortDir != "desc" {
+		WriteError(w, newBadRequest("sort_dir must be one of: asc, desc"))
+		return
+	}
+
+	filter := domain.FlagListFilter{
+		Page:    page,
+		PerPage: perPage,
+		Search:  q.Get("search"),
+		SortBy:  sortBy,
+		SortDir: sortDir,
+	}
+
+	flags, total, err := h.svc.ListByProjectPaginated(r.Context(), proj.ID, filter)
 	if err != nil {
 		WriteError(w, err)
 		return
 	}
+
+	// Normalize applies defaults and clamping — use the normalized values in the response.
+	filter.Normalize()
+
 	items := make([]flagResponse, 0, len(flags))
 	for _, f := range flags {
 		items = append(items, toFlagResponse(f))
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"flags": items})
+	writeJSON(w, http.StatusOK, map[string]any{
+		"flags":    items,
+		"total":    total,
+		"page":     filter.Page,
+		"per_page": filter.PerPage,
+	})
 }
 
 func (h *FlagHandler) create(w http.ResponseWriter, r *http.Request) {

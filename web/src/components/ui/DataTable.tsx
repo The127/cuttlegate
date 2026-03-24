@@ -13,9 +13,9 @@ export interface ColumnDef<T> {
   sortValue?: (row: T) => string | number
 }
 
-type SortDir = 'asc' | 'desc'
+export type SortDir = 'asc' | 'desc'
 
-interface SortState {
+export interface SortState {
   key: string
   dir: SortDir
 }
@@ -29,6 +29,24 @@ export interface DataTableProps<T> {
   onRowClick?: (row: T) => void
   /** Accessible label for the table element */
   'aria-label'?: string
+
+  // --- Server-mode props (optional) ---
+  // When these are provided, sorting and pagination are delegated to the parent.
+
+  /** If true, shows a loading overlay on the table body */
+  loading?: boolean
+  /** Total number of rows across all pages (for pagination display) */
+  totalRows?: number
+  /** Current page number (1-based) */
+  currentPage?: number
+  /** Rows per page */
+  perPage?: number
+  /** Called when the user changes page */
+  onPageChange?: (page: number) => void
+  /** Called when the user clicks a sortable column header in server mode */
+  onSortChange?: (sort: SortState) => void
+  /** Current server-side sort state (used for header indicators in server mode) */
+  serverSort?: SortState | null
 }
 
 function sortRows<T>(data: T[], columns: ColumnDef<T>[], sort: SortState): T[] {
@@ -44,7 +62,12 @@ function sortRows<T>(data: T[], columns: ColumnDef<T>[], sort: SortState): T[] {
 }
 
 /**
- * DataTable — generic typed data table with client-side sort and empty state.
+ * DataTable — generic typed data table with client-side or server-side sort,
+ * optional pagination, and empty state.
+ *
+ * **Client mode (default):** sorting and display are handled locally.
+ * **Server mode:** when `onSortChange`, `onPageChange`, and `totalRows` are provided,
+ * the table delegates sorting/pagination to the parent and renders pagination controls.
  *
  * Uses role="table" with standard Tab focus order. Arrow-key grid navigation
  * is out of scope — this is a display table, not an editable grid.
@@ -55,19 +78,36 @@ export function DataTable<T>({
   emptyState,
   onRowClick,
   'aria-label': ariaLabel,
+  loading,
+  totalRows,
+  currentPage,
+  perPage,
+  onPageChange,
+  onSortChange,
+  serverSort,
 }: DataTableProps<T>) {
-  const [sort, setSort] = useState<SortState | null>(null)
+  const isServerMode = onSortChange !== undefined || onPageChange !== undefined
+  const [clientSort, setClientSort] = useState<SortState | null>(null)
+
+  const sort = isServerMode ? (serverSort ?? null) : clientSort
 
   function toggleSort(key: string) {
-    setSort((prev) => {
-      if (prev?.key === key) {
-        return { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
-      }
-      return { key, dir: 'asc' }
-    })
+    const newSort: SortState =
+      sort?.key === key
+        ? { key, dir: sort.dir === 'asc' ? 'desc' : 'asc' }
+        : { key, dir: 'asc' }
+
+    if (isServerMode && onSortChange) {
+      onSortChange(newSort)
+    } else {
+      setClientSort(newSort)
+    }
   }
 
-  const rows = sort ? sortRows(data, columns, sort) : data
+  const rows = !isServerMode && clientSort ? sortRows(data, columns, clientSort) : data
+
+  const showPagination = isServerMode && totalRows !== undefined && perPage !== undefined && currentPage !== undefined && onPageChange !== undefined
+  const totalPages = showPagination ? Math.max(1, Math.ceil(totalRows! / perPage!)) : 1
 
   return (
     <div className="w-full overflow-x-auto">
@@ -114,8 +154,8 @@ export function DataTable<T>({
             ))}
           </tr>
         </thead>
-        <tbody>
-          {rows.length === 0 ? (
+        <tbody className={loading ? 'opacity-50 pointer-events-none' : ''}>
+          {rows.length === 0 && !loading ? (
             <tr>
               <td colSpan={columns.length} className="px-4 py-8 text-center">
                 {emptyState ?? (
@@ -155,6 +195,35 @@ export function DataTable<T>({
           )}
         </tbody>
       </table>
+
+      {showPagination && totalPages > 1 && (
+        <nav
+          aria-label="Pagination"
+          className="flex items-center justify-between px-4 py-3 border-t border-[var(--color-border)] bg-[var(--color-surface)]"
+        >
+          <span className="text-xs text-[var(--color-text-muted)]">
+            Page {currentPage} of {totalPages}
+          </span>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={currentPage! <= 1}
+              onClick={() => onPageChange!(currentPage! - 1)}
+              className="px-3 py-1 text-xs rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-elevated)] disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              disabled={currentPage! >= totalPages}
+              onClick={() => onPageChange!(currentPage! + 1)}
+              className="px-3 py-1 text-xs rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-elevated)] disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            >
+              Next
+            </button>
+          </div>
+        </nav>
+      )}
     </div>
   )
 }

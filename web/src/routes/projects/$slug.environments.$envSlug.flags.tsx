@@ -1,6 +1,6 @@
 import { createRoute, Link } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { projectEnvRoute } from './$slug.environments.$envSlug'
 import { projectRoute } from './$slug'
@@ -23,7 +23,7 @@ import {
   DialogFooter,
   DialogCloseButton,
 } from '../../components/ui/Dialog'
-import type { ColumnDef } from '../../components/ui'
+import type { ColumnDef, SortState } from '../../components/ui'
 import { formatRelativeDate } from '../../utils/date'
 import { DeleteConfirmModal } from '../../components/DeleteConfirmModal'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'

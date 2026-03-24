@@ -128,6 +128,11 @@ func (s *FlagService) ListByProject(ctx context.Context, projectID string) ([]*d
 	return s.repo.ListByProject(ctx, projectID)
 }
 
+// ListByProjectPaginated returns a paginated, filtered, sorted list of flags for a project.
+func (s *FlagService) ListByProjectPaginated(ctx context.Context, projectID string, filter domain.FlagListFilter) ([]*domain.Flag, int, error) {
+	return s.repo.ListByProjectPaginated(ctx, projectID, filter)
+}
+
 // ListByEnvironment returns all flags that have a state row for the given environment,
 // each combined with its enabled state. Flags created before the environment existed
 // have no state row and are absent from the result.

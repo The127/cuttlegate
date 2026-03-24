@@ -11,6 +11,9 @@ type FlagRepository interface {
 	Create(ctx context.Context, flag *domain.Flag) error
 	GetByKey(ctx context.Context, projectID, key string) (*domain.Flag, error)
 	ListByProject(ctx context.Context, projectID string) ([]*domain.Flag, error)
+	// ListByProjectPaginated returns a page of flags matching the filter criteria,
+	// along with the total count of matching flags (for pagination metadata).
+	ListByProjectPaginated(ctx context.Context, projectID string, filter domain.FlagListFilter) ([]*domain.Flag, int, error)
 	Update(ctx context.Context, flag *domain.Flag) error
 	Delete(ctx context.Context, id string) error
 }

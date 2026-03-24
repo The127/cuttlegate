@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/lib/pq"
 
@@ -100,6 +101,76 @@ func (r *PostgresFlagRepository) ListByProject(ctx context.Context, projectID st
 		flags = append(flags, f)
 	}
 	return flags, rows.Err()
+}
+
+// sortColumnMap maps allowed FlagListFilter.SortBy values to SQL column names.
+// This is the allowlist — only these values are accepted; everything else is
+// rejected at the domain layer by Normalize().
+var sortColumnMap = map[string]string{
+	"key":        "key",
+	"name":       "name",
+	"type":       "type",
+	"created_at": "created_at",
+}
+
+func (r *PostgresFlagRepository) ListByProjectPaginated(ctx context.Context, projectID string, filter domain.FlagListFilter) ([]*domain.Flag, int, error) {
+	filter.Normalize()
+
+	// Build the WHERE clause. Always filter by project_id.
+	// Search is optional — when present, filter on key OR name via ILIKE with parameterized value.
+	whereClause := "WHERE project_id = $1"
+	args := []any{projectID}
+	paramIdx := 2
+
+	if filter.Search != "" {
+		whereClause += fmt.Sprintf(" AND (key ILIKE $%d OR name ILIKE $%d)", paramIdx, paramIdx)
+		args = append(args, "%"+filter.Search+"%")
+		paramIdx++
+	}
+
+	// Count query
+	var total int
+	countQuery := "SELECT COUNT(*) FROM flags " + whereClause
+	if err := r.db.QueryRowContext(ctx, countQuery, args...).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
+	// Data query with sort and pagination
+	orderCol, ok := sortColumnMap[filter.SortBy]
+	if !ok {
+		orderCol = "created_at"
+	}
+	orderDir := "ASC"
+	if filter.SortDir == "desc" {
+		orderDir = "DESC"
+	}
+
+	offset := (filter.Page - 1) * filter.PerPage
+	dataQuery := fmt.Sprintf(
+		`SELECT id, project_id, key, name, type, variants, default_variant_key, created_at
+		 FROM flags %s ORDER BY %s %s LIMIT $%d OFFSET $%d`,
+		whereClause, orderCol, orderDir, paramIdx, paramIdx+1,
+	)
+	args = append(args, filter.PerPage, offset)
+
+	rows, err := r.db.QueryContext(ctx, dataQuery, args...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	flags := make([]*domain.Flag, 0)
+	for rows.Next() {
+		f, err := scanFlagRow(rows)
+		if err != nil {
+			return nil, 0, err
+		}
+		flags = append(flags, f)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	return flags, total, nil
 }
 
 func (r *PostgresFlagRepository) Update(ctx context.Context, flag *domain.Flag) error {

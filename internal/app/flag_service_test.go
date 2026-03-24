@@ -155,6 +155,12 @@ func (f *fakeFlagRepository) ListByProject(_ context.Context, projectID string) 
 	return result, nil
 }
 
+func (f *fakeFlagRepository) ListByProjectPaginated(_ context.Context, projectID string, filter domain.FlagListFilter) ([]*domain.Flag, int, error) {
+	filter.Normalize()
+	all, _ := f.ListByProject(nil, projectID)
+	return all, len(all), nil
+}
+
 func (f *fakeFlagRepository) Update(_ context.Context, flag *domain.Flag) error {
 	existing, ok := f.byID[flag.ID]
 	if !ok {
