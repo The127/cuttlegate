@@ -1,6 +1,6 @@
 # Frontend Index
 
-_Generated 2026-03-24 00:21 UTC. Read this at session start for frontend orientation._
+_Generated 2026-03-24 00:54 UTC. Read this at session start for frontend orientation._
 
 ## Routes (`web/src/routes/`)
 
@@ -34,6 +34,7 @@ _Generated 2026-03-24 00:21 UTC. Read this at session start for frontend orienta
 | `ProjectSwitcher` | `ProjectSwitcher.tsx` | — |
 | `PromoteDialog` | `PromoteDialog.tsx` | — |
 | `Sidebar` | `Sidebar.tsx` | — |
+| `UserMenu` | `UserMenu.tsx` | — |
 | `Button` | `ui/Button.tsx` | — |
 | `CopyableCode` | `ui/CopyableCode.tsx` | — |
 | `DataTable` | `ui/DataTable.tsx` | — |
@@ -55,6 +56,7 @@ _Generated 2026-03-24 00:21 UTC. Read this at session start for frontend orienta
 | `Select` | `ui/Select.tsx` | — |
 | `StatusBadge` | `ui/StatusBadge.tsx` | — |
 | `Textarea` | `ui/Textarea.tsx` | — |
+| `ThemeToggle` | `ui/ThemeToggle.tsx` | — |
 | `TierBadge` | `ui/TierBadge.tsx` | — |
 | `TierSelector` | `ui/TierSelector.tsx` | — |
 
