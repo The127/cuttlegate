@@ -140,6 +140,13 @@ func testPackageBasePkg(pkgPath string) string {
 // Imports that are themselves test packages (e.g. "…_test") are skipped — a test
 // binary package (e.g. "…/http.test") legitimately imports its own external test
 // package (e.g. "…/http_test") and that is not a sibling adapter violation.
+// crossAdapterAllowList permits specific cross-adapter imports that are
+// architecturally intentional (e.g. tenant RLS middleware in http must call
+// the db adapter's SetTenantContext / WithTenantTx).
+var crossAdapterAllowList = map[[2]string]bool{
+	{"http", "db"}: true, // tenant_middleware.go uses dbadapter.SetTenantContext / WithTenantTx
+}
+
 func isCrossAdapterImport(from, imp string) bool {
 	if !strings.HasPrefix(from, pkg("internal/adapters/")) {
 		return false
@@ -151,7 +158,12 @@ func isCrossAdapterImport(from, imp string) bool {
 	if isTestPackage(imp) {
 		return false
 	}
-	return adapterDir(from) != adapterDir(imp)
+	fromDir := adapterDir(from)
+	impDir := adapterDir(imp)
+	if fromDir == impDir {
+		return false
+	}
+	return !crossAdapterAllowList[[2]string{fromDir, impDir}]
 }
 
 // adapterDir returns the immediate subdirectory name under internal/adapters/.
@@ -193,6 +205,12 @@ func TestCompositionRootExclusivity(t *testing.T) {
 			for imp := range p.Imports {
 				checkTestImportRule(t, p.PkgPath, imp)
 			}
+			continue
+		}
+
+		// Adapter packages legitimately import app types (service interfaces).
+		// The cross-adapter rule (Rule 2) handles sibling adapter violations.
+		if strings.HasPrefix(p.PkgPath, pkg("internal/adapters/")) {
 			continue
 		}
 
