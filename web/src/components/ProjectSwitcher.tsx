@@ -159,7 +159,7 @@ export function ProjectSwitcher() {
             ) : noEnvironments ? (
               <button
                 onClick={() =>
-                  void navigate({ to: '/projects/$slug/settings/environments', params: { slug: projectSlug } })
+                  void navigate({ to: '/projects/$slug/settings/environments', params: { slug: projectSlug! } })
                 }
                 className="text-xs text-[var(--color-accent)] hover:text-[var(--color-accent)] flex items-center gap-1"
               >
