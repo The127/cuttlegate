@@ -51,7 +51,7 @@ export function UserMenu() {
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
         <button
-          className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold text-white select-none shrink-0 cursor-pointer outline-none"
+          className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold text-white select-none shrink-0 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[rgba(79,124,255,0.35)]"
           style={{
             background:
               'linear-gradient(135deg, var(--color-accent-start), var(--color-accent-end))',
