@@ -27,17 +27,17 @@ func (f *fakeProjectService) Create(_ context.Context, name, slug string) (*doma
 	if f.mutateErr != nil {
 		return nil, f.mutateErr
 	}
+	p := domain.Project{Name: name, Slug: slug}
+	if err := p.Validate(); err != nil {
+		return nil, err
+	}
 	if _, exists := f.projects[slug]; exists {
 		return nil, domain.ErrConflict
 	}
-	p := &domain.Project{
-		ID:        "test-uuid-" + slug,
-		Name:      name,
-		Slug:      slug,
-		CreatedAt: time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC),
-	}
-	f.projects[slug] = p
-	return p, nil
+	p.ID = "test-uuid-" + slug
+	p.CreatedAt = time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC)
+	f.projects[slug] = &p
+	return &p, nil
 }
 
 func (f *fakeProjectService) GetBySlug(_ context.Context, slug string) (*domain.Project, error) {
@@ -65,6 +65,10 @@ func (f *fakeProjectService) UpdateName(_ context.Context, slug, name string) (*
 	p, ok := f.projects[slug]
 	if !ok {
 		return nil, domain.ErrNotFound
+	}
+	candidate := domain.Project{Name: name, Slug: p.Slug}
+	if err := candidate.Validate(); err != nil {
+		return nil, err
 	}
 	p.Name = name
 	cp := *p

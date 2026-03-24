@@ -84,10 +84,6 @@ func (h *EnvironmentHandler) create(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, newBadRequest("invalid request body"))
 		return
 	}
-	if body.Name == "" || body.Slug == "" {
-		WriteError(w, newBadRequest("name and slug are required"))
-		return
-	}
 	e, err := h.svc.Create(r.Context(), r.PathValue("slug"), body.Name, body.Slug)
 	if err != nil {
 		WriteError(w, err)

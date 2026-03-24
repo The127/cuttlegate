@@ -30,7 +30,8 @@ type Flag struct {
 	CreatedAt         time.Time
 }
 
-var keyRe = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
+// slugRe validates slugs and flag keys: lowercase alphanumeric with internal hyphens.
+var slugRe = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
 
 const MaxKeyLength = 128
 
@@ -40,6 +41,10 @@ func (f *Flag) Validate() error {
 	case FlagTypeBool, FlagTypeString, FlagTypeNumber, FlagTypeJSON:
 	default:
 		return &ValidationError{Field: "type", Message: "invalid flag type: " + string(f.Type)}
+	}
+	// name
+	if f.Name == "" {
+		return &ValidationError{Field: "name", Message: "must not be empty"}
 	}
 	// key
 	if len(f.Key) > MaxKeyLength {

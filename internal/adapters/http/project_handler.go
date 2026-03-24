@@ -76,10 +76,6 @@ func (h *ProjectHandler) create(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, newBadRequest("invalid request body"))
 		return
 	}
-	if body.Name == "" || body.Slug == "" {
-		WriteError(w, newBadRequest("name and slug are required"))
-		return
-	}
 	p, err := h.svc.Create(r.Context(), body.Name, body.Slug)
 	if err != nil {
 		WriteError(w, err)
@@ -117,11 +113,6 @@ func (h *ProjectHandler) update(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		writeJSON(w, http.StatusOK, toProjectResponse(p))
-		return
-	}
-
-	if *body.Name == "" {
-		WriteError(w, newBadRequest("name must not be empty"))
 		return
 	}
 

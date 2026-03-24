@@ -42,6 +42,9 @@ func (s *EnvironmentService) Create(ctx context.Context, projectSlug, name, envS
 		Slug:      envSlug,
 		CreatedAt: time.Now().UTC(),
 	}
+	if err := e.Validate(); err != nil {
+		return nil, err
+	}
 	if err := s.repo.Create(ctx, e); err != nil {
 		return nil, err
 	}
