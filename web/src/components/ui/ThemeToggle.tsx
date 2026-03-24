@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 
 type ThemePreference = 'system' | 'light' | 'dark'
@@ -48,15 +48,10 @@ export function ThemeToggle() {
   const { t } = useTranslation('common')
   const [current, setCurrent] = useState<ThemePreference>(readPreference)
 
-  // Sync class on mount (handles case where React hydrates after inline script)
+  // Apply theme class whenever preference changes (including initial mount).
   useEffect(() => {
     applyPreference(current)
   }, [current])
-
-  const handleChange = useCallback((pref: ThemePreference) => {
-    setCurrent(pref)
-    applyPreference(pref)
-  }, [])
 
   return (
     <div className="flex items-center gap-1" role="radiogroup" aria-label={t('theme.label')}>
@@ -66,7 +61,7 @@ export function ThemeToggle() {
           type="button"
           role="radio"
           aria-checked={current === opt}
-          onClick={() => handleChange(opt)}
+          onClick={() => setCurrent(opt)}
           className={`px-2 py-1 text-xs rounded transition-colors ${
             current === opt
               ? 'bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] font-medium'
