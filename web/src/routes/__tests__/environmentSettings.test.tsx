@@ -37,6 +37,10 @@ vi.mock('../../hooks/useProjectRole', () => ({
   useProjectRole: (...args: unknown[]) => mockUseProjectRole(...args),
 }))
 
+vi.mock('../../components/SettingsTabBar', () => ({
+  SettingsTabBar: () => null,
+}))
+
 function Wrapper({ children }: { children: React.ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return <QueryClientProvider client={qc}>{children}</QueryClientProvider>
