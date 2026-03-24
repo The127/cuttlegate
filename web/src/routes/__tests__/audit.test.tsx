@@ -35,6 +35,11 @@ function makeEntry(overrides: Partial<{
   action: string
   flag_key: string
   environment_slug: string
+  entity_type: string
+  entity_id: string
+  source: string
+  before_state: string
+  after_state: string
 }> = {}) {
   return {
     id: overrides.id ?? 'entry-1',
@@ -42,8 +47,13 @@ function makeEntry(overrides: Partial<{
     actor_id: 'user-1',
     actor_email: overrides.actor_email ?? 'alice@example.com',
     action: overrides.action ?? 'flag.enabled',
+    entity_type: overrides.entity_type ?? 'flag',
+    entity_id: overrides.entity_id ?? 'flag-uuid-123',
     flag_key: overrides.flag_key ?? 'checkout-v2',
     environment_slug: overrides.environment_slug ?? 'production',
+    source: overrides.source ?? '',
+    before_state: overrides.before_state ?? '',
+    after_state: overrides.after_state ?? '',
     project_slug: 'acme',
   }
 }
@@ -286,5 +296,272 @@ describe('AuditLogPage — @edge filter', () => {
       const input = screen.getByLabelText(/filter by flag key/i)
       expect(input).toBeInTheDocument()
     })
+  })
+})
+
+// @happy — Expand row to see full audit detail
+describe('AuditLogPage — @happy expand detail', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('expands a row when clicked and shows detail panel', async () => {
+    mockFetchJSON.mockResolvedValue({
+      entries: [makeEntry({
+        entity_type: 'flag',
+        entity_id: 'flag-uuid-123',
+        source: 'mcp',
+        before_state: '{"enabled":false}',
+        after_state: '{"enabled":true}',
+      })],
+      next_cursor: null,
+    })
+
+    const { auditRoute } = await loadAuditPage()
+    const AuditLogPage = auditRoute.options.component
+
+    render(<Wrapper><AuditLogPage /></Wrapper>)
+
+    await waitFor(() => {
+      expect(screen.getByText('alice@example.com')).toBeInTheDocument()
+    })
+
+    // Row should have aria-expanded=false initially
+    const row = screen.getByText('alice@example.com').closest('tr')!
+    expect(row).toHaveAttribute('aria-expanded', 'false')
+
+    // Click to expand
+    fireEvent.click(row)
+
+    expect(row).toHaveAttribute('aria-expanded', 'true')
+    // Detail panel shows entity info
+    expect(screen.getByText('flag')).toBeInTheDocument()
+    expect(screen.getByText('flag-uuid-123')).toBeInTheDocument()
+    // Source badge
+    expect(screen.getByText('mcp')).toBeInTheDocument()
+  })
+
+  it('collapses an expanded row when clicked again', async () => {
+    mockFetchJSON.mockResolvedValue({
+      entries: [makeEntry({ before_state: '{"enabled":false}', after_state: '{"enabled":true}' })],
+      next_cursor: null,
+    })
+
+    const { auditRoute } = await loadAuditPage()
+    const AuditLogPage = auditRoute.options.component
+
+    render(<Wrapper><AuditLogPage /></Wrapper>)
+
+    await waitFor(() => {
+      expect(screen.getByText('alice@example.com')).toBeInTheDocument()
+    })
+
+    const row = screen.getByText('alice@example.com').closest('tr')!
+    fireEvent.click(row)
+    expect(row).toHaveAttribute('aria-expanded', 'true')
+
+    fireEvent.click(row)
+    expect(row).toHaveAttribute('aria-expanded', 'false')
+  })
+})
+
+// @happy — Accordion: only one row expanded at a time
+describe('AuditLogPage — @happy accordion', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('collapses first row when second row is expanded', async () => {
+    mockFetchJSON.mockResolvedValue({
+      entries: [
+        makeEntry({ id: 'e1', actor_email: 'alice@example.com' }),
+        makeEntry({ id: 'e2', actor_email: 'bob@example.com' }),
+      ],
+      next_cursor: null,
+    })
+
+    const { auditRoute } = await loadAuditPage()
+    const AuditLogPage = auditRoute.options.component
+
+    render(<Wrapper><AuditLogPage /></Wrapper>)
+
+    await waitFor(() => {
+      expect(screen.getByText('alice@example.com')).toBeInTheDocument()
+    })
+
+    const row1 = screen.getByText('alice@example.com').closest('tr')!
+    const row2 = screen.getByText('bob@example.com').closest('tr')!
+
+    // Expand row 1
+    fireEvent.click(row1)
+    expect(row1).toHaveAttribute('aria-expanded', 'true')
+
+    // Expand row 2 — row 1 should collapse
+    fireEvent.click(row2)
+    expect(row2).toHaveAttribute('aria-expanded', 'true')
+    expect(row1).toHaveAttribute('aria-expanded', 'false')
+  })
+})
+
+// @happy — Keyboard toggle
+describe('AuditLogPage — @happy keyboard', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('toggles expansion with Enter key', async () => {
+    mockFetchJSON.mockResolvedValue({
+      entries: [makeEntry()],
+      next_cursor: null,
+    })
+
+    const { auditRoute } = await loadAuditPage()
+    const AuditLogPage = auditRoute.options.component
+
+    render(<Wrapper><AuditLogPage /></Wrapper>)
+
+    await waitFor(() => {
+      expect(screen.getByText('alice@example.com')).toBeInTheDocument()
+    })
+
+    const row = screen.getByText('alice@example.com').closest('tr')!
+    fireEvent.keyDown(row, { key: 'Enter' })
+    expect(row).toHaveAttribute('aria-expanded', 'true')
+
+    fireEvent.keyDown(row, { key: 'Enter' })
+    expect(row).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('toggles expansion with Space key', async () => {
+    mockFetchJSON.mockResolvedValue({
+      entries: [makeEntry()],
+      next_cursor: null,
+    })
+
+    const { auditRoute } = await loadAuditPage()
+    const AuditLogPage = auditRoute.options.component
+
+    render(<Wrapper><AuditLogPage /></Wrapper>)
+
+    await waitFor(() => {
+      expect(screen.getByText('alice@example.com')).toBeInTheDocument()
+    })
+
+    const row = screen.getByText('alice@example.com').closest('tr')!
+    fireEvent.keyDown(row, { key: ' ' })
+    expect(row).toHaveAttribute('aria-expanded', 'true')
+  })
+})
+
+// @edge — Empty before/after state
+describe('AuditLogPage — @edge empty states', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('shows muted placeholder for empty before_state (create action)', async () => {
+    mockFetchJSON.mockResolvedValue({
+      entries: [makeEntry({
+        action: 'flag.created',
+        before_state: '',
+        after_state: '{"key":"new-flag"}',
+      })],
+      next_cursor: null,
+    })
+
+    const { auditRoute } = await loadAuditPage()
+    const AuditLogPage = auditRoute.options.component
+
+    render(<Wrapper><AuditLogPage /></Wrapper>)
+
+    await waitFor(() => {
+      expect(screen.getByText('alice@example.com')).toBeInTheDocument()
+    })
+
+    const row = screen.getByText('alice@example.com').closest('tr')!
+    fireEvent.click(row)
+
+    // The detail panel should show the after JSON
+    expect(screen.getByText(/"key": "new-flag"/)).toBeInTheDocument()
+  })
+
+  it('shows muted placeholder for empty after_state (delete action)', async () => {
+    mockFetchJSON.mockResolvedValue({
+      entries: [makeEntry({
+        action: 'flag.deleted',
+        before_state: '{"key":"old-flag"}',
+        after_state: '',
+      })],
+      next_cursor: null,
+    })
+
+    const { auditRoute } = await loadAuditPage()
+    const AuditLogPage = auditRoute.options.component
+
+    render(<Wrapper><AuditLogPage /></Wrapper>)
+
+    await waitFor(() => {
+      expect(screen.getByText('alice@example.com')).toBeInTheDocument()
+    })
+
+    const row = screen.getByText('alice@example.com').closest('tr')!
+    fireEvent.click(row)
+
+    expect(screen.getByText(/"key": "old-flag"/)).toBeInTheDocument()
+  })
+
+  it('shows no source badge when source is empty', async () => {
+    mockFetchJSON.mockResolvedValue({
+      entries: [makeEntry({ source: '' })],
+      next_cursor: null,
+    })
+
+    const { auditRoute } = await loadAuditPage()
+    const AuditLogPage = auditRoute.options.component
+
+    render(<Wrapper><AuditLogPage /></Wrapper>)
+
+    await waitFor(() => {
+      expect(screen.getByText('alice@example.com')).toBeInTheDocument()
+    })
+
+    const row = screen.getByText('alice@example.com').closest('tr')!
+    fireEvent.click(row)
+
+    // Source label should not appear when source is empty
+    expect(screen.queryByText('Source')).not.toBeInTheDocument()
+  })
+})
+
+// @happy — Expanded detail passes accessibility audit
+describe('AuditLogPage — @happy expanded accessibility', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('passes accessibility audit with expanded detail panel', async () => {
+    mockFetchJSON.mockResolvedValue({
+      entries: [makeEntry({
+        source: 'mcp',
+        before_state: '{"enabled":false}',
+        after_state: '{"enabled":true}',
+      })],
+      next_cursor: null,
+    })
+
+    const { auditRoute } = await loadAuditPage()
+    const AuditLogPage = auditRoute.options.component
+
+    const { container } = render(<Wrapper><AuditLogPage /></Wrapper>)
+
+    await waitFor(() => {
+      expect(screen.getByText('alice@example.com')).toBeInTheDocument()
+    })
+
+    const row = screen.getByText('alice@example.com').closest('tr')!
+    fireEvent.click(row)
+
+    const results = await axe(container)
+    expect(results).toHaveNoViolations()
   })
 })

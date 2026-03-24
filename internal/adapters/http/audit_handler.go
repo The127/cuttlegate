@@ -37,9 +37,13 @@ type auditEntryResponse struct {
 	ActorID         string    `json:"actor_id"`
 	ActorEmail      string    `json:"actor_email"`
 	Action          string    `json:"action"`
+	EntityType      string    `json:"entity_type,omitempty"`
+	EntityID        string    `json:"entity_id,omitempty"`
 	FlagKey         string    `json:"flag_key,omitempty"`
 	EnvironmentSlug string    `json:"environment_slug,omitempty"`
 	Source          string    `json:"source,omitempty"`
+	BeforeState     string    `json:"before_state,omitempty"`
+	AfterState      string    `json:"after_state,omitempty"`
 	ProjectSlug     string    `json:"project_slug"`
 }
 
@@ -55,9 +59,13 @@ func toAuditEntryResponse(e *domain.AuditEvent, projectSlug string) auditEntryRe
 		ActorID:         e.ActorID,
 		ActorEmail:      e.ActorEmail,
 		Action:          e.Action,
+		EntityType:      e.EntityType,
+		EntityID:        e.EntityID,
 		FlagKey:         e.EntityKey,
 		EnvironmentSlug: e.EnvironmentSlug,
 		Source:          e.Source,
+		BeforeState:     e.BeforeState,
+		AfterState:      e.AfterState,
 		ProjectSlug:     projectSlug,
 	}
 }
