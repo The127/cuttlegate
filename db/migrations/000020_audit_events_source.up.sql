@@ -1,1 +1,0 @@
-ALTER TABLE audit_events ADD COLUMN source TEXT NOT NULL DEFAULT '';

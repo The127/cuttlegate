@@ -106,6 +106,17 @@ dev:
     DATABASE_URL=postgres://cuttlegate:cuttlegate@localhost:5433/cuttlegate?sslmode=disable \
     AUTO_MIGRATE=true \
     go run github.com/air-verse/air@latest &
+    echo "Waiting for Go server on port ${api_port}..."
+    waited=0
+    until curl -sf "http://localhost:${api_port}/healthz" > /dev/null 2>&1; do
+      sleep 1
+      waited=$((waited + 1))
+      if [ "$waited" -ge 30 ]; then
+        echo "ERROR: Go server failed to start within 30s" >&2
+        exit 1
+      fi
+    done
+    echo "Go server ready."
     cd web && npm install --silent && API_PORT="$api_port" npm run dev &
     wait
 
