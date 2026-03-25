@@ -1,4 +1,5 @@
 {
+  "page_title": "标志",
   "list": {
     "title": "功能标志",
     "new_flag": "新建标志",
@@ -9,7 +10,14 @@
     "failed_to_load": "加载标志失败。",
     "back_to_flags": "返回标志列表",
     "copy_key_aria": "复制标志键 {{key}}",
-    "delete_flag_aria": "删除标志 {{key}}"
+    "delete_flag_aria": "删除标志 {{key}}",
+    "flag_count_one": "{{count}} 个标志",
+    "flag_count_other": "{{count}} 个标志",
+    "search_placeholder": "搜索标志...",
+    "search_aria": "按键或名称筛选标志",
+    "search_count": "{{total}} 个标志中的 {{filtered}} 个",
+    "search_no_results": "没有匹配的标志",
+    "search_clear_aria": "清除搜索"
   },
   "toggle": {
     "enable": "启用标志",
@@ -23,7 +31,10 @@
   "delete": {
     "title": "删除标志？",
     "body": "这将从所有环境中永久删除 <mono>{{key}}</mono>。此操作无法撤销。",
-    "failed": "删除失败。请重试。"
+    "failed": "删除失败。请重试。",
+    "confirm_instruction": "输入 <mono>{{key}}</mono> 以确认删除",
+    "confirm_placeholder": "输入标志键以确认",
+    "confirm_aria": "输入标志键以确认删除"
   },
   "create": {
     "title": "创建标志",
@@ -42,9 +53,23 @@
     "type_string": "字符串",
     "type_number": "数字",
     "type_json": "JSON",
-    "type_aria": "标志类型"
+    "type_aria": "标志类型",
+    "success_title": "标志已创建",
+    "success_body": "复制您的标志键并在 SDK 中使用它来开始评估。",
+    "success_copy_aria": "复制标志键 {{key}}",
+    "success_done": "完成",
+    "sdk_prompt": {
+      "heading": "准备就绪。选择您的 SDK。",
+      "tab_go": "Go",
+      "tab_js": "JS",
+      "tab_python": "Python",
+      "dismiss": "关闭",
+      "dismiss_aria": "关闭 SDK 设置指南",
+      "region_aria": "SDK 设置指南"
+    }
   },
   "detail": {
+    "key_label": "键",
     "name_label": "名称",
     "variants_label": "变体",
     "default_variant_label": "默认变体",
@@ -65,7 +90,8 @@
     "environments_section": "环境",
     "env_error": "加载环境失败。",
     "env_row_error": "加载失败",
-    "loading_aria": "加载中"
+    "loading_aria": "加载中",
+    "copy_key_aria": "复制标志键 {{key}}"
   },
   "eval": {
     "title": "评估演练场",
@@ -80,6 +106,49 @@
     "reason_default": "无规则匹配 — 默认值",
     "reason_rule_match": "匹配到定向规则"
   },
+  "heading": {
+    "rules": "规则",
+    "evaluations": "评估"
+  },
+  "audit": {
+    "tab_title": "评估",
+    "loading": "加载评估中…",
+    "load_error": "加载评估失败。",
+    "empty_state": "尚无评估记录。",
+    "load_more": "加载更多",
+    "col_timestamp": "时间戳",
+    "col_user": "用户",
+    "col_context": "上下文",
+    "col_rule": "匹配规则",
+    "col_variant": "变体",
+    "col_reason": "原因",
+    "no_rule_matched": "无规则",
+    "reason_flag_disabled": "标志已禁用",
+    "reason_no_match": "未匹配",
+    "reason_rule_match": "规则匹配",
+    "reason_override": "覆盖",
+    "context_expand_aria": "展开第 {{id}} 行的输入上下文",
+    "rule_id_label": "规则"
+  },
+  "table": {
+    "col_key": "键",
+    "col_name": "名称",
+    "col_default_variant": "默认值",
+    "col_status": "状态",
+    "col_last_evaluated": "最后评估"
+  },
+  "type_badge": {
+    "bool": "布尔",
+    "string": "字符串",
+    "number": "数字",
+    "json": "json"
+  },
+  "stats": {
+    "never_evaluated": "从未",
+    "last_evaluated_label": "最后评估",
+    "evaluation_count_label": "评估次数",
+    "load_error": "加载统计失败。"
+  },
   "compare": {
     "title": "比较环境",
     "flag_column": "标志",
@@ -92,5 +161,65 @@
   },
   "api_key": {
     "show_once_warning": "请立即复制此密钥。它不会再次显示。"
+  },
+  "history": {
+    "title": "变更历史",
+    "col_timestamp": "时间戳",
+    "col_environment": "环境",
+    "col_actor": "操作者",
+    "col_action": "变更",
+    "empty": "尚无变更记录",
+    "empty_filtered": "该环境没有变更记录",
+    "error": "无法加载变更历史",
+    "env_filter_all": "所有环境",
+    "env_filter_aria": "按环境筛选",
+    "table_aria": "标志变更历史",
+    "env_none": "—",
+    "action_flag_created": "已创建",
+    "action_flag_updated": "已更新",
+    "action_flag_variant_added": "变体已添加",
+    "action_flag_variant_renamed": "变体已重命名",
+    "action_flag_variant_deleted": "变体已删除",
+    "action_flag_state_changed": "状态已变更",
+    "action_flag_deleted": "已删除",
+    "action_flag_promoted": "已提升"
+  },
+  "analytics": {
+    "panel_title": "分析",
+    "window_7d": "7天",
+    "window_30d": "30天",
+    "empty_state": "尚无评估记录",
+    "load_error": "加载分析失败。",
+    "chart_aria_label": "评估图表",
+    "total_evaluations": "过去 {{window}} 内共 {{count}} 次评估",
+    "true_label": "True",
+    "false_label": "False",
+    "variant_label": "{{key}}",
+    "y_axis_label": "最大值：{{count}}"
+  },
+  "project_list": {
+    "title": "功能标志",
+    "page_title": "标志",
+    "new_flag": "新建标志",
+    "empty_state": "暂无标志。创建您的第一个标志以开始定向用户。",
+    "error": "加载标志失败。",
+    "flag_count_one": "{{count}} 个标志",
+    "flag_count_other": "{{count}} 个标志",
+    "search_placeholder": "搜索标志...",
+    "search_aria": "按键或名称筛选标志",
+    "search_count": "{{total}} 个标志中的 {{filtered}} 个",
+    "search_no_results": "没有匹配的标志",
+    "search_clear_aria": "清除搜索",
+    "copy_key_aria": "复制标志键 {{key}}",
+    "delete_flag_aria": "删除标志 {{key}}",
+    "col_key": "键",
+    "col_name": "名称",
+    "col_type": "类型",
+    "col_variants": "变体",
+    "col_created": "创建时间",
+    "col_environments": "环境",
+    "env_loading": "加载中...",
+    "env_badge_enabled": "{{env}}：开",
+    "env_badge_disabled": "{{env}}：关"
   }
 }

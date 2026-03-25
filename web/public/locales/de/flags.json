@@ -1,4 +1,5 @@
 {
+  "page_title": "Flags",
   "list": {
     "title": "Feature-Flags",
     "new_flag": "Neues Flag",
@@ -9,7 +10,14 @@
     "failed_to_load": "Flag konnte nicht geladen werden.",
     "back_to_flags": "Zurück zu den Flags",
     "copy_key_aria": "Flag-Schlüssel {{key}} kopieren",
-    "delete_flag_aria": "Flag {{key}} löschen"
+    "delete_flag_aria": "Flag {{key}} löschen",
+    "flag_count_one": "{{count}} Flag",
+    "flag_count_other": "{{count}} Flags",
+    "search_placeholder": "Flags suchen...",
+    "search_aria": "Flags nach Schlüssel oder Name filtern",
+    "search_count": "{{filtered}} von {{total}} Flags",
+    "search_no_results": "Keine Flags entsprechen Ihrer Suche",
+    "search_clear_aria": "Suche löschen"
   },
   "toggle": {
     "enable": "Flag aktivieren",
@@ -23,7 +31,10 @@
   "delete": {
     "title": "Flag löschen?",
     "body": "Dadurch wird <mono>{{key}}</mono> dauerhaft aus allen Umgebungen gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
-    "failed": "Löschen fehlgeschlagen. Bitte erneut versuchen."
+    "failed": "Löschen fehlgeschlagen. Bitte erneut versuchen.",
+    "confirm_instruction": "Geben Sie <mono>{{key}}</mono> zur Bestätigung der Löschung ein",
+    "confirm_placeholder": "Flag-Schlüssel zur Bestätigung eingeben",
+    "confirm_aria": "Geben Sie den Flag-Schlüssel zur Bestätigung der Löschung ein"
   },
   "create": {
     "title": "Flag erstellen",
@@ -42,9 +53,23 @@
     "type_string": "Zeichenkette",
     "type_number": "Zahl",
     "type_json": "JSON",
-    "type_aria": "Flag-Typ"
+    "type_aria": "Flag-Typ",
+    "success_title": "Flag erstellt",
+    "success_body": "Kopieren Sie Ihren Flag-Schlüssel und verwenden Sie ihn in Ihrem SDK, um mit der Auswertung zu beginnen.",
+    "success_copy_aria": "Flag-Schlüssel {{key}} kopieren",
+    "success_done": "Fertig",
+    "sdk_prompt": {
+      "heading": "Bereit. Wählen Sie Ihr SDK.",
+      "tab_go": "Go",
+      "tab_js": "JS",
+      "tab_python": "Python",
+      "dismiss": "Schließen",
+      "dismiss_aria": "SDK-Einrichtungsanleitung schließen",
+      "region_aria": "SDK-Einrichtungsanleitung"
+    }
   },
   "detail": {
+    "key_label": "Schlüssel",
     "name_label": "Name",
     "variants_label": "Varianten",
     "default_variant_label": "Standardvariante",
@@ -61,24 +86,68 @@
     "variant_key_invalid": "Schlüssel muss mit einem Buchstaben oder einer Ziffer beginnen und darf nur Kleinbuchstaben, Ziffern, Bindestriche und Unterstriche enthalten",
     "variant_key_duplicate": "Eine Variante mit diesem Schlüssel existiert bereits",
     "default_variant_aria": "Standardvariante",
-    "targeting_rules": "Zielgruppenregeln →",
+    "targeting_rules": "Zielgruppenregeln \u2192",
     "environments_section": "Umgebungen",
     "env_error": "Umgebungen konnten nicht geladen werden.",
     "env_row_error": "Laden fehlgeschlagen",
-    "loading_aria": "Wird geladen"
+    "loading_aria": "Wird geladen",
+    "copy_key_aria": "Flag-Schlüssel {{key}} kopieren"
   },
   "eval": {
     "title": "Auswertungs-Playground",
     "context_label": "Auswertungskontext (JSON)",
     "evaluate": "Auswerten",
-    "evaluating": "Wird ausgewertet…",
+    "evaluating": "Wird ausgewertet\u2026",
     "invalid_json": "Ungültiges JSON",
     "eval_failed": "Auswertung fehlgeschlagen. Bitte erneut versuchen.",
     "result_label": "Ergebnis",
     "reason_label": "Grund",
     "reason_disabled": "Flag ist deaktiviert",
-    "reason_default": "Keine Regel zugeordnet — Standard",
+    "reason_default": "Keine Regel zugeordnet \u2014 Standard",
     "reason_rule_match": "Eine Zielgruppenregel wurde zugeordnet"
+  },
+  "heading": {
+    "rules": "Regeln",
+    "evaluations": "Auswertungen"
+  },
+  "audit": {
+    "tab_title": "Auswertungen",
+    "loading": "Auswertungen werden geladen\u2026",
+    "load_error": "Auswertungen konnten nicht geladen werden.",
+    "empty_state": "Noch keine Auswertungen aufgezeichnet.",
+    "load_more": "Mehr laden",
+    "col_timestamp": "Zeitstempel",
+    "col_user": "Benutzer",
+    "col_context": "Kontext",
+    "col_rule": "Zugeordnete Regel",
+    "col_variant": "Variante",
+    "col_reason": "Grund",
+    "no_rule_matched": "Keine Regel",
+    "reason_flag_disabled": "Flag deaktiviert",
+    "reason_no_match": "Keine Übereinstimmung",
+    "reason_rule_match": "Regel zugeordnet",
+    "reason_override": "Überschreibung",
+    "context_expand_aria": "Eingabekontext für Zeile {{id}} aufklappen",
+    "rule_id_label": "Regel"
+  },
+  "table": {
+    "col_key": "Schlüssel",
+    "col_name": "Name",
+    "col_default_variant": "Standard",
+    "col_status": "Status",
+    "col_last_evaluated": "Zuletzt ausgewertet"
+  },
+  "type_badge": {
+    "bool": "bool",
+    "string": "str",
+    "number": "num",
+    "json": "json"
+  },
+  "stats": {
+    "never_evaluated": "Nie",
+    "last_evaluated_label": "Zuletzt ausgewertet",
+    "evaluation_count_label": "Auswertungsanzahl",
+    "load_error": "Statistiken konnten nicht geladen werden."
   },
   "compare": {
     "title": "Umgebungen vergleichen",
@@ -92,5 +161,65 @@
   },
   "api_key": {
     "show_once_warning": "Kopieren Sie diesen Schlüssel jetzt. Er wird nicht erneut angezeigt."
+  },
+  "history": {
+    "title": "Änderungsverlauf",
+    "col_timestamp": "Zeitstempel",
+    "col_environment": "Umgebung",
+    "col_actor": "Akteur",
+    "col_action": "Änderung",
+    "empty": "Noch keine Änderungen aufgezeichnet",
+    "empty_filtered": "Keine Änderungen für diese Umgebung",
+    "error": "Änderungsverlauf konnte nicht geladen werden",
+    "env_filter_all": "Alle Umgebungen",
+    "env_filter_aria": "Nach Umgebung filtern",
+    "table_aria": "Flag-Änderungsverlauf",
+    "env_none": "\u2014",
+    "action_flag_created": "Erstellt",
+    "action_flag_updated": "Aktualisiert",
+    "action_flag_variant_added": "Variante hinzugefügt",
+    "action_flag_variant_renamed": "Variante umbenannt",
+    "action_flag_variant_deleted": "Variante gelöscht",
+    "action_flag_state_changed": "Status geändert",
+    "action_flag_deleted": "Gelöscht",
+    "action_flag_promoted": "Befördert"
+  },
+  "analytics": {
+    "panel_title": "Analytik",
+    "window_7d": "7T",
+    "window_30d": "30T",
+    "empty_state": "Noch keine Auswertungen aufgezeichnet",
+    "load_error": "Analytik konnte nicht geladen werden.",
+    "chart_aria_label": "Auswertungsdiagramm",
+    "total_evaluations": "{{count}} Auswertungen in den letzten {{window}}",
+    "true_label": "Wahr",
+    "false_label": "Falsch",
+    "variant_label": "{{key}}",
+    "y_axis_label": "Max: {{count}}"
+  },
+  "project_list": {
+    "title": "Feature-Flags",
+    "page_title": "Flags",
+    "new_flag": "Neues Flag",
+    "empty_state": "Noch keine Flags. Erstellen Sie Ihr erstes Flag, um mit der Zielgruppensteuerung zu beginnen.",
+    "error": "Flags konnten nicht geladen werden.",
+    "flag_count_one": "{{count}} Flag",
+    "flag_count_other": "{{count}} Flags",
+    "search_placeholder": "Flags suchen...",
+    "search_aria": "Flags nach Schlüssel oder Name filtern",
+    "search_count": "{{filtered}} von {{total}} Flags",
+    "search_no_results": "Keine Flags entsprechen Ihrer Suche",
+    "search_clear_aria": "Suche löschen",
+    "copy_key_aria": "Flag-Schlüssel {{key}} kopieren",
+    "delete_flag_aria": "Flag {{key}} löschen",
+    "col_key": "Schlüssel",
+    "col_name": "Name",
+    "col_type": "Typ",
+    "col_variants": "Varianten",
+    "col_created": "Erstellt",
+    "col_environments": "Umgebungen",
+    "env_loading": "Wird geladen...",
+    "env_badge_enabled": "{{env}}: an",
+    "env_badge_disabled": "{{env}}: aus"
   }
 }
