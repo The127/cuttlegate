@@ -18,6 +18,17 @@ func newFakeRuleRepository() *fakeRuleRepository {
 	return &fakeRuleRepository{rules: make(map[string]*domain.Rule)}
 }
 
+func (f *fakeRuleRepository) ListByFlag(_ context.Context, flagID string) ([]*domain.Rule, error) {
+	result := make([]*domain.Rule, 0)
+	for _, r := range f.rules {
+		if r.FlagID == flagID {
+			cp := *r
+			result = append(result, &cp)
+		}
+	}
+	return result, nil
+}
+
 func (f *fakeRuleRepository) ListByFlagEnvironment(_ context.Context, flagID, environmentID string) ([]*domain.Rule, error) {
 	result := make([]*domain.Rule, 0)
 	for _, r := range f.rules {
