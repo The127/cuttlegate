@@ -131,6 +131,7 @@
     "environments_error": "Failed to load environments.",
     "empty": "No API keys yet — create one to enable SDK integration",
     "revoke_aria": "Revoke key {{name}}",
+    "change_tier_aria": "Change capability tier for {{name}}",
     "revoke": "Revoke",
     "create_title": "Create API key",
     "name_label": "Name",

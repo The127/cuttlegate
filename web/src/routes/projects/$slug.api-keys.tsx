@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { projectRoute } from './$slug'
-import { fetchJSON, postJSON, deleteRequest, APIError } from '../../api'
+import { fetchJSON, postJSON, patchJSON, deleteRequest, APIError } from '../../api'
 import { formatRelativeDate } from '../../utils/date'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
@@ -160,7 +160,10 @@ function APIKeyPage() {
                 <APIKeyCard
                   key={key.id}
                   apiKey={key}
+                  slug={slug}
+                  envSlug={envSlug!}
                   onRevokeIntent={() => setPendingRevoke(key)}
+                  onTierUpdated={() => void queryClient.invalidateQueries({ queryKey: ['api-keys', slug, envSlug] })}
                 />
               ))}
             </div>
@@ -196,18 +199,59 @@ function APIKeyPage() {
 
 function APIKeyCard({
   apiKey,
+  slug,
+  envSlug,
   onRevokeIntent,
+  onTierUpdated,
 }: {
   apiKey: APIKey
+  slug: string
+  envSlug: string
   onRevokeIntent: () => void
+  onTierUpdated: () => void
 }) {
   const { t } = useTranslation('projects')
+  const [editingTier, setEditingTier] = useState(false)
+
+  const tierMutation = useMutation({
+    mutationFn: (newTier: ToolCapabilityTier) =>
+      patchJSON(`/api/v1/projects/${slug}/environments/${envSlug}/api-keys/${apiKey.id}`, {
+        capability_tier: newTier,
+      }),
+    onSuccess: () => {
+      setEditingTier(false)
+      onTierUpdated()
+    },
+  })
+
   return (
     <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)] px-4 py-3 flex items-center justify-between gap-4">
       <div className="flex flex-col gap-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-[var(--color-text-primary)] truncate">{apiKey.name}</span>
-          <TierBadge tier={apiKey.capability_tier} />
+          {editingTier ? (
+            <div className="flex items-center gap-1">
+              <TierSelector
+                value={apiKey.capability_tier}
+                onChange={(tier) => tierMutation.mutate(tier)}
+              />
+              <button
+                onClick={() => setEditingTier(false)}
+                className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] focus:outline-none"
+                aria-label={t('actions.cancel', { ns: 'common' })}
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setEditingTier(true)}
+              className="focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
+              aria-label={t('api_keys.change_tier_aria', { name: apiKey.name })}
+            >
+              <TierBadge tier={apiKey.capability_tier} />
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <span className="font-mono text-xs text-[var(--color-text-secondary)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-2 py-0.5">
