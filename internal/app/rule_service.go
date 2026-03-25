@@ -20,7 +20,7 @@ func NewRuleService(repo ports.RuleRepository) *RuleService {
 
 // Create validates the rule, assigns a UUID and creation timestamp, and persists it.
 // Requires at least editor role.
-func (s *RuleService) Create(ctx context.Context, flagID, environmentID string, priority int, conditions []domain.Condition, variantKey, name string) (*domain.Rule, error) {
+func (s *RuleService) Create(ctx context.Context, flagID, environmentID string, priority int, conditions []domain.Condition, variantKey, name string, rollout []domain.RolloutEntry) (*domain.Rule, error) {
 	if _, err := requireRole(ctx, domain.RoleEditor); err != nil {
 		return nil, err
 	}
@@ -31,6 +31,7 @@ func (s *RuleService) Create(ctx context.Context, flagID, environmentID string, 
 		Priority:      priority,
 		Conditions:    conditions,
 		VariantKey:    variantKey,
+		Rollout:       rollout,
 		Enabled:       true,
 	}
 	if err := rule.Validate(); err != nil {

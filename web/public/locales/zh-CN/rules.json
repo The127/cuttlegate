@@ -26,6 +26,12 @@
   "attribute_placeholder": "属性",
   "value_placeholder": "值（多个值以逗号分隔）",
   "select_segment": "选择用户分群…",
+  "rollout_toggle": "百分比分流",
+  "rollout_variant": "变体",
+  "rollout_weight": "权重 %",
+  "rollout_add_split": "+ 添加分流",
+  "rollout_weight_error": "权重总和必须为 100（当前 {{total}}）",
+  "rollout_weight_valid": "100%",
   "operators": {
     "eq": "等于",
     "neq": "不等于",

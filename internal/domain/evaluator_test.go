@@ -196,3 +196,88 @@ func TestEvaluate_SegmentOperators(t *testing.T) {
 		})
 	}
 }
+
+// ── Rollout tests ────────────────────────────────────────────────────────────
+
+func TestEvaluate_Rollout_PicksVariantByBucket(t *testing.T) {
+	flag := testFlag()
+	state := enabledState()
+	r := &Rule{
+		ID:            "rule-rollout",
+		FlagID:        "flag-1",
+		EnvironmentID: "env-1",
+		Priority:      0,
+		Conditions:    []Condition{cond("plan", OperatorEq, "pro")},
+		Rollout: []RolloutEntry{
+			{VariantKey: "variant-a", Weight: 50},
+			{VariantKey: "variant-b", Weight: 50},
+		},
+		Enabled: true,
+	}
+	// Bucket("my-flag", "user-123") == 82, so falls in variant-b (50–99 range)
+	ctx := EvalContext{UserID: "user-123", Attributes: map[string]string{"plan": "pro"}}
+	result := Evaluate(flag, state, []*Rule{r}, ctx, nil)
+	if result.Reason != ReasonRuleMatch {
+		t.Fatalf("expected rule_match, got %s", result.Reason)
+	}
+	if result.VariantKey != "variant-b" {
+		t.Errorf("expected variant-b (bucket 82 >= 50), got %s", result.VariantKey)
+	}
+}
+
+func TestEvaluate_Rollout_NoUserID_FallsThrough(t *testing.T) {
+	flag := testFlag()
+	state := enabledState()
+	r := &Rule{
+		ID:            "rule-rollout",
+		FlagID:        "flag-1",
+		EnvironmentID: "env-1",
+		Priority:      0,
+		Conditions:    []Condition{cond("plan", OperatorEq, "pro")},
+		Rollout: []RolloutEntry{
+			{VariantKey: "variant-a", Weight: 100},
+		},
+		Enabled: true,
+	}
+	ctx := EvalContext{UserID: "", Attributes: map[string]string{"plan": "pro"}}
+	result := Evaluate(flag, state, []*Rule{r}, ctx, nil)
+	if result.Reason != ReasonDefault {
+		t.Fatalf("expected default (no user ID for rollout), got %s", result.Reason)
+	}
+	if result.VariantKey != "default" {
+		t.Errorf("expected default variant, got %s", result.VariantKey)
+	}
+}
+
+func TestEvaluate_Rollout_EmptyRollout_UsesVariantKey(t *testing.T) {
+	flag := testFlag()
+	state := enabledState()
+	r := rule(0, "variant-a", cond("plan", OperatorEq, "pro"))
+	ctx := EvalContext{UserID: "user-123", Attributes: map[string]string{"plan": "pro"}}
+	result := Evaluate(flag, state, []*Rule{r}, ctx, nil)
+	if result.VariantKey != "variant-a" {
+		t.Errorf("expected variant-a from VariantKey, got %s", result.VariantKey)
+	}
+}
+
+func TestResolveRollout_BoundaryValues(t *testing.T) {
+	entries := []RolloutEntry{
+		{VariantKey: "a", Weight: 30},
+		{VariantKey: "b", Weight: 70},
+	}
+	tests := []struct {
+		bucket int
+		want   string
+	}{
+		{0, "a"},
+		{29, "a"},
+		{30, "b"},
+		{99, "b"},
+	}
+	for _, tt := range tests {
+		got := resolveRollout(entries, tt.bucket)
+		if got != tt.want {
+			t.Errorf("resolveRollout(entries, %d) = %q, want %q", tt.bucket, got, tt.want)
+		}
+	}
+}

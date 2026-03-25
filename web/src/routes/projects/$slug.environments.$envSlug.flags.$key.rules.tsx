@@ -31,12 +31,18 @@ interface Condition {
   values: string[]
 }
 
+interface RolloutEntry {
+  variantKey: string
+  weight: number
+}
+
 interface Rule {
   id: string
   name: string
   priority: number
   conditions: Condition[]
   variantKey: string
+  rollout?: RolloutEntry[]
   enabled: boolean
   createdAt: string
 }
@@ -365,6 +371,7 @@ function RuleRow({
     priority: rule.priority,
     conditions: rule.conditions,
     variantKey: rule.variantKey,
+    rollout: rule.rollout,
     enabled: rule.enabled,
   })
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -375,6 +382,7 @@ function RuleRow({
       priority: rule.priority,
       conditions: rule.conditions,
       variantKey: rule.variantKey,
+      rollout: rule.rollout,
       enabled: rule.enabled,
     })
     setSaveError(null)
@@ -437,7 +445,19 @@ function RuleRow({
             </ul>
           )}
           <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
-            → <span className="font-mono">{rule.variantKey}</span>
+            {rule.rollout && rule.rollout.length > 0 ? (
+              <>
+                → {rule.rollout.map((e, i) => (
+                  <span key={e.variantKey}>
+                    {i > 0 && ', '}
+                    <span className="font-mono">{e.variantKey}</span>
+                    <span className="text-[var(--color-text-muted)]"> {e.weight}%</span>
+                  </span>
+                ))}
+              </>
+            ) : (
+              <>→ <span className="font-mono">{rule.variantKey}</span></>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-1 shrink-0">
@@ -518,6 +538,7 @@ function NewRuleRow({
     priority: nextPriority,
     conditions: [],
     variantKey: variants[0]?.key ?? '',
+    rollout: undefined,
     enabled: true,
   })
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -678,20 +699,51 @@ function RuleEditor({
         </button>
       </div>
 
-      {/* Variant */}
+      {/* Variant / Rollout */}
       <div>
-        <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">{t('serve_variant_label')}</label>
-        <Select
-          value={draft.variantKey}
-          onValueChange={(val) => onChange({ ...draft, variantKey: val })}
-          aria-label={t('serve_variant_aria')}
-        >
-          {variants.map((v) => (
-            <SelectItem key={v.key} value={v.key}>
-              {v.key}
-            </SelectItem>
-          ))}
-        </Select>
+        <div className="flex items-center gap-2 mb-1">
+          <label className="text-xs font-medium text-[var(--color-text-secondary)]">{t('serve_variant_label')}</label>
+          <label className="flex items-center gap-1 text-xs text-[var(--color-text-muted)] cursor-pointer">
+            <input
+              type="checkbox"
+              checked={!!draft.rollout && draft.rollout.length > 0}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  onChange({
+                    ...draft,
+                    variantKey: '',
+                    rollout: variants.length >= 2
+                      ? [{ variantKey: variants[0].key, weight: 50 }, { variantKey: variants[1].key, weight: 50 }]
+                      : [{ variantKey: variants[0]?.key ?? '', weight: 100 }],
+                  })
+                } else {
+                  onChange({ ...draft, rollout: undefined, variantKey: variants[0]?.key ?? '' })
+                }
+              }}
+              className="accent-[var(--color-accent)]"
+            />
+            {t('rollout_toggle')}
+          </label>
+        </div>
+        {draft.rollout && draft.rollout.length > 0 ? (
+          <RolloutEditor
+            entries={draft.rollout}
+            variants={variants}
+            onChange={(rollout) => onChange({ ...draft, rollout })}
+          />
+        ) : (
+          <Select
+            value={draft.variantKey}
+            onValueChange={(val) => onChange({ ...draft, variantKey: val })}
+            aria-label={t('serve_variant_aria')}
+          >
+            {variants.map((v) => (
+              <SelectItem key={v.key} value={v.key}>
+                {v.key}
+              </SelectItem>
+            ))}
+          </Select>
+        )}
       </div>
 
       {/* Priority */}
@@ -706,6 +758,91 @@ function RuleEditor({
           onChange={(e) => onChange({ ...draft, priority: parseInt(e.target.value, 10) || 0 })}
           className="w-24 py-1.5 px-2"
         />
+      </div>
+    </div>
+  )
+}
+
+// ── Rollout editor ──────────────────────────────────────────────────────────
+
+function RolloutEditor({
+  entries,
+  variants,
+  onChange,
+}: {
+  entries: RolloutEntry[]
+  variants: { key: string; name: string }[]
+  onChange: (entries: RolloutEntry[]) => void
+}) {
+  const { t } = useTranslation('rules')
+  const totalWeight = entries.reduce((sum, e) => sum + e.weight, 0)
+  const isValid = totalWeight === 100
+
+  function updateEntry(i: number, patch: Partial<RolloutEntry>) {
+    onChange(entries.map((e, idx) => (idx === i ? { ...e, ...patch } : e)))
+  }
+
+  function removeEntry(i: number) {
+    onChange(entries.filter((_, idx) => idx !== i))
+  }
+
+  function addEntry() {
+    const usedKeys = new Set(entries.map((e) => e.variantKey))
+    const nextVariant = variants.find((v) => !usedKeys.has(v.key))?.key ?? variants[0]?.key ?? ''
+    onChange([...entries, { variantKey: nextVariant, weight: 0 }])
+  }
+
+  return (
+    <div className="space-y-2">
+      {entries.map((entry, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <Select
+            value={entry.variantKey}
+            onValueChange={(val) => updateEntry(i, { variantKey: val })}
+            aria-label={t('rollout_variant')}
+            className="flex-1"
+          >
+            {variants.map((v) => (
+              <SelectItem key={v.key} value={v.key}>
+                {v.key}
+              </SelectItem>
+            ))}
+          </Select>
+          <div className="w-20 shrink-0">
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              value={entry.weight}
+              onChange={(e) => updateEntry(i, { weight: parseInt(e.target.value, 10) || 0 })}
+              aria-label={t('rollout_weight')}
+              className="py-1.5 px-2 text-right"
+            />
+          </div>
+          <span className="text-xs text-[var(--color-text-muted)] w-4">%</span>
+          {entries.length > 1 && (
+            <button
+              onClick={() => removeEntry(i)}
+              className="text-[var(--color-text-muted)] hover:text-[var(--color-status-error)] focus:outline-none"
+              aria-label={t('condition_remove_aria', { n: i + 1 })}
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      ))}
+      <div className="flex items-center justify-between">
+        {entries.length < variants.length && (
+          <button
+            onClick={addEntry}
+            className="text-xs text-[var(--color-accent)] hover:underline focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] rounded"
+          >
+            {t('rollout_add_split')}
+          </button>
+        )}
+        <span className={`text-xs ml-auto ${isValid ? 'text-[var(--color-text-muted)]' : 'text-[var(--color-status-error)]'}`}>
+          {isValid ? t('rollout_weight_valid') : t('rollout_weight_error', { total: totalWeight })}
+        </span>
       </div>
     </div>
   )

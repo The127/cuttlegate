@@ -11,7 +11,7 @@ import (
 
 // ruleService is the use-case interface required by RuleHandler.
 type ruleService interface {
-	Create(ctx context.Context, flagID, environmentID string, priority int, conditions []domain.Condition, variantKey, name string) (*domain.Rule, error)
+	Create(ctx context.Context, flagID, environmentID string, priority int, conditions []domain.Condition, variantKey, name string, rollout []domain.RolloutEntry) (*domain.Rule, error)
 	List(ctx context.Context, flagID, environmentID string) ([]*domain.Rule, error)
 	Update(ctx context.Context, rule *domain.Rule) (*domain.Rule, error)
 	Delete(ctx context.Context, id string) error
@@ -50,15 +50,22 @@ type conditionJSON struct {
 	Values    []string `json:"values"`
 }
 
+// rolloutEntryJSON is the JSON representation of a domain.RolloutEntry.
+type rolloutEntryJSON struct {
+	VariantKey string `json:"variantKey"`
+	Weight     int    `json:"weight"`
+}
+
 // ruleResponse is the JSON representation of a domain.Rule.
 type ruleResponse struct {
-	ID         string          `json:"id"`
-	Name       string          `json:"name"`
-	Priority   int             `json:"priority"`
-	Conditions []conditionJSON `json:"conditions"`
-	VariantKey string          `json:"variantKey"`
-	Enabled    bool            `json:"enabled"`
-	CreatedAt  time.Time       `json:"createdAt"`
+	ID         string             `json:"id"`
+	Name       string             `json:"name"`
+	Priority   int                `json:"priority"`
+	Conditions []conditionJSON    `json:"conditions"`
+	VariantKey string             `json:"variantKey"`
+	Rollout    []rolloutEntryJSON `json:"rollout,omitempty"`
+	Enabled    bool               `json:"enabled"`
+	CreatedAt  time.Time          `json:"createdAt"`
 }
 
 func toRuleResponse(r *domain.Rule) ruleResponse {
@@ -70,15 +77,34 @@ func toRuleResponse(r *domain.Rule) ruleResponse {
 			Values:    c.Values,
 		}
 	}
+	var rollout []rolloutEntryJSON
+	if len(r.Rollout) > 0 {
+		rollout = make([]rolloutEntryJSON, len(r.Rollout))
+		for i, e := range r.Rollout {
+			rollout[i] = rolloutEntryJSON{VariantKey: e.VariantKey, Weight: e.Weight}
+		}
+	}
 	return ruleResponse{
 		ID:         r.ID,
 		Name:       r.Name,
 		Priority:   r.Priority,
 		Conditions: conditions,
 		VariantKey: r.VariantKey,
+		Rollout:    rollout,
 		Enabled:    r.Enabled,
 		CreatedAt:  r.CreatedAt.UTC(),
 	}
+}
+
+func rolloutFromJSON(raw []rolloutEntryJSON) []domain.RolloutEntry {
+	if len(raw) == 0 {
+		return nil
+	}
+	entries := make([]domain.RolloutEntry, len(raw))
+	for i, e := range raw {
+		entries[i] = domain.RolloutEntry{VariantKey: e.VariantKey, Weight: e.Weight}
+	}
+	return entries
 }
 
 func conditionsFromJSON(raw []conditionJSON) []domain.Condition {
@@ -115,17 +141,18 @@ func (h *RuleHandler) create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var body struct {
-		Conditions []conditionJSON `json:"conditions"`
-		VariantKey string          `json:"variantKey"`
-		Priority   int             `json:"priority"`
-		Name       string          `json:"name"`
+		Conditions []conditionJSON    `json:"conditions"`
+		VariantKey string             `json:"variantKey"`
+		Rollout    []rolloutEntryJSON `json:"rollout"`
+		Priority   int                `json:"priority"`
+		Name       string             `json:"name"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		WriteError(w, newBadRequest("invalid request body"))
 		return
 	}
 
-	rule, err := h.svc.Create(r.Context(), flag.ID, env.ID, body.Priority, conditionsFromJSON(body.Conditions), body.VariantKey, body.Name)
+	rule, err := h.svc.Create(r.Context(), flag.ID, env.ID, body.Priority, conditionsFromJSON(body.Conditions), body.VariantKey, body.Name, rolloutFromJSON(body.Rollout))
 	if err != nil {
 		WriteError(w, err)
 		return
@@ -157,11 +184,12 @@ func (h *RuleHandler) update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var body struct {
-		Conditions []conditionJSON `json:"conditions"`
-		VariantKey string          `json:"variantKey"`
-		Priority   int             `json:"priority"`
-		Enabled    bool            `json:"enabled"`
-		Name       string          `json:"name"`
+		Conditions []conditionJSON    `json:"conditions"`
+		VariantKey string             `json:"variantKey"`
+		Rollout    []rolloutEntryJSON `json:"rollout"`
+		Priority   int                `json:"priority"`
+		Enabled    bool               `json:"enabled"`
+		Name       string             `json:"name"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		WriteError(w, newBadRequest("invalid request body"))
@@ -175,6 +203,7 @@ func (h *RuleHandler) update(w http.ResponseWriter, r *http.Request) {
 		Name:          body.Name,
 		Conditions:    conditionsFromJSON(body.Conditions),
 		VariantKey:    body.VariantKey,
+		Rollout:       rolloutFromJSON(body.Rollout),
 		Priority:      body.Priority,
 		Enabled:       body.Enabled,
 	}

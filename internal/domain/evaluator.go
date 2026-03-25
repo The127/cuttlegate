@@ -52,8 +52,15 @@ func Evaluate(flag *Flag, state *FlagEnvironmentState, rules []*Rule, ctx EvalCo
 			continue
 		}
 		if matchesAll(rule.Conditions, ctx, segmentSlugs) {
+			variantKey := rule.VariantKey
+			if len(rule.Rollout) > 0 {
+				if ctx.UserID == "" {
+					continue // no user key → can't bucket, skip rule
+				}
+				variantKey = resolveRollout(rule.Rollout, Bucket(flag.Key, ctx.UserID))
+			}
 			return EvalResult{
-				VariantKey:      rule.VariantKey,
+				VariantKey:      variantKey,
 				Reason:          ReasonRuleMatch,
 				MatchedRuleID:   rule.ID,
 				MatchedRuleName: rule.Name,
@@ -62,6 +69,20 @@ func Evaluate(flag *Flag, state *FlagEnvironmentState, rules []*Rule, ctx EvalCo
 	}
 
 	return EvalResult{VariantKey: flag.DefaultVariantKey, Reason: ReasonDefault}
+}
+
+// resolveRollout picks a variant key from a weighted rollout based on a bucket value [0, 99].
+// Weights must sum to 100 (enforced by Rule.Validate).
+func resolveRollout(entries []RolloutEntry, bucket int) string {
+	cumulative := 0
+	for _, e := range entries {
+		cumulative += e.Weight
+		if bucket < cumulative {
+			return e.VariantKey
+		}
+	}
+	// Fallback: should not happen if weights sum to 100, but return last entry to be safe.
+	return entries[len(entries)-1].VariantKey
 }
 
 // matchesAll returns true when every condition in the slice matches ctx.

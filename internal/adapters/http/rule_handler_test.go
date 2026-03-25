@@ -23,7 +23,7 @@ func newFakeRuleService() *fakeRuleService {
 	return &fakeRuleService{rules: make(map[string]*domain.Rule)}
 }
 
-func (f *fakeRuleService) Create(_ context.Context, flagID, environmentID string, priority int, conditions []domain.Condition, variantKey, name string) (*domain.Rule, error) {
+func (f *fakeRuleService) Create(_ context.Context, flagID, environmentID string, priority int, conditions []domain.Condition, variantKey, name string, rollout []domain.RolloutEntry) (*domain.Rule, error) {
 	if f.err != nil {
 		return nil, f.err
 	}
@@ -35,6 +35,7 @@ func (f *fakeRuleService) Create(_ context.Context, flagID, environmentID string
 		Priority:      priority,
 		Conditions:    conditions,
 		VariantKey:    variantKey,
+		Rollout:       rollout,
 		Enabled:       true,
 		CreatedAt:     time.Date(2026, 3, 21, 0, 0, 0, 0, time.UTC),
 	}

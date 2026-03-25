@@ -29,6 +29,12 @@
   "attribute_placeholder": "attribute",
   "value_placeholder": "value(s), comma-separated",
   "select_segment": "Select segment…",
+  "rollout_toggle": "Percentage rollout",
+  "rollout_variant": "Variant",
+  "rollout_weight": "Weight %",
+  "rollout_add_split": "+ Add split",
+  "rollout_weight_error": "Weights must sum to 100 (currently {{total}})",
+  "rollout_weight_valid": "100%",
   "operators": {
     "eq": "equals",
     "neq": "not equals",

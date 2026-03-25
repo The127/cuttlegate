@@ -26,6 +26,12 @@
   "attribute_placeholder": "Attribut",
   "value_placeholder": "Wert(e), kommagetrennt",
   "select_segment": "Segment auswählen…",
+  "rollout_toggle": "Prozentuale Verteilung",
+  "rollout_variant": "Variante",
+  "rollout_weight": "Gewicht %",
+  "rollout_add_split": "+ Aufteilung hinzufügen",
+  "rollout_weight_error": "Gewichte müssen sich auf 100 summieren (aktuell {{total}})",
+  "rollout_weight_valid": "100%",
   "operators": {
     "eq": "gleich",
     "neq": "ungleich",
