@@ -75,7 +75,7 @@ func (f *fakeEnvironmentRepository) Delete(_ context.Context, id string) error {
 }
 
 func newEnvironmentService() *app.EnvironmentService {
-	return app.NewEnvironmentService(newFakeEnvironmentRepository())
+	return app.NewEnvironmentService(newFakeEnvironmentRepository(), newFakeFlagRepository(), newFakeFlagEnvironmentStateRepository())
 }
 
 func TestEnvironmentService_Create_Succeeds(t *testing.T) {
@@ -97,6 +97,40 @@ func TestEnvironmentService_Create_Succeeds(t *testing.T) {
 	}
 	if e.CreatedAt.IsZero() {
 		t.Error("expected CreatedAt to be set")
+	}
+}
+
+func TestEnvironmentService_Create_BackfillsStateRowsForExistingFlags(t *testing.T) {
+	flagRepo := newFakeFlagRepository()
+	envRepo := newFakeEnvironmentRepository()
+	stateRepo := newFakeFlagEnvironmentStateRepository()
+	svc := app.NewEnvironmentService(envRepo, flagRepo, stateRepo)
+	ctx := authCtx("admin-1", domain.RoleAdmin)
+
+	// Seed two flags in the project.
+	f1 := &domain.Flag{ID: "flag-1", ProjectID: "proj-1", Key: "a", Name: "A", Type: domain.FlagTypeBool, Variants: []domain.Variant{{Key: "true", Name: "On"}, {Key: "false", Name: "Off"}}, DefaultVariantKey: "false"}
+	f2 := &domain.Flag{ID: "flag-2", ProjectID: "proj-1", Key: "b", Name: "B", Type: domain.FlagTypeBool, Variants: []domain.Variant{{Key: "true", Name: "On"}, {Key: "false", Name: "Off"}}, DefaultVariantKey: "false"}
+	flagRepo.byKey[flagKey("proj-1", "a")] = f1
+	flagRepo.byID["flag-1"] = f1
+	flagRepo.byKey[flagKey("proj-1", "b")] = f2
+	flagRepo.byID["flag-2"] = f2
+
+	env, err := svc.Create(ctx, "proj-1", "Dev", "dev")
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	s1 := stateRepo.states[stateKey("flag-1", env.ID)]
+	if s1 == nil {
+		t.Error("expected state row for flag-1")
+	} else if s1.Enabled {
+		t.Error("expected state to be disabled for flag-1")
+	}
+	s2 := stateRepo.states[stateKey("flag-2", env.ID)]
+	if s2 == nil {
+		t.Error("expected state row for flag-2")
+	} else if s2.Enabled {
+		t.Error("expected state to be disabled for flag-2")
 	}
 }
 

@@ -10,12 +10,14 @@ import (
 
 // EnvironmentService orchestrates environment use cases.
 type EnvironmentService struct {
-	repo ports.EnvironmentRepository
+	repo      ports.EnvironmentRepository
+	flagRepo  ports.FlagRepository
+	stateRepo ports.FlagEnvironmentStateRepository
 }
 
 // NewEnvironmentService constructs an EnvironmentService.
-func NewEnvironmentService(repo ports.EnvironmentRepository) *EnvironmentService {
-	return &EnvironmentService{repo: repo}
+func NewEnvironmentService(repo ports.EnvironmentRepository, flagRepo ports.FlagRepository, stateRepo ports.FlagEnvironmentStateRepository) *EnvironmentService {
+	return &EnvironmentService{repo: repo, flagRepo: flagRepo, stateRepo: stateRepo}
 }
 
 // Create assigns a UUID and creation timestamp, then persists the environment under projectID.
@@ -41,6 +43,26 @@ func (s *EnvironmentService) Create(ctx context.Context, projectID, name, envSlu
 	}
 	if err := s.repo.Create(ctx, e); err != nil {
 		return nil, err
+	}
+	// Backfill: create a disabled state row for every existing flag in the project.
+	flags, err := s.flagRepo.ListByProject(ctx, projectID)
+	if err != nil {
+		_ = s.repo.Delete(ctx, e.ID)
+		return nil, err
+	}
+	if len(flags) > 0 {
+		states := make([]*domain.FlagEnvironmentState, len(flags))
+		for i, f := range flags {
+			states[i] = &domain.FlagEnvironmentState{
+				FlagID:        f.ID,
+				EnvironmentID: e.ID,
+				Enabled:       false,
+			}
+		}
+		if err := s.stateRepo.CreateBatch(ctx, states); err != nil {
+			_ = s.repo.Delete(ctx, e.ID)
+			return nil, err
+		}
 	}
 	return &e, nil
 }

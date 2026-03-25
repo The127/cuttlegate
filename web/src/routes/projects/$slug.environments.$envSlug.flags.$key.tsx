@@ -8,7 +8,6 @@ import { fetchJSON, patchJSON, postJSON, deleteRequest, APIError } from '../../a
 import { useFlagSSE } from '../../hooks/useFlagSSE'
 import { Button, Input, Select, SelectItem, CopyableCode, Textarea } from '../../components/ui'
 import { DeleteConfirmModal } from '../../components/DeleteConfirmModal'
-import { PromoteDialog } from '../../components/PromoteDialog'
 import { FlagAnalyticsPanel } from '../../components/FlagAnalyticsPanel'
 import { PageHeading } from '../../components/PageHeading'
 import { formatAbsoluteDate, formatRelativeDate } from '../../utils/date'
@@ -75,12 +74,6 @@ function FlagDetailPage() {
     },
   })
 
-  const toggleMutation = useMutation({
-    mutationFn: (enabled: boolean) =>
-      patchJSON(`/api/v1/projects/${slug}/environments/${envSlug}/flags/${key}`, { enabled }),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey }),
-  })
-
   const deleteMutation = useMutation({
     mutationFn: () => deleteRequest(`/api/v1/projects/${slug}/flags/${key}`),
     onSuccess: () => {
@@ -90,14 +83,6 @@ function FlagDetailPage() {
   })
 
   const [pendingDelete, setPendingDelete] = useState(false)
-  const [pendingPromote, setPendingPromote] = useState(false)
-
-  const { data: environments } = useQuery({
-    queryKey: ['environments', slug],
-    queryFn: () =>
-      fetchJSON<{ environments: Environment[] }>(`/api/v1/projects/${slug}/environments`)
-        .then((d) => d.environments),
-  })
 
   if (isLoading) return <FlagDetailSkeleton />
 
@@ -132,31 +117,11 @@ function FlagDetailPage() {
         flag={flag}
         slug={slug}
         envSlug={envSlug}
-        isToggling={toggleMutation.isPending}
-        onToggle={(enabled) => toggleMutation.mutate(enabled)}
         onDeleteIntent={() => setPendingDelete(true)}
-        onPromoteIntent={() => setPendingPromote(true)}
         onSaved={() => void queryClient.invalidateQueries({ queryKey })}
       />
 
       <EnvironmentTogglePanel slug={slug} flagKey={key} />
-
-      <div className="mt-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg p-4 flex gap-4">
-        <Link
-          to="/projects/$slug/environments/$envSlug/flags/$key/rules"
-          params={{ slug, envSlug, key }}
-          className="text-sm text-[var(--color-accent)] hover:underline"
-        >
-          {t('detail.targeting_rules')}
-        </Link>
-        <Link
-          to="/projects/$slug/environments/$envSlug/flags/$key/evaluations"
-          params={{ slug, envSlug, key }}
-          className="text-sm text-[var(--color-accent)] hover:underline"
-        >
-          {t('audit.tab_title')}
-        </Link>
-      </div>
 
       <FlagAnalyticsPanel slug={slug} envSlug={envSlug} flagKey={key} flagType={flag.type} />
 
@@ -174,17 +139,6 @@ function FlagDetailPage() {
         />
       )}
 
-      {pendingPromote && environments && (
-        <PromoteDialog
-          mode="single"
-          projectSlug={slug}
-          sourceEnvSlug={envSlug}
-          flagKey={key}
-          environments={environments}
-          onClose={() => setPendingPromote(false)}
-          onSuccess={() => void queryClient.invalidateQueries({ queryKey })}
-        />
-      )}
     </div>
   )
 }
@@ -193,19 +147,13 @@ function FlagDetailCard({
   flag,
   slug,
   envSlug,
-  isToggling,
-  onToggle,
   onDeleteIntent,
-  onPromoteIntent,
   onSaved,
 }: {
   flag: FlagDetail
   slug: string
   envSlug: string
-  isToggling: boolean
-  onToggle: (enabled: boolean) => void
   onDeleteIntent: () => void
-  onPromoteIntent: () => void
   onSaved: () => void
 }) {
   const { t } = useTranslation('flags')
@@ -259,11 +207,15 @@ function FlagDetailCard({
         <div className="flex items-center gap-2">
           {!editing && (
             <>
+              <Link
+                to="/projects/$slug/environments/$envSlug/flags/$key/rules"
+                params={{ slug, envSlug, key: flag.key }}
+                className="text-sm text-[var(--color-accent)] hover:underline"
+              >
+                {t('detail.targeting_rules')}
+              </Link>
               <Button variant="secondary" size="sm" onClick={() => setEditing(true)}>
                 {t('actions.edit', { ns: 'common' })}
-              </Button>
-              <Button variant="secondary" size="sm" onClick={onPromoteIntent}>
-                {t('promote.button')}
               </Button>
             </>
           )}
@@ -344,29 +296,6 @@ function FlagDetailCard({
           )}
         </div>
 
-        {/* Enabled toggle */}
-        <div>
-          <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
-            {t('detail.status_label', { env: envSlug })}
-          </label>
-          <button
-            onClick={() => onToggle(!flag.enabled)}
-            disabled={isToggling}
-            aria-pressed={flag.enabled}
-            aria-label={flag.enabled ? t('toggle.disable') : t('toggle.enable')}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-60 ${
-              flag.enabled
-                ? 'bg-[rgba(16,217,168,0.08)] text-[var(--color-status-enabled)] border-[var(--color-status-enabled)] hover:bg-[rgba(16,217,168,0.08)] focus:ring-[var(--color-status-enabled)]'
-                : 'bg-[var(--color-surface)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:bg-[var(--color-surface-elevated)] focus:ring-[var(--color-accent)]'
-            }`}
-          >
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${flag.enabled ? 'bg-[var(--color-status-enabled)]' : 'bg-[var(--color-surface-elevated)]'}`}
-              aria-hidden="true"
-            />
-            {flag.enabled ? t('toggle.enabled') : t('toggle.disabled')}
-          </button>
-        </div>
       </div>
 
       {/* Edit actions */}

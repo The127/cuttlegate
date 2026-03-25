@@ -58,6 +58,7 @@ func run() error {
 		cfg.OIDCAudience,
 		cfg.OIDCRoleClaim,
 		cfg.OIDCMissingRolePolicy,
+		cfg.OIDCRoleMapper,
 		slog.Default(),
 	)
 	if err != nil {
@@ -124,7 +125,6 @@ func run() error {
 		auditRepo := dbadapter.NewPostgresAuditRepository(conn)
 		evalEventRepo := dbadapter.NewPostgresEvaluationEventRepository(conn)
 		evalStatsRepo := dbadapter.NewPostgresFlagEvaluationStatsRepository(conn)
-		uowFactory := dbadapter.NewPostgresUnitOfWorkFactory(conn)
 
 		requireBearer := httpadapter.RequireBearer(verifier, userRepo)
 		tenantRLS := httpadapter.TenantRLS(conn, projRepo)
@@ -134,7 +134,7 @@ func run() error {
 		}
 
 		projSvc := app.NewProjectService(projRepo)
-		envSvc := app.NewEnvironmentService(envRepo)
+		envSvc := app.NewEnvironmentService(envRepo, flagRepo, stateRepo)
 		memberSvc := app.NewProjectMemberService(memberRepo, projRepo, userRepo)
 		flagSvc := app.NewFlagService(flagRepo, envRepo, stateRepo, broker, auditRepo)
 		ruleSvc := app.NewRuleService(ruleRepo)
@@ -144,8 +144,6 @@ func run() error {
 		evalStatsSvc := app.NewEvaluationStatsService(evalStatsRepo, flagRepo)
 		apiKeySvc := app.NewAPIKeyService(apiKeyRepo)
 		auditSvc := app.NewAuditService(auditRepo)
-		promotionSvc := app.NewPromotionService(uowFactory, flagRepo)
-
 		// Start retention worker — runs in background, exits when ctx is cancelled.
 		dbadapter.StartEvaluationRetentionWorker(ctx, evalEventRepo, cfg.EvalEventRetentionDays, cfg.EvalEventRetentionInterval)
 
@@ -167,8 +165,6 @@ func run() error {
 
 		httpadapter.NewSSEHandler(broker, projSvc, envSvc).RegisterRoutes(mux, requireBearerWithRLS)
 		httpadapter.NewAuditHandler(auditSvc, projSvc).RegisterRoutes(mux, requireBearerWithRLS)
-		httpadapter.NewPromotionHandler(promotionSvc, projSvc, envSvc).RegisterRoutes(mux, requireBearerWithRLS)
-
 		// ── MCP server ────────────────────────────────────────────────────────
 		mcpMux := http.NewServeMux()
 		mcpSrv := mcpadapter.NewServer(apiKeySvc, apiKeyRepo, flagSvc, evalSvc, projSvc, envSvc)

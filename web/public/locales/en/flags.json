@@ -48,6 +48,7 @@
     "key_invalid": "Flag key must start with a letter or digit and contain only lowercase letters, digits, and hyphens",
     "key_conflict": "A flag with this key already exists in this project",
     "server_error": "Something went wrong. Please try again.",
+    "no_environments": "Create at least one environment before adding flags.",
     "type_bool": "Boolean",
     "type_string": "String",
     "type_number": "Number",
@@ -72,7 +73,6 @@
     "name_label": "Name",
     "variants_label": "Variants",
     "default_variant_label": "Default variant",
-    "status_label": "Status in {{env}}",
     "save_failed": "Save failed. Please try again.",
     "delete_aria": "Delete flag",
     "variant_name_aria": "Variant name for {{key}}",
@@ -212,27 +212,5 @@
     "env_loading": "Loading...",
     "env_badge_enabled": "{{env}}: on",
     "env_badge_disabled": "{{env}}: off"
-  },
-  "promote": {
-    "button": "Promote to\u2026",
-    "bulk_button": "Promote all \u2192",
-    "dialog_title_single": "Promote {{key}} to another environment",
-    "dialog_title_bulk": "Promote all flags from {{source}} to another environment",
-    "target_label": "Target environment",
-    "select_target": "Select target environment\u2026",
-    "confirm_button": "Confirm promotion",
-    "confirming": "Promoting\u2026",
-    "result_title": "Changes applied",
-    "done_button": "Done",
-    "error": "Promotion failed. Please try again.",
-    "same_env_error": "Source and target environments must differ.",
-    "forbidden_error": "You must be an admin to promote flags.",
-    "select_target_aria": "Select target environment for promotion",
-    "result_enabled_on": "on",
-    "result_enabled_off": "off",
-    "result_enabled_label": "Enabled",
-    "result_rules_added": "{{count}} rule(s) added",
-    "result_rules_removed": "{{count}} rule(s) removed",
-    "result_no_rule_change": "Rules unchanged"
   }
 }

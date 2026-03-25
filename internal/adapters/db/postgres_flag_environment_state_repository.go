@@ -92,19 +92,11 @@ func (r *PostgresFlagEnvironmentStateRepository) Upsert(ctx context.Context, sta
 }
 
 func (r *PostgresFlagEnvironmentStateRepository) SetEnabled(ctx context.Context, flagID, environmentID string, enabled bool) error {
-	res, err := r.conn(ctx).ExecContext(ctx,
-		`UPDATE flag_environment_states SET enabled = $1 WHERE flag_id = $2 AND environment_id = $3`,
-		enabled, flagID, environmentID,
+	_, err := r.conn(ctx).ExecContext(ctx,
+		`INSERT INTO flag_environment_states (flag_id, environment_id, enabled)
+		 VALUES ($1, $2, $3)
+		 ON CONFLICT (flag_id, environment_id) DO UPDATE SET enabled = EXCLUDED.enabled`,
+		flagID, environmentID, enabled,
 	)
-	if err != nil {
-		return err
-	}
-	n, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if n == 0 {
-		return domain.ErrNotFound
-	}
-	return nil
+	return err
 }

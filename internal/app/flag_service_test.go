@@ -84,11 +84,7 @@ func (f *fakeFlagEnvironmentStateRepository) GetByFlagAndEnvironment(_ context.C
 
 func (f *fakeFlagEnvironmentStateRepository) SetEnabled(_ context.Context, flagID, environmentID string, enabled bool) error {
 	k := stateKey(flagID, environmentID)
-	s, ok := f.states[k]
-	if !ok {
-		return domain.ErrNotFound
-	}
-	s.Enabled = enabled
+	f.states[k] = &domain.FlagEnvironmentState{FlagID: flagID, EnvironmentID: environmentID, Enabled: enabled}
 	return nil
 }
 
@@ -99,7 +95,7 @@ func (f *fakeFlagEnvironmentStateRepository) Upsert(_ context.Context, state *do
 	return nil
 }
 
-// newFlagSvc constructs a FlagService with in-memory fakes. Repos are discarded when not needed.
+// newFlagSvc constructs a FlagService with in-memory fakes.
 func newFlagSvc() *app.FlagService {
 	return app.NewFlagService(newFakeFlagRepository(), newFakeEnvironmentRepository(), newFakeFlagEnvironmentStateRepository(), noOpPublisher{}, noOpAuditRepository{})
 }
@@ -363,6 +359,17 @@ func TestFlagService_Create_ViewerWrappedForbidden(t *testing.T) {
 	}
 }
 
+func TestFlagService_Create_NoEnvironments_Succeeds(t *testing.T) {
+	svc := newFlagSvc() // no environments seeded
+	f := validBoolFlag("proj-1")
+	if err := svc.Create(authCtx("admin-1", domain.RoleAdmin), f); err != nil {
+		t.Fatalf("expected flag creation without environments to succeed, got %v", err)
+	}
+	if f.ID == "" {
+		t.Error("expected non-empty ID after Create")
+	}
+}
+
 // ── FlagEnvironmentState scenarios ───────────────────────────────────────────
 
 // Scenario 1: creating a flag auto-creates a disabled state row for every existing environment.
@@ -473,8 +480,8 @@ func TestFlagService_ListByEnvironment_NoFlags_ReturnsEmptySlice(t *testing.T) {
 	}
 }
 
-// Scenario 6: SetEnabled on non-existent state row returns ErrNotFound.
-func TestFlagService_SetEnabled_MissingStateRow_ReturnsErrNotFound(t *testing.T) {
+// Scenario 6: SetEnabled upserts when no state row exists yet.
+func TestFlagService_SetEnabled_MissingStateRow_Upserts(t *testing.T) {
 	flagRepo := newFakeFlagRepository()
 	envRepo := newFakeEnvironmentRepository()
 	stateRepo := newFakeFlagEnvironmentStateRepository()
@@ -489,8 +496,15 @@ func TestFlagService_SetEnabled_MissingStateRow_ReturnsErrNotFound(t *testing.T)
 		ProjectID: "proj-1", EnvironmentID: "env-new", FlagKey: "dark-mode",
 		Enabled: true, ProjectSlug: "alpha", EnvSlug: "new",
 	})
-	if !errors.Is(err, domain.ErrNotFound) {
-		t.Errorf("expected ErrNotFound, got %v", err)
+	if err != nil {
+		t.Fatalf("expected upsert to succeed, got %v", err)
+	}
+	state := stateRepo.states[stateKey("flag-1", "env-new")]
+	if state == nil {
+		t.Fatal("expected state row to be created")
+	}
+	if !state.Enabled {
+		t.Error("expected state to be enabled")
 	}
 }
 
@@ -748,15 +762,10 @@ func TestFlagService_SetEnabled_NoEventOnFailure(t *testing.T) {
 	stateRepo := newFakeFlagEnvironmentStateRepository()
 	spy := &spyPublisher{}
 	svc := app.NewFlagService(flagRepo, newFakeEnvironmentRepository(), stateRepo, spy, noOpAuditRepository{})
-	// Flag exists but no state row → SetEnabled returns ErrNotFound.
-	f := validBoolFlag("proj-1")
-	f.ID = "flag-1"
-	flagRepo.byKey[flagKey("proj-1", "dark-mode")] = f
-	flagRepo.byID["flag-1"] = f
-
+	// Flag does not exist → SetEnabled returns ErrNotFound before reaching state repo.
 	err := svc.SetEnabled(authCtx("editor-1", domain.RoleEditor), app.SetEnabledParams{
-		ProjectID: "proj-1", EnvironmentID: "env-missing", FlagKey: "dark-mode",
-		Enabled: true, ProjectSlug: "alpha", EnvSlug: "missing",
+		ProjectID: "proj-1", EnvironmentID: "env-1", FlagKey: "ghost",
+		Enabled: true, ProjectSlug: "alpha", EnvSlug: "staging",
 	})
 	if err == nil {
 		t.Fatal("expected error, got nil")
