@@ -254,24 +254,44 @@ function FlagDetailCard({
                   {v.key}
                 </span>
                 {editing ? (
-                  <Input
-                    type="text"
-                    value={editVariants[i].name}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                      const updated = editVariants.map((ev: Variant, idx: number) =>
-                        idx === i ? { ...ev, name: e.target.value } : ev,
-                      )
-                      setEditVariants(updated)
-                    }}
-                    aria-label={t('detail.variant_name_aria', { key: v.key })}
-                    className="py-1 px-2"
-                  />
+                  <>
+                    <Input
+                      type="text"
+                      value={editVariants[i].name}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                        const updated = editVariants.map((ev: Variant, idx: number) =>
+                          idx === i ? { ...ev, name: e.target.value } : ev,
+                        )
+                        setEditVariants(updated)
+                      }}
+                      aria-label={t('detail.variant_name_aria', { key: v.key })}
+                      className="py-1 px-2"
+                    />
+                    {flag.type !== 'bool' && editVariants.length > 1 && v.key !== editDefaultVariantKey && (
+                      <button
+                        type="button"
+                        onClick={() => setEditVariants(editVariants.filter((_, idx) => idx !== i))}
+                        className="text-[var(--color-text-muted)] hover:text-[var(--color-status-error)] focus:outline-none focus:ring-2 focus:ring-[var(--color-status-error)] rounded p-0.5"
+                        aria-label={t('detail.remove_variant_aria', { key: v.key })}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    )}
+                  </>
                 ) : (
                   <span className="text-sm text-[var(--color-text-primary)]">{v.name}</span>
                 )}
               </li>
             ))}
           </ul>
+          {editing && flag.type !== 'bool' && (
+            <AddVariantRow
+              existingKeys={editVariants.map((v) => v.key)}
+              onAdd={(v) => setEditVariants([...editVariants, v])}
+            />
+          )}
         </div>
 
         {/* Default variant */}
@@ -323,6 +343,71 @@ function FlagDetailCard({
   )
 }
 
+
+const VARIANT_KEY_RE = /^[a-z0-9][a-z0-9_-]*$/
+
+function AddVariantRow({
+  existingKeys,
+  onAdd,
+}: {
+  existingKeys: string[]
+  onAdd: (v: Variant) => void
+}) {
+  const { t } = useTranslation('flags')
+  const [key, setKey] = useState('')
+  const [name, setName] = useState('')
+  const [error, setError] = useState<string | null>(null)
+
+  function handleAdd() {
+    const trimmedKey = key.trim()
+    if (!trimmedKey) {
+      setError(t('detail.variant_key_required'))
+      return
+    }
+    if (!VARIANT_KEY_RE.test(trimmedKey)) {
+      setError(t('detail.variant_key_invalid'))
+      return
+    }
+    if (existingKeys.includes(trimmedKey)) {
+      setError(t('detail.variant_key_duplicate'))
+      return
+    }
+    onAdd({ key: trimmedKey, name: name.trim() || trimmedKey })
+    setKey('')
+    setName('')
+    setError(null)
+  }
+
+  return (
+    <div className="mt-2 space-y-1">
+      <div className="flex items-center gap-2">
+        <Input
+          type="text"
+          value={key}
+          onChange={(e) => { setKey(e.target.value); setError(null) }}
+          placeholder={t('detail.variant_key_placeholder')}
+          className="font-mono py-1 px-2 w-24 shrink-0"
+          aria-label={t('detail.variant_key_aria')}
+          hasError={!!error}
+        />
+        <Input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={t('detail.variant_name_placeholder')}
+          className="py-1 px-2"
+          aria-label={t('detail.variant_new_name_aria')}
+        />
+        <Button variant="secondary" size="sm" onClick={handleAdd} type="button">
+          {t('detail.add_variant')}
+        </Button>
+      </div>
+      {error && (
+        <p className="text-xs text-[var(--color-status-error)]">{error}</p>
+      )}
+    </div>
+  )
+}
 
 function EnvironmentTogglePanel({ slug, flagKey }: { slug: string; flagKey: string }) {
   const { t } = useTranslation('flags')
