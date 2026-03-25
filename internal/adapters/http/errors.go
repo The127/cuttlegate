@@ -38,6 +38,8 @@ func WriteError(w http.ResponseWriter, err error) {
 		status, code, message = http.StatusBadRequest, "priority_conflict", err.Error()
 	case errors.Is(err, domain.ErrKeyRevoked):
 		status, code, message = http.StatusConflict, "key_revoked", "key has been revoked"
+	case errors.Is(err, domain.ErrVariantInUse):
+		status, code, message = http.StatusConflict, "variant_in_use", err.Error()
 	case errors.Is(err, domain.ErrConflict):
 		status, code, message = http.StatusConflict, "conflict", "resource already exists"
 	case errors.Is(err, domain.ErrForbidden):

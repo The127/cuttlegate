@@ -20,13 +20,14 @@ type FlagService struct {
 	repo      ports.FlagRepository
 	envRepo   ports.EnvironmentRepository
 	stateRepo ports.FlagEnvironmentStateRepository
+	ruleRepo  ports.RuleRepository
 	publisher ports.EventPublisher
 	auditRepo ports.AuditRepository
 }
 
 // NewFlagService constructs a FlagService.
-func NewFlagService(repo ports.FlagRepository, envRepo ports.EnvironmentRepository, stateRepo ports.FlagEnvironmentStateRepository, publisher ports.EventPublisher, auditRepo ports.AuditRepository) *FlagService {
-	return &FlagService{repo: repo, envRepo: envRepo, stateRepo: stateRepo, publisher: publisher, auditRepo: auditRepo}
+func NewFlagService(repo ports.FlagRepository, envRepo ports.EnvironmentRepository, stateRepo ports.FlagEnvironmentStateRepository, ruleRepo ports.RuleRepository, publisher ports.EventPublisher, auditRepo ports.AuditRepository) *FlagService {
+	return &FlagService{repo: repo, envRepo: envRepo, stateRepo: stateRepo, ruleRepo: ruleRepo, publisher: publisher, auditRepo: auditRepo}
 }
 
 type auditEntry struct {
@@ -228,7 +229,7 @@ func (s *FlagService) RenameVariant(ctx context.Context, projectID, flagKey, var
 // Returns ErrImmutableVariants for bool flags, ErrDefaultVariant if the variant is the default,
 // ErrLastVariant if it is the only remaining variant, ErrNotFound if the key does not exist.
 // Requires at least editor role.
-func (s *FlagService) DeleteVariant(ctx context.Context, projectID, flagKey, variantKey string) (*domain.Flag, error) {
+func (s *FlagService) DeleteVariant(ctx context.Context, projectID, flagKey, variantKey string, force bool) (*domain.Flag, error) {
 	if _, err := requireRole(ctx, domain.RoleEditor); err != nil {
 		return nil, err
 	}
@@ -255,6 +256,59 @@ func (s *FlagService) DeleteVariant(ctx context.Context, projectID, flagKey, var
 	if idx == -1 {
 		return nil, domain.ErrNotFound
 	}
+
+	// Check if any rules reference this variant.
+	rules, err := s.ruleRepo.ListByFlag(ctx, f.ID)
+	if err != nil {
+		return nil, err
+	}
+	var affectedRules []*domain.Rule
+	for _, r := range rules {
+		if r.VariantKey == variantKey {
+			affectedRules = append(affectedRules, r)
+		} else if len(r.Rollout) > 0 {
+			for _, e := range r.Rollout {
+				if e.VariantKey == variantKey {
+					affectedRules = append(affectedRules, r)
+					break
+				}
+			}
+		}
+	}
+	if len(affectedRules) > 0 && !force {
+		return nil, domain.ErrVariantInUse
+	}
+
+	// Force: patch affected rules to use the default variant.
+	for _, r := range affectedRules {
+		if r.VariantKey == variantKey {
+			r.VariantKey = f.DefaultVariantKey
+		}
+		if len(r.Rollout) > 0 {
+			var kept []domain.RolloutEntry
+			removedWeight := 0
+			for _, e := range r.Rollout {
+				if e.VariantKey == variantKey {
+					removedWeight += e.Weight
+				} else {
+					kept = append(kept, e)
+				}
+			}
+			if len(kept) == 0 {
+				// All entries pointed to the deleted variant — collapse to simple rule.
+				r.Rollout = nil
+				r.VariantKey = f.DefaultVariantKey
+			} else {
+				// Redistribute removed weight to the first remaining entry.
+				kept[0].Weight += removedWeight
+				r.Rollout = kept
+			}
+		}
+		if err := s.ruleRepo.Upsert(ctx, r); err != nil {
+			return nil, err
+		}
+	}
+
 	f.Variants = append(f.Variants[:idx], f.Variants[idx+1:]...)
 	if err := f.Validate(); err != nil {
 		return nil, err

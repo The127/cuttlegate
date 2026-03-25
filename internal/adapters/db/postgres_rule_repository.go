@@ -88,6 +88,31 @@ func unmarshalConditions(data []byte) ([]domain.Condition, error) {
 	return conditions, nil
 }
 
+// ListByFlag returns all rules for a flag across all environments.
+func (r *PostgresRuleRepository) ListByFlag(ctx context.Context, flagID string) ([]*domain.Rule, error) {
+	rows, err := r.db.QueryContext(ctx,
+		`SELECT id, flag_id, environment_id, name, priority, conditions, variant_key, rollout, enabled, created_at
+		 FROM rules
+		 WHERE flag_id = $1
+		 ORDER BY environment_id, priority ASC`,
+		flagID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	rules := make([]*domain.Rule, 0)
+	for rows.Next() {
+		rule, err := scanRuleRow(rows)
+		if err != nil {
+			return nil, err
+		}
+		rules = append(rules, rule)
+	}
+	return rules, rows.Err()
+}
+
 // ListByFlagEnvironment returns all rules for a flag+environment, ordered by priority ascending.
 func (r *PostgresRuleRepository) ListByFlagEnvironment(ctx context.Context, flagID, environmentID string) ([]*domain.Rule, error) {
 	rows, err := r.db.QueryContext(ctx,

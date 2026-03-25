@@ -85,7 +85,7 @@ func (f *fakeFlagVariantService) RenameVariant(_ context.Context, projectID, fla
 	return nil, domain.ErrNotFound
 }
 
-func (f *fakeFlagVariantService) DeleteVariant(_ context.Context, projectID, flagKey, variantKey string) (*domain.Flag, error) {
+func (f *fakeFlagVariantService) DeleteVariant(_ context.Context, projectID, flagKey, variantKey string, _ bool) (*domain.Flag, error) {
 	if f.err != nil {
 		return nil, f.err
 	}

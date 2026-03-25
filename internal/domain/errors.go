@@ -39,3 +39,6 @@ var ErrPriorityConflict = errors.New("a rule with this priority already exists")
 
 // ErrKeyRevoked is returned when an operation is attempted on a revoked API key.
 var ErrKeyRevoked = errors.New("key revoked")
+
+// ErrVariantInUse is returned when deleting a variant that is referenced by targeting rules.
+var ErrVariantInUse = errors.New("variant is referenced by targeting rules")

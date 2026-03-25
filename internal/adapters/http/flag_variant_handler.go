@@ -12,7 +12,7 @@ import (
 type flagVariantService interface {
 	AddVariant(ctx context.Context, projectID, flagKey string, v domain.Variant) (*domain.Flag, error)
 	RenameVariant(ctx context.Context, projectID, flagKey, variantKey, newName string) (*domain.Flag, error)
-	DeleteVariant(ctx context.Context, projectID, flagKey, variantKey string) (*domain.Flag, error)
+	DeleteVariant(ctx context.Context, projectID, flagKey, variantKey string, force bool) (*domain.Flag, error)
 }
 
 // FlagVariantHandler handles HTTP requests for variant management.
@@ -95,7 +95,8 @@ func (h *FlagVariantHandler) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	f, err := h.svc.DeleteVariant(r.Context(), proj.ID, r.PathValue("key"), r.PathValue("variant_key"))
+	force := r.URL.Query().Get("force") == "true"
+	f, err := h.svc.DeleteVariant(r.Context(), proj.ID, r.PathValue("key"), r.PathValue("variant_key"), force)
 	if err != nil {
 		WriteError(w, err)
 		return

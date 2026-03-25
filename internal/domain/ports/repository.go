@@ -38,6 +38,8 @@ type EnvironmentRepository interface {
 
 // RuleRepository is the port for persisting and retrieving targeting rules.
 type RuleRepository interface {
+	// ListByFlag returns all rules for a flag across all environments.
+	ListByFlag(ctx context.Context, flagID string) ([]*domain.Rule, error)
 	ListByFlagEnvironment(ctx context.Context, flagID, environmentID string) ([]*domain.Rule, error)
 	// ListByEnvironment returns all rules for an environment ordered by flag_id then priority ascending.
 	// Used by EvaluateAll to batch-load rules in one query instead of one per flag.
