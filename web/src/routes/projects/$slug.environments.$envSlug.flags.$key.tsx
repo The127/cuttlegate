@@ -381,23 +381,27 @@ function AddVariantRow({
   return (
     <div className="mt-2 space-y-1">
       <div className="flex items-center gap-2">
-        <Input
-          type="text"
-          value={key}
-          onChange={(e) => { setKey(e.target.value); setError(null) }}
-          placeholder={t('detail.variant_key_placeholder')}
-          className="font-mono py-1 px-2 w-24 shrink-0"
-          aria-label={t('detail.variant_key_aria')}
-          hasError={!!error}
-        />
-        <Input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder={t('detail.variant_name_placeholder')}
-          className="py-1 px-2"
-          aria-label={t('detail.variant_new_name_aria')}
-        />
+        <div className="w-24 shrink-0">
+          <Input
+            type="text"
+            value={key}
+            onChange={(e) => { setKey(e.target.value); setError(null) }}
+            placeholder={t('detail.variant_key_placeholder')}
+            className="font-mono py-1 px-2"
+            aria-label={t('detail.variant_key_aria')}
+            hasError={!!error}
+          />
+        </div>
+        <div className="flex-1 min-w-0">
+          <Input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={t('detail.variant_name_placeholder')}
+            className="py-1 px-2"
+            aria-label={t('detail.variant_new_name_aria')}
+          />
+        </div>
         <Button variant="secondary" size="sm" onClick={handleAdd} type="button">
           {t('detail.add_variant')}
         </Button>
