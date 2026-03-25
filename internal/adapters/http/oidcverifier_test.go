@@ -64,7 +64,7 @@ func TestResolveRole(t *testing.T) {
 			var buf bytes.Buffer
 			logger := slog.New(slog.NewTextHandler(&buf, nil))
 
-			got, err := resolveRole(context.Background(), logger, tt.roleStr, "test-sub", tt.policy)
+			got, err := resolveRole(context.Background(), logger, tt.roleStr, "test-sub", tt.policy, IdentityRoleMapper{})
 
 			if tt.wantErr != nil {
 				if !errors.Is(err, tt.wantErr) {
@@ -106,7 +106,7 @@ func TestResolveRole_RejectLogsSubject(t *testing.T) {
 	var buf bytes.Buffer
 	logger := slog.New(slog.NewTextHandler(&buf, nil))
 
-	_, err := resolveRole(context.Background(), logger, "", "user-abc", MissingRolePolicyReject)
+	_, err := resolveRole(context.Background(), logger, "", "user-abc", MissingRolePolicyReject, IdentityRoleMapper{})
 
 	if !errors.Is(err, errMissingRoleClaim) {
 		t.Fatalf("expected errMissingRoleClaim, got %v", err)

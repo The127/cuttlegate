@@ -18,6 +18,7 @@ type Config struct {
 	OIDCMissingRolePolicy      httpadapter.MissingRolePolicy // what to do when the role claim is absent (default: reject)
 	OIDCClientID               string                        // OIDC client_id for the SPA (returned by /api/v1/config)
 	OIDCRedirectURI            string                        // OIDC redirect_uri for the SPA (returned by /api/v1/config)
+	OIDCRoleMapper             httpadapter.RoleMapper        // maps external claim values to domain roles; nil = identity
 	OIDCSPAAuthority           string                        // OIDC authority URL for the SPA (browser-reachable); defaults to OIDCIssuer
 	Addr                       string                        // listen address (default: :8080)
 	MCPAddr                    string                        // MCP server listen address (default: :8081); env: MCP_ADDR
