@@ -116,6 +116,7 @@
     "environments_error": "Umgebungen konnten nicht geladen werden.",
     "empty": "Noch keine API-Schlüssel — erstellen Sie einen, um die SDK-Integration zu aktivieren",
     "revoke_aria": "Schlüssel {{name}} widerrufen",
+    "change_tier_aria": "Berechtigungsstufe für {{name}} ändern",
     "revoke": "Widerrufen",
     "create_title": "API-Schlüssel erstellen",
     "name_label": "Name",
