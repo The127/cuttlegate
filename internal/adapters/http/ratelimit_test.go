@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	httpadapter "github.com/karo/cuttlegate/internal/adapters/http"
-	"github.com/karo/cuttlegate/internal/app"
-	"github.com/karo/cuttlegate/internal/domain"
+	httpadapter "github.com/The127/cuttlegate/internal/adapters/http"
+	"github.com/The127/cuttlegate/internal/app"
+	"github.com/The127/cuttlegate/internal/domain"
 )
 
 // authAs returns middleware that injects an AuthContext for the given userID.

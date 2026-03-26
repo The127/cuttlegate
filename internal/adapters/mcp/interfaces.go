@@ -3,8 +3,8 @@ package mcp
 import (
 	"context"
 
-	"github.com/karo/cuttlegate/internal/app"
-	"github.com/karo/cuttlegate/internal/domain"
+	"github.com/The127/cuttlegate/internal/app"
+	"github.com/The127/cuttlegate/internal/domain"
 )
 
 // apiKeyAuthenticator is the subset of app.APIKeyService used by the MCP server.

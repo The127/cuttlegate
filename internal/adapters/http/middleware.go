@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/karo/cuttlegate/internal/domain"
-	"github.com/karo/cuttlegate/internal/domain/ports"
+	"github.com/The127/cuttlegate/internal/domain"
+	"github.com/The127/cuttlegate/internal/domain/ports"
 )
 
 // RequireBearer returns middleware that authenticates requests using a Bearer

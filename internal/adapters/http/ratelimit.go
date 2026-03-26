@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/karo/cuttlegate/internal/domain"
+	"github.com/The127/cuttlegate/internal/domain"
 )
 
 // windowState tracks request count and window start for a single key.

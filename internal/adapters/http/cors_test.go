@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	httpadapter "github.com/karo/cuttlegate/internal/adapters/http"
+	httpadapter "github.com/The127/cuttlegate/internal/adapters/http"
 )
 
 func okHandler() http.Handler {

@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	dbadapter "github.com/karo/cuttlegate/internal/adapters/db"
-	"github.com/karo/cuttlegate/internal/app"
-	"github.com/karo/cuttlegate/internal/domain"
+	dbadapter "github.com/The127/cuttlegate/internal/adapters/db"
+	"github.com/The127/cuttlegate/internal/app"
+	"github.com/The127/cuttlegate/internal/domain"
 )
 
 func TestRuleService_PriorityCollision_Integration(t *testing.T) {

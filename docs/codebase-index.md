@@ -7,7 +7,7 @@ _Generated 2026-03-24 10:15 UTC. Read this at session start for orientation._
 cmd/migrate
 cmd/server
 db
-github.com/karo/cuttlegate
+github.com/The127/cuttlegate
 internal/adapters/db
 internal/adapters/http
 internal/adapters/mcp

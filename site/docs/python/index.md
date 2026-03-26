@@ -17,4 +17,4 @@ client = Client(base_url="https://your-instance", api_key=api_key)
 result = client.evaluate_flag("my-flag", context={"user_id": "user-123"})
 ```
 
-In the meantime, see the [API reference](https://github.com/karo/cuttlegate) for the raw HTTP evaluation endpoint.
+In the meantime, see the [API reference](https://github.com/The127/cuttlegate) for the raw HTTP evaluation endpoint.

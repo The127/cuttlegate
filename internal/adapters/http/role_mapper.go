@@ -1,6 +1,6 @@
 package httpadapter
 
-import "github.com/karo/cuttlegate/internal/domain"
+import "github.com/The127/cuttlegate/internal/domain"
 
 // RoleMapper translates an external OIDC claim value to a domain.Role.
 type RoleMapper interface {

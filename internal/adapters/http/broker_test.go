@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	httpadapter "github.com/karo/cuttlegate/internal/adapters/http"
-	"github.com/karo/cuttlegate/internal/domain/ports"
+	httpadapter "github.com/The127/cuttlegate/internal/adapters/http"
+	"github.com/The127/cuttlegate/internal/domain/ports"
 )
 
 // testEvent is a minimal DomainEvent for broker tests.

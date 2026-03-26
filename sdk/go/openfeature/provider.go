@@ -3,8 +3,8 @@
 // Usage:
 //
 //	import (
-//	    cuttlegate "github.com/karo/cuttlegate/sdk/go"
-//	    cuttlegateof "github.com/karo/cuttlegate/sdk/go/openfeature"
+//	    cuttlegate "github.com/The127/cuttlegate/sdk/go"
+//	    cuttlegateof "github.com/The127/cuttlegate/sdk/go/openfeature"
 //	    "github.com/open-feature/go-sdk/openfeature"
 //	)
 //
@@ -18,7 +18,7 @@ package openfeature
 import (
 	"context"
 
-	cuttlegate "github.com/karo/cuttlegate/sdk/go"
+	cuttlegate "github.com/The127/cuttlegate/sdk/go"
 	of "github.com/open-feature/go-sdk/openfeature"
 )
 

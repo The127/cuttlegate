@@ -7,7 +7,7 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-const module = "github.com/karo/cuttlegate"
+const module = "github.com/The127/cuttlegate"
 
 func pkg(suffix string) string { return module + "/" + suffix }
 

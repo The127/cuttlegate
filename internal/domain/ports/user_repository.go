@@ -3,7 +3,7 @@ package ports
 import (
 	"context"
 
-	"github.com/karo/cuttlegate/internal/domain"
+	"github.com/The127/cuttlegate/internal/domain"
 )
 
 // UserRepository is the port for the local user profile cache.

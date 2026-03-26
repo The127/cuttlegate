@@ -9,9 +9,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/karo/cuttlegate/internal/adapters/mcp"
-	"github.com/karo/cuttlegate/internal/app"
-	"github.com/karo/cuttlegate/internal/domain"
+	"github.com/The127/cuttlegate/internal/adapters/mcp"
+	"github.com/The127/cuttlegate/internal/app"
+	"github.com/The127/cuttlegate/internal/domain"
 )
 
 // ── Test doubles ──────────────────────────────────────────────────────────────

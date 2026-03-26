@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/karo/cuttlegate/internal/domain"
-	"github.com/karo/cuttlegate/internal/domain/ports"
+	"github.com/The127/cuttlegate/internal/domain"
+	"github.com/The127/cuttlegate/internal/domain/ports"
 )
 
 // ProjectMemberView is a project member record enriched with cached user profile data.

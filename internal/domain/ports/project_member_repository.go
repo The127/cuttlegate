@@ -3,7 +3,7 @@ package ports
 import (
 	"context"
 
-	"github.com/karo/cuttlegate/internal/domain"
+	"github.com/The127/cuttlegate/internal/domain"
 )
 
 // ProjectMemberRepository is the port for persisting and retrieving project membership entities.

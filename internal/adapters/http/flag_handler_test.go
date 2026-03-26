@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	httpadapter "github.com/karo/cuttlegate/internal/adapters/http"
-	"github.com/karo/cuttlegate/internal/domain"
+	httpadapter "github.com/The127/cuttlegate/internal/adapters/http"
+	"github.com/The127/cuttlegate/internal/domain"
 )
 
 // fakeFlagService is a test double for the flagService interface.

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	dbadapter "github.com/karo/cuttlegate/internal/adapters/db"
+	dbadapter "github.com/The127/cuttlegate/internal/adapters/db"
 )
 
 func TestTenantTxFromContext_ReturnsFalseWhenAbsent(t *testing.T) {

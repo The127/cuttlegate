@@ -7,9 +7,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	dbadapter "github.com/karo/cuttlegate/internal/adapters/db"
-	httpadapter "github.com/karo/cuttlegate/internal/adapters/http"
-	"github.com/karo/cuttlegate/internal/domain"
+	dbadapter "github.com/The127/cuttlegate/internal/adapters/db"
+	httpadapter "github.com/The127/cuttlegate/internal/adapters/http"
+	"github.com/The127/cuttlegate/internal/domain"
 )
 
 // stubProjectResolver returns a fixed project for any slug.

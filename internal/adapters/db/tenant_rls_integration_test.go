@@ -10,7 +10,7 @@ import (
 
 	_ "github.com/lib/pq"
 
-	dbadapter "github.com/karo/cuttlegate/internal/adapters/db"
+	dbadapter "github.com/The127/cuttlegate/internal/adapters/db"
 )
 
 // newAppRoleDB creates a non-superuser "cg_app" role and returns a *sql.DB

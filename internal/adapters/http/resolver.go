@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/karo/cuttlegate/internal/domain"
+	"github.com/The127/cuttlegate/internal/domain"
 )
 
 // projectResolver resolves a project slug to a domain.Project.

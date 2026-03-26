@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	httpadapter "github.com/karo/cuttlegate/internal/adapters/http"
-	"github.com/karo/cuttlegate/internal/domain"
-	"github.com/karo/cuttlegate/internal/domain/ports"
+	httpadapter "github.com/The127/cuttlegate/internal/adapters/http"
+	"github.com/The127/cuttlegate/internal/domain"
+	"github.com/The127/cuttlegate/internal/domain/ports"
 )
 
 // fakeSegmentService is a test double for the segmentService interface.

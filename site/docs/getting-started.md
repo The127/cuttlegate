@@ -20,7 +20,7 @@ By the end you will have:
 Clone the repository and bring up the full stack with Docker Compose:
 
 ```bash
-git clone https://github.com/karo/cuttlegate.git
+git clone https://github.com/The127/cuttlegate.git
 cd cuttlegate
 docker compose up --build
 ```
@@ -169,7 +169,7 @@ node demo.mjs
 Install the SDK:
 
 ```bash
-go get github.com/karo/cuttlegate/sdk/go
+go get github.com/The127/cuttlegate/sdk/go
 ```
 
 Create `main.go`:
@@ -182,7 +182,7 @@ import (
     "fmt"
     "log"
 
-    cuttlegate "github.com/karo/cuttlegate/sdk/go"
+    cuttlegate "github.com/The127/cuttlegate/sdk/go"
 )
 
 func main() {

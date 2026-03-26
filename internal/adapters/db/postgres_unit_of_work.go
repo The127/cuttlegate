@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"sync"
 
-	"github.com/karo/cuttlegate/internal/domain/ports"
+	"github.com/The127/cuttlegate/internal/domain/ports"
 )
 
 // PostgresUnitOfWork implements ports.UnitOfWork by wrapping a *sql.Tx

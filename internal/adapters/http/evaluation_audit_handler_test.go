@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	httpadapter "github.com/karo/cuttlegate/internal/adapters/http"
-	"github.com/karo/cuttlegate/internal/app"
-	"github.com/karo/cuttlegate/internal/domain"
-	"github.com/karo/cuttlegate/internal/domain/ports"
+	httpadapter "github.com/The127/cuttlegate/internal/adapters/http"
+	"github.com/The127/cuttlegate/internal/app"
+	"github.com/The127/cuttlegate/internal/domain"
+	"github.com/The127/cuttlegate/internal/domain/ports"
 )
 
 // rejectAllAuth is a test auth middleware that always returns 401.

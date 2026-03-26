@@ -58,7 +58,7 @@ const config: Config = {
           label: 'SDKs',
         },
         {
-          href: 'https://github.com/karo/cuttlegate',
+          href: 'https://github.com/The127/cuttlegate',
           label: 'GitHub',
           position: 'right',
         },
@@ -80,7 +80,7 @@ const config: Config = {
           items: [
             {
               label: 'GitHub',
-              href: 'https://github.com/karo/cuttlegate',
+              href: 'https://github.com/The127/cuttlegate',
             },
           ],
         },

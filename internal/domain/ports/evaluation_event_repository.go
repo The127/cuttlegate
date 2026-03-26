@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/karo/cuttlegate/internal/domain"
+	"github.com/The127/cuttlegate/internal/domain"
 )
 
 // EvaluationFilter constrains evaluation event queries.

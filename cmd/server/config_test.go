@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	httpadapter "github.com/karo/cuttlegate/internal/adapters/http"
+	httpadapter "github.com/The127/cuttlegate/internal/adapters/http"
 )
 
 func TestLoad_AllVarsSet(t *testing.T) {

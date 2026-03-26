@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	dbadapter "github.com/karo/cuttlegate/internal/adapters/db"
-	"github.com/karo/cuttlegate/internal/domain"
-	"github.com/karo/cuttlegate/internal/domain/ports"
+	dbadapter "github.com/The127/cuttlegate/internal/adapters/db"
+	"github.com/The127/cuttlegate/internal/domain"
+	"github.com/The127/cuttlegate/internal/domain/ports"
 )
 
 // evalEvtID builds a UUID-shaped string for evaluation event tests.

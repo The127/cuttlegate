@@ -10,7 +10,7 @@ import (
 
 	"context"
 
-	cuttlegate "github.com/karo/cuttlegate/sdk/go"
+	cuttlegate "github.com/The127/cuttlegate/sdk/go"
 )
 
 // sseEvent formats a single SSE data line.

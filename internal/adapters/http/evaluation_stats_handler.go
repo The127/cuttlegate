@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/karo/cuttlegate/internal/app"
+	"github.com/The127/cuttlegate/internal/app"
 )
 
 // evaluationStatsService is the use-case interface required by EvaluationStatsHandler.

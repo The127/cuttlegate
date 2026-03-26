@@ -10,7 +10,7 @@ The Cuttlegate Go SDK evaluates feature flags in your Go services. It requires G
 ## Install
 
 ```bash
-go get github.com/karo/cuttlegate/sdk/go
+go get github.com/The127/cuttlegate/sdk/go
 ```
 
 ## Quick start
@@ -23,7 +23,7 @@ import (
     "fmt"
     "log"
 
-    cuttlegate "github.com/karo/cuttlegate/sdk/go"
+    cuttlegate "github.com/The127/cuttlegate/sdk/go"
 )
 
 func main() {
@@ -134,7 +134,7 @@ Use the `cuttlegatetesting` subpackage to mock flags in-process:
 
 ```go
 import (
-    cgt "github.com/karo/cuttlegate/sdk/go/testing"
+    cgt "github.com/The127/cuttlegate/sdk/go/testing"
 )
 
 func TestMyService(t *testing.T) {

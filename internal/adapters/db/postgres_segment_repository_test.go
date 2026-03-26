@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	dbadapter "github.com/karo/cuttlegate/internal/adapters/db"
-	"github.com/karo/cuttlegate/internal/domain"
+	dbadapter "github.com/The127/cuttlegate/internal/adapters/db"
+	"github.com/The127/cuttlegate/internal/domain"
 )
 
 func TestPostgresSegmentRepository(t *testing.T) {

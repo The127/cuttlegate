@@ -3,8 +3,8 @@ package mcp_test
 import (
 	"testing"
 
-	"github.com/karo/cuttlegate/internal/adapters/mcp"
-	"github.com/karo/cuttlegate/internal/domain"
+	"github.com/The127/cuttlegate/internal/adapters/mcp"
+	"github.com/The127/cuttlegate/internal/domain"
 )
 
 func TestBuildToolList_ReadTier_OnlyReadTools(t *testing.T) {

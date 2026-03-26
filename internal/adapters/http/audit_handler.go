@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/karo/cuttlegate/internal/domain"
+	"github.com/The127/cuttlegate/internal/domain"
 )
 
 // auditService is the use-case interface required by AuditHandler.

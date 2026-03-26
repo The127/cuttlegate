@@ -9,7 +9,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 
-	dbmigrations "github.com/karo/cuttlegate/db"
+	dbmigrations "github.com/The127/cuttlegate/db"
 )
 
 func main() {

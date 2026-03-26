@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	cuttlegate "github.com/karo/cuttlegate/sdk/go"
+	cuttlegate "github.com/The127/cuttlegate/sdk/go"
 )
 
 const mockEvaluatedAt = "1970-01-01T00:00:00Z"

@@ -1,6 +1,6 @@
 package mcp
 
-import "github.com/karo/cuttlegate/internal/domain"
+import "github.com/The127/cuttlegate/internal/domain"
 
 // toolDef describes an MCP tool.
 type toolDef struct {

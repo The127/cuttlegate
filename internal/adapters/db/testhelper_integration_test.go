@@ -25,7 +25,7 @@ import (
 	_ "github.com/lib/pq"
 	testcontainerspg "github.com/testcontainers/testcontainers-go/modules/postgres"
 
-	dbmigrations "github.com/karo/cuttlegate/db"
+	dbmigrations "github.com/The127/cuttlegate/db"
 )
 
 // TestMain disables the Ryuk reaper before any test runs. Ryuk is testcontainers-go's

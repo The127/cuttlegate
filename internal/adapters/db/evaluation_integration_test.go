@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	dbadapter "github.com/karo/cuttlegate/internal/adapters/db"
-	"github.com/karo/cuttlegate/internal/app"
-	"github.com/karo/cuttlegate/internal/domain"
-	"github.com/karo/cuttlegate/internal/domain/ports"
+	dbadapter "github.com/The127/cuttlegate/internal/adapters/db"
+	"github.com/The127/cuttlegate/internal/app"
+	"github.com/The127/cuttlegate/internal/domain"
+	"github.com/The127/cuttlegate/internal/domain/ports"
 )
 
 // viewerCtx returns a context carrying a viewer role for EvaluationService calls.

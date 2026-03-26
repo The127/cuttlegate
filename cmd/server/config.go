@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	httpadapter "github.com/karo/cuttlegate/internal/adapters/http"
+	httpadapter "github.com/The127/cuttlegate/internal/adapters/http"
 )
 
 // Config holds all runtime configuration for the server, read from env vars.

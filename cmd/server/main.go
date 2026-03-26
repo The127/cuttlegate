@@ -19,11 +19,11 @@ import (
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	_ "github.com/lib/pq"
 
-	dbmigrations "github.com/karo/cuttlegate/db"
-	dbadapter "github.com/karo/cuttlegate/internal/adapters/db"
-	httpadapter "github.com/karo/cuttlegate/internal/adapters/http"
-	mcpadapter "github.com/karo/cuttlegate/internal/adapters/mcp"
-	"github.com/karo/cuttlegate/internal/app"
+	dbmigrations "github.com/The127/cuttlegate/db"
+	dbadapter "github.com/The127/cuttlegate/internal/adapters/db"
+	httpadapter "github.com/The127/cuttlegate/internal/adapters/http"
+	mcpadapter "github.com/The127/cuttlegate/internal/adapters/mcp"
+	"github.com/The127/cuttlegate/internal/app"
 )
 
 func main() {

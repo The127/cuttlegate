@@ -1,6 +1,6 @@
 # Cuttlegate JS SDK
 
-JavaScript/TypeScript client for the [Cuttlegate](https://github.com/karo/cuttlegate) feature-flag service. Requires Node.js 20 or later. Works in any modern browser via a bundler.
+JavaScript/TypeScript client for the [Cuttlegate](https://github.com/The127/cuttlegate) feature-flag service. Requires Node.js 20 or later. Works in any modern browser via a bundler.
 
 ## Install
 

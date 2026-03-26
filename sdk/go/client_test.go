@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	cuttlegate "github.com/karo/cuttlegate/sdk/go"
+	cuttlegate "github.com/The127/cuttlegate/sdk/go"
 )
 
 // bulkResponse is a valid evaluate API response for use in tests.

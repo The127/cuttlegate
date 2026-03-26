@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/karo/cuttlegate/internal/domain"
+	"github.com/The127/cuttlegate/internal/domain"
 )
 
 func TestToAuditEntryResponse(t *testing.T) {

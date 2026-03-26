@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	dbadapter "github.com/karo/cuttlegate/internal/adapters/db"
-	"github.com/karo/cuttlegate/internal/domain"
+	dbadapter "github.com/The127/cuttlegate/internal/adapters/db"
+	"github.com/The127/cuttlegate/internal/domain"
 )
 
 // TestGetBuckets_Integration verifies the generate_series + LEFT JOIN zero-fill

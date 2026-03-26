@@ -5,8 +5,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/karo/cuttlegate/internal/domain"
-	"github.com/karo/cuttlegate/internal/domain/ports"
+	"github.com/The127/cuttlegate/internal/domain"
+	"github.com/The127/cuttlegate/internal/domain/ports"
 )
 
 // FlagEnvironmentView combines a flag with its enabled state for a specific environment.

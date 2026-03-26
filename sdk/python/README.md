@@ -1,6 +1,6 @@
 # Cuttlegate Python SDK
 
-Python client for the [Cuttlegate](https://github.com/karo/cuttlegate) feature-flag service. Requires Python 3.11 or later.
+Python client for the [Cuttlegate](https://github.com/The127/cuttlegate) feature-flag service. Requires Python 3.11 or later.
 
 ## Install
 
@@ -11,7 +11,7 @@ pip install cuttlegate
 For development (editable install from source):
 
 ```sh
-git clone https://github.com/karo/cuttlegate
+git clone https://github.com/The127/cuttlegate
 cd cuttlegate/sdk/python
 pip install -e .
 ```

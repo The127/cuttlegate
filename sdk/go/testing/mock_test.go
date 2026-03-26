@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	cuttlegate "github.com/karo/cuttlegate/sdk/go"
-	cuttlegatetesting "github.com/karo/cuttlegate/sdk/go/testing"
+	cuttlegate "github.com/The127/cuttlegate/sdk/go"
+	cuttlegatetesting "github.com/The127/cuttlegate/sdk/go/testing"
 )
 
 var ctx = context.Background()

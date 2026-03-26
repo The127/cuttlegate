@@ -3,7 +3,7 @@ package httpadapter
 import (
 	"testing"
 
-	"github.com/karo/cuttlegate/internal/domain"
+	"github.com/The127/cuttlegate/internal/domain"
 )
 
 func TestIdentityRoleMapper(t *testing.T) {

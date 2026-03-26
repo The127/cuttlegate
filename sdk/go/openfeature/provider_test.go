@@ -6,8 +6,8 @@ import (
 
 	of "github.com/open-feature/go-sdk/openfeature"
 
-	cuttlegateof "github.com/karo/cuttlegate/sdk/go/openfeature"
-	cuttlegatetesting "github.com/karo/cuttlegate/sdk/go/testing"
+	cuttlegateof "github.com/The127/cuttlegate/sdk/go/openfeature"
+	cuttlegatetesting "github.com/The127/cuttlegate/sdk/go/testing"
 )
 
 func TestProvider_ImplementsFeatureProvider(t *testing.T) {
