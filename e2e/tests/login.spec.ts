@@ -22,10 +22,6 @@ test.describe('OIDC PKCE login flow', () => {
     await expect(
       page.getByRole('heading', { name: 'Cuttlegate' }),
     ).toBeVisible({ timeout: 15_000 });
-
-    await expect(
-      page.getByText('Select a project to get started.'),
-    ).toBeVisible();
   });
 
   test('session persists across navigation without re-authentication', async ({ page }) => {

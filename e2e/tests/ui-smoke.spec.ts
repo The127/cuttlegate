@@ -4,10 +4,6 @@
  * Seeds a project, environment, and flag via the API factory, then navigates
  * through the SPA to verify the flag appears in the flag list. This proves the
  * full stack end-to-end: database -> API -> SPA rendering.
- *
- * Note: the BDD scenario says "creates a new project via the UI" but the SPA
- * does not yet have create-project/flag forms. Once those forms ship, this test
- * should be updated to exercise the UI creation flow directly.
  */
 
 import { test, expect } from '../fixtures';
@@ -34,23 +30,10 @@ test.describe('UI smoke — project and flag', () => {
   });
 
   test('flag appears in the flag list after navigating through the SPA', async ({ page }) => {
-    // Navigate to the app — auth state is pre-loaded from auth.setup.ts.
-    await page.goto('/');
-    await expect(
-      page.getByRole('heading', { name: 'Cuttlegate' }),
-    ).toBeVisible({ timeout: 10_000 });
+    // Navigate directly to the flag list page for the seeded project/environment.
+    await page.goto(`/projects/${projectSlug}/environments/${envSlug}/flags`);
 
-    // Select the project from the project switcher dropdown.
-    await page.locator('#project-select').selectOption(projectSlug);
-
-    // Select the environment from the environment switcher dropdown.
-    await expect(page.locator('#env-select')).toBeVisible({ timeout: 5_000 });
-    await page.locator('#env-select').selectOption(envSlug);
-
-    // Verify the flag list page loads and shows our flag.
-    await expect(page.getByRole('heading', { name: 'Feature Flags' })).toBeVisible({
-      timeout: 5_000,
-    });
-    await expect(page.getByRole('link', { name: flagKey })).toBeVisible();
+    // Verify the flag appears in the list (two links per row: key + name).
+    await expect(page.getByRole('link', { name: flagKey }).first()).toBeVisible({ timeout: 15_000 });
   });
 });

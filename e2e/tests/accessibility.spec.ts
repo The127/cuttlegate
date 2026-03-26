@@ -91,18 +91,18 @@ test.describe('Accessibility — CreateProjectDialog', () => {
     await page.goto('/');
     await page.waitForSelector('main#main-content');
 
-    // Open the dialog — find the "New project" button in ProjectSwitcher
-    const newProjectBtn = page.getByRole('button', { name: /new project/i });
-    await newProjectBtn.click();
+    // Click the "Create your first project" button (empty state) or "New Project"
+    const createBtn = page.getByRole('button', { name: /create.*project|new project/i });
+    await createBtn.click();
 
-    // Dialog should be open; first focusable element should be focused
-    await page.waitForSelector('dialog[open]');
+    // Radix Dialog renders [role="dialog"], not native <dialog>
+    await page.waitForSelector('[role="dialog"]');
 
     // Tab through elements — focus must stay inside the dialog
     for (let i = 0; i < 10; i++) {
       await page.keyboard.press('Tab');
       const isInsideDialog = await page.evaluate(() => {
-        const dialog = document.querySelector('dialog[open]');
+        const dialog = document.querySelector('[role="dialog"]');
         const active = document.activeElement;
         return dialog ? dialog.contains(active) : false;
       });
@@ -114,35 +114,35 @@ test.describe('Accessibility — CreateProjectDialog', () => {
     await page.goto('/');
     await page.waitForSelector('main#main-content');
 
-    const newProjectBtn = page.getByRole('button', { name: /new project/i });
-    await newProjectBtn.click();
-    await page.waitForSelector('dialog[open]');
+    const createBtn = page.getByRole('button', { name: /create.*project|new project/i });
+    await createBtn.click();
+    await page.waitForSelector('[role="dialog"]');
 
     // Close with Escape
     await page.keyboard.press('Escape');
-    await page.waitForSelector('dialog[open]', { state: 'detached' });
+    await page.waitForSelector('[role="dialog"]', { state: 'detached' });
 
     // Focus should have returned to the trigger button
     const focusedLabel = await page.evaluate(() =>
       document.activeElement?.textContent?.trim() ?? '',
     );
-    expect(focusedLabel).toMatch(/new project/i);
+    expect(focusedLabel).toMatch(/create.*project|new project/i);
   });
 
   test('focus returns to trigger after dialog is closed with Cancel button', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('main#main-content');
 
-    const newProjectBtn = page.getByRole('button', { name: /new project/i });
-    await newProjectBtn.click();
-    await page.waitForSelector('dialog[open]');
+    const createBtn = page.getByRole('button', { name: /create.*project|new project/i });
+    await createBtn.click();
+    await page.waitForSelector('[role="dialog"]');
 
     await page.getByRole('button', { name: /cancel/i }).click();
-    await page.waitForSelector('dialog[open]', { state: 'detached' });
+    await page.waitForSelector('[role="dialog"]', { state: 'detached' });
 
     const focusedLabel = await page.evaluate(() =>
       document.activeElement?.textContent?.trim() ?? '',
     );
-    expect(focusedLabel).toMatch(/new project/i);
+    expect(focusedLabel).toMatch(/create.*project|new project/i);
   });
 });
