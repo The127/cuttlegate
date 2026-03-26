@@ -35,7 +35,7 @@ initialVirtualServer:
     displayName: admin
     primaryEmail: admin@cuttlegate.local
     # argon2id hash of "password"
-    passwordHash: "$argon2id$v=19$m=16,t=2,p=1$MTIzNDU2Nzg$QWu7e+sjG5knAdNLoKdLDg"
+    passwordHash: "$argon2id$v=19$m=16,t=2,p=1$tkHAK68vEQo$76Lmgs4DXxyN52e4yc66sw"
   projects:
     - slug: "cuttlegate"
       name: "Cuttlegate"
