@@ -46,6 +46,10 @@ test-frontend:
 build:
     go build -o build/server ./cmd/server
 
+# Build the CLI binary into build/cuttlegate
+build-cli:
+    go build -o build/cuttlegate ./cmd/cuttlegate
+
 # Run lint and all tests in sequence — mirrors CI exactly
 ci: lint lint-web test test-integration test-sdk
 

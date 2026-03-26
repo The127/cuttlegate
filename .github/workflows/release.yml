@@ -141,6 +141,14 @@ jobs:
       - name: Build linux/amd64 server binary
         run: mkdir -p build && GOOS=linux GOARCH=amd64 go build -o build/server ./cmd/server
 
+      - name: Build CLI binaries
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o build/cuttlegate-linux-amd64 ./cmd/cuttlegate
+          GOOS=linux GOARCH=arm64 go build -o build/cuttlegate-linux-arm64 ./cmd/cuttlegate
+          GOOS=darwin GOARCH=amd64 go build -o build/cuttlegate-darwin-amd64 ./cmd/cuttlegate
+          GOOS=darwin GOARCH=arm64 go build -o build/cuttlegate-darwin-arm64 ./cmd/cuttlegate
+          GOOS=windows GOARCH=amd64 go build -o build/cuttlegate-windows-amd64.exe ./cmd/cuttlegate
+
       - name: Log in to GHCR
         if: startsWith(github.ref, 'refs/tags/')
         uses: docker/login-action@v3
@@ -178,4 +186,10 @@ jobs:
 
             See the [changelog](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}) for details.
             Operators: edit this body to add release notes.
-          files: build/server
+          files: |
+            build/server
+            build/cuttlegate-linux-amd64
+            build/cuttlegate-linux-arm64
+            build/cuttlegate-darwin-amd64
+            build/cuttlegate-darwin-arm64
+            build/cuttlegate-windows-amd64.exe
