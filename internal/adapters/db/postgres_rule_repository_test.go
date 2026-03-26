@@ -72,21 +72,21 @@ func TestRuleService_PriorityCollision_Integration(t *testing.T) {
 	}
 
 	t.Run("first rule at priority 5 succeeds", func(t *testing.T) {
-		_, err := svc.Create(authCtxEditor, flagID, envID, 5, conditions, "true", "")
+		_, err := svc.Create(authCtxEditor, flagID, envID, 5, conditions, "true", "", nil)
 		if err != nil {
 			t.Fatalf("Create: %v", err)
 		}
 	})
 
 	t.Run("second rule at same priority returns ErrPriorityConflict", func(t *testing.T) {
-		_, err := svc.Create(authCtxEditor, flagID, envID, 5, conditions, "false", "")
+		_, err := svc.Create(authCtxEditor, flagID, envID, 5, conditions, "false", "", nil)
 		if !errors.Is(err, domain.ErrPriorityConflict) {
 			t.Errorf("expected ErrPriorityConflict, got %v", err)
 		}
 	})
 
 	t.Run("rule at different priority succeeds", func(t *testing.T) {
-		_, err := svc.Create(authCtxEditor, flagID, envID, 10, conditions, "false", "")
+		_, err := svc.Create(authCtxEditor, flagID, envID, 10, conditions, "false", "", nil)
 		if err != nil {
 			t.Errorf("expected success for different priority, got %v", err)
 		}
