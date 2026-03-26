@@ -85,18 +85,9 @@ Segments are named groups of users. Membership is explicit — you add user IDs 
 Navigate to **Segments** within your project and click **New Segment**:
 
 - **Name:** `Pro users`
-- **Key:** `pro-users`
+- **Slug:** `pro-users`
 
 Save the segment. Now add the demo user to it. In the UI, open the `pro-users` segment and click **Add Member**, entering `user-1`.
-
-Alternatively, use the API directly:
-
-```bash
-curl -s -X PUT http://localhost:8080/api/v1/projects/my-app/segments/pro-users/members \
-  -H "Authorization: Bearer cg_YOUR_API_KEY_HERE" \
-  -H "Content-Type: application/json" \
-  -d '{"members": ["user-1"]}'
-```
 
 Any SDK call that evaluates with `user_id: "user-1"` will now match the `pro-users` segment.
 
@@ -105,8 +96,9 @@ Any SDK call that evaluates with `user_id: "user-1"` will now match the `pro-use
 Navigate back to the `dark-mode` flag and open the `production` environment settings. Click **Add Rule**:
 
 - **Name:** `Pro users get dark mode`
-- **Condition:** `in_segment: pro-users`
-- **Serve:** Enabled
+- **Operator:** `in_segment`
+- **Value:** `pro-users`
+- **Serve variant:** `true` (Enabled)
 
 Save the rule. The flag now behaves as follows:
 
