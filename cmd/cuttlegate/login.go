@@ -125,7 +125,7 @@ func discover(issuer string) (*oidcDiscovery, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("discovery returned %d: %s", resp.StatusCode, string(body))
@@ -147,7 +147,7 @@ func startDeviceAuth(endpoint, clientID string) (*deviceAuthResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("device auth returned %d: %s", resp.StatusCode, string(body))
@@ -181,7 +181,7 @@ func pollToken(tokenEndpoint, clientID, deviceCode string) (*StoredToken, string
 	if err != nil {
 		return nil, "", err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
