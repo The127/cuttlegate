@@ -83,12 +83,12 @@ export function ProjectSwitcher() {
       {/* Wordmark / logo */}
       <Link to="/" className="flex items-center gap-2 mr-2 no-underline">
         <img src={logo_url ?? '/logo.svg'} alt={app_name} className="h-6 w-auto" />
-        <span
-          className="text-sm font-semibold text-[var(--color-text-primary)]"
+        <h1
+          className="text-sm font-semibold text-[var(--color-text-primary)] m-0"
           style={{ fontFamily: 'var(--font-mono)' }}
         >
           {app_name}
-        </span>
+        </h1>
       </Link>
 
       <div className="w-px h-5 bg-[var(--color-border-hover)]" aria-hidden="true" />
