@@ -19,6 +19,8 @@ import (
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	_ "github.com/lib/pq"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	dbmigrations "github.com/The127/cuttlegate/db"
 	dbadapter "github.com/The127/cuttlegate/internal/adapters/db"
 	httpadapter "github.com/The127/cuttlegate/internal/adapters/http"
@@ -64,6 +66,10 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("oidc: %w", err)
 	}
+
+	// ── Prometheus metrics ───────────────────────────────────────────────────
+
+	httpadapter.RegisterMetrics()
 
 	// ── Event broker ─────────────────────────────────────────────────────────
 
@@ -218,6 +224,9 @@ func run() error {
 	// Distinct from /healthz (liveness, always 200) and /readyz (Kubernetes-style readiness).
 	mux.HandleFunc("GET /health", healthHandler(conn))
 
+	// Prometheus metrics — unauthenticated, standard for Prometheus scraping.
+	mux.Handle("GET /metrics", promhttp.Handler())
+
 	// SPA static files — registered last so /api/v1/* routes take precedence.
 	serveSPA(mux)
 
@@ -225,7 +234,7 @@ func run() error {
 
 	srv := &http.Server{
 		Addr:    cfg.Addr,
-		Handler: mux,
+		Handler: httpadapter.MetricsMiddleware(mux),
 	}
 
 	go func() {

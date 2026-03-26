@@ -114,6 +114,8 @@ func (h *EvaluationHandler) evaluate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	FlagEvaluationsTotal.WithLabelValues(proj.Slug, env.Slug, string(view.Reason)).Inc()
+
 	writeJSON(w, http.StatusOK, evaluateResponse{
 		Key:      view.Key,
 		Enabled:  view.Enabled,
@@ -143,6 +145,7 @@ func (h *EvaluationHandler) evaluateAll(w http.ResponseWriter, r *http.Request) 
 
 	flags := make([]evaluateResponse, len(views))
 	for i, v := range views {
+		FlagEvaluationsTotal.WithLabelValues(proj.Slug, env.Slug, string(v.Reason)).Inc()
 		flags[i] = evaluateResponse{
 			Key:      v.Key,
 			Enabled:  v.Enabled,

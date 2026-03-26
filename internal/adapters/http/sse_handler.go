@@ -87,6 +87,9 @@ func (h *SSEHandler) stream(w http.ResponseWriter, r *http.Request) {
 	// Accept Last-Event-ID without error — no replay.
 	_ = r.Header.Get("Last-Event-ID")
 
+	SSEConnectionsActive.Inc()
+	defer SSEConnectionsActive.Dec()
+
 	h.streamLoop(r.Context(), w, flusher, ch, projSlug, envSlug)
 }
 
