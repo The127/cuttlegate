@@ -70,7 +70,7 @@ func (f *fakeProjectRepository) Delete(_ context.Context, id string) error {
 }
 
 func TestProjectService_Create_Succeeds(t *testing.T) {
-	svc := app.NewProjectService(newFakeProjectRepository())
+	svc := app.NewProjectService(newFakeProjectRepository(), newFakeProjectMemberRepository())
 	p, err := svc.Create(authCtx("editor-1", domain.RoleEditor), "Acme Corp", "acme")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -86,8 +86,31 @@ func TestProjectService_Create_Succeeds(t *testing.T) {
 	}
 }
 
+func TestProjectService_Create_AddsCreatorAsAdminMember(t *testing.T) {
+	memberRepo := newFakeProjectMemberRepository()
+	svc := app.NewProjectService(newFakeProjectRepository(), memberRepo)
+	ctx := authCtx("creator-1", domain.RoleEditor)
+	p, err := svc.Create(ctx, "Acme Corp", "acme")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	members, err := memberRepo.ListMembers(ctx, p.ID)
+	if err != nil {
+		t.Fatalf("ListMembers: %v", err)
+	}
+	if len(members) != 1 {
+		t.Fatalf("expected 1 member, got %d", len(members))
+	}
+	if members[0].UserID != "creator-1" {
+		t.Errorf("member user ID: got %q, want %q", members[0].UserID, "creator-1")
+	}
+	if members[0].Role != domain.RoleAdmin {
+		t.Errorf("member role: got %q, want %q", members[0].Role, domain.RoleAdmin)
+	}
+}
+
 func TestProjectService_Create_DuplicateSlug_ReturnsErrConflict(t *testing.T) {
-	svc := app.NewProjectService(newFakeProjectRepository())
+	svc := app.NewProjectService(newFakeProjectRepository(), newFakeProjectMemberRepository())
 	ctx := authCtx("editor-1", domain.RoleEditor)
 	if _, err := svc.Create(ctx, "Acme Corp", "acme"); err != nil {
 		t.Fatalf("first create: %v", err)
@@ -99,7 +122,7 @@ func TestProjectService_Create_DuplicateSlug_ReturnsErrConflict(t *testing.T) {
 }
 
 func TestProjectService_GetBySlug_NotFound_ReturnsErrNotFound(t *testing.T) {
-	svc := app.NewProjectService(newFakeProjectRepository())
+	svc := app.NewProjectService(newFakeProjectRepository(), newFakeProjectMemberRepository())
 	_, err := svc.GetBySlug(context.Background(), "ghost")
 	if !errors.Is(err, domain.ErrNotFound) {
 		t.Errorf("expected ErrNotFound, got %v", err)
@@ -107,7 +130,7 @@ func TestProjectService_GetBySlug_NotFound_ReturnsErrNotFound(t *testing.T) {
 }
 
 func TestProjectService_List_EmptyReturnsEmptySlice(t *testing.T) {
-	svc := app.NewProjectService(newFakeProjectRepository())
+	svc := app.NewProjectService(newFakeProjectRepository(), newFakeProjectMemberRepository())
 	list, err := svc.List(context.Background())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -121,7 +144,7 @@ func TestProjectService_List_EmptyReturnsEmptySlice(t *testing.T) {
 }
 
 func TestProjectService_Delete_NotFound_ReturnsErrNotFound(t *testing.T) {
-	svc := app.NewProjectService(newFakeProjectRepository())
+	svc := app.NewProjectService(newFakeProjectRepository(), newFakeProjectMemberRepository())
 	err := svc.Delete(authCtx("admin-1", domain.RoleAdmin), "00000000-0000-0000-0000-000000000000")
 	if !errors.Is(err, domain.ErrNotFound) {
 		t.Errorf("expected ErrNotFound, got %v", err)
@@ -129,7 +152,7 @@ func TestProjectService_Delete_NotFound_ReturnsErrNotFound(t *testing.T) {
 }
 
 func TestProjectService_UpdateName_Succeeds(t *testing.T) {
-	svc := app.NewProjectService(newFakeProjectRepository())
+	svc := app.NewProjectService(newFakeProjectRepository(), newFakeProjectMemberRepository())
 	ctx := authCtx("admin-1", domain.RoleAdmin)
 	p, err := svc.Create(ctx, "Acme", "acme")
 	if err != nil {
@@ -151,7 +174,7 @@ func TestProjectService_UpdateName_Succeeds(t *testing.T) {
 }
 
 func TestProjectService_UpdateName_NotFound_ReturnsErrNotFound(t *testing.T) {
-	svc := app.NewProjectService(newFakeProjectRepository())
+	svc := app.NewProjectService(newFakeProjectRepository(), newFakeProjectMemberRepository())
 	_, err := svc.UpdateName(authCtx("admin-1", domain.RoleAdmin), "ghost", "Whatever")
 	if !errors.Is(err, domain.ErrNotFound) {
 		t.Errorf("expected ErrNotFound, got %v", err)
@@ -159,7 +182,7 @@ func TestProjectService_UpdateName_NotFound_ReturnsErrNotFound(t *testing.T) {
 }
 
 func TestProjectService_DeleteBySlug_Succeeds(t *testing.T) {
-	svc := app.NewProjectService(newFakeProjectRepository())
+	svc := app.NewProjectService(newFakeProjectRepository(), newFakeProjectMemberRepository())
 	editorCtx := authCtx("editor-1", domain.RoleEditor)
 	adminCtx := authCtx("admin-1", domain.RoleAdmin)
 	if _, err := svc.Create(editorCtx, "Acme", "acme"); err != nil {
@@ -175,7 +198,7 @@ func TestProjectService_DeleteBySlug_Succeeds(t *testing.T) {
 }
 
 func TestProjectService_DeleteBySlug_NotFound_ReturnsErrNotFound(t *testing.T) {
-	svc := app.NewProjectService(newFakeProjectRepository())
+	svc := app.NewProjectService(newFakeProjectRepository(), newFakeProjectMemberRepository())
 	err := svc.DeleteBySlug(authCtx("admin-1", domain.RoleAdmin), "ghost")
 	if !errors.Is(err, domain.ErrNotFound) {
 		t.Errorf("expected ErrNotFound, got %v", err)
@@ -185,7 +208,7 @@ func TestProjectService_DeleteBySlug_NotFound_ReturnsErrNotFound(t *testing.T) {
 // ── RBAC ──────────────────────────────────────────────────────────────────────
 
 func TestProjectService_Create_ViewerForbidden(t *testing.T) {
-	svc := app.NewProjectService(newFakeProjectRepository())
+	svc := app.NewProjectService(newFakeProjectRepository(), newFakeProjectMemberRepository())
 	_, err := svc.Create(authCtx("viewer-1", domain.RoleViewer), "Acme", "acme")
 	if !errors.Is(err, domain.ErrForbidden) {
 		t.Errorf("expected ErrForbidden, got %v", err)
@@ -193,7 +216,7 @@ func TestProjectService_Create_ViewerForbidden(t *testing.T) {
 }
 
 func TestProjectService_UpdateName_ViewerForbidden(t *testing.T) {
-	svc := app.NewProjectService(newFakeProjectRepository())
+	svc := app.NewProjectService(newFakeProjectRepository(), newFakeProjectMemberRepository())
 	_, err := svc.UpdateName(authCtx("viewer-1", domain.RoleViewer), "acme", "New Name")
 	if !errors.Is(err, domain.ErrForbidden) {
 		t.Errorf("expected ErrForbidden, got %v", err)
@@ -201,7 +224,7 @@ func TestProjectService_UpdateName_ViewerForbidden(t *testing.T) {
 }
 
 func TestProjectService_DeleteBySlug_ViewerForbidden(t *testing.T) {
-	svc := app.NewProjectService(newFakeProjectRepository())
+	svc := app.NewProjectService(newFakeProjectRepository(), newFakeProjectMemberRepository())
 	err := svc.DeleteBySlug(authCtx("viewer-1", domain.RoleViewer), "acme")
 	if !errors.Is(err, domain.ErrForbidden) {
 		t.Errorf("expected ErrForbidden, got %v", err)
@@ -209,7 +232,7 @@ func TestProjectService_DeleteBySlug_ViewerForbidden(t *testing.T) {
 }
 
 func TestProjectService_Create_NoAuthContextForbidden(t *testing.T) {
-	svc := app.NewProjectService(newFakeProjectRepository())
+	svc := app.NewProjectService(newFakeProjectRepository(), newFakeProjectMemberRepository())
 	_, err := svc.Create(context.Background(), "Acme", "acme")
 	if !errors.Is(err, domain.ErrForbidden) {
 		t.Errorf("expected ErrForbidden, got %v", err)
@@ -218,7 +241,7 @@ func TestProjectService_Create_NoAuthContextForbidden(t *testing.T) {
 
 // @auth-bypass — editor is blocked on rename
 func TestProjectService_UpdateName_EditorForbidden(t *testing.T) {
-	svc := app.NewProjectService(newFakeProjectRepository())
+	svc := app.NewProjectService(newFakeProjectRepository(), newFakeProjectMemberRepository())
 	_, err := svc.UpdateName(authCtx("editor-1", domain.RoleEditor), "acme", "New Name")
 	if !errors.Is(err, domain.ErrForbidden) {
 		t.Errorf("expected ErrForbidden, got %v", err)
@@ -227,7 +250,7 @@ func TestProjectService_UpdateName_EditorForbidden(t *testing.T) {
 
 // @auth-bypass — editor is blocked on delete
 func TestProjectService_DeleteBySlug_EditorForbidden(t *testing.T) {
-	svc := app.NewProjectService(newFakeProjectRepository())
+	svc := app.NewProjectService(newFakeProjectRepository(), newFakeProjectMemberRepository())
 	err := svc.DeleteBySlug(authCtx("editor-1", domain.RoleEditor), "acme")
 	if !errors.Is(err, domain.ErrForbidden) {
 		t.Errorf("expected ErrForbidden, got %v", err)
@@ -236,7 +259,7 @@ func TestProjectService_DeleteBySlug_EditorForbidden(t *testing.T) {
 
 // @happy — admin can rename
 func TestProjectService_UpdateName_AdminSucceeds(t *testing.T) {
-	svc := app.NewProjectService(newFakeProjectRepository())
+	svc := app.NewProjectService(newFakeProjectRepository(), newFakeProjectMemberRepository())
 	editorCtx := authCtx("editor-1", domain.RoleEditor)
 	adminCtx := authCtx("admin-1", domain.RoleAdmin)
 	if _, err := svc.Create(editorCtx, "Acme", "acme"); err != nil {
@@ -253,7 +276,7 @@ func TestProjectService_UpdateName_AdminSucceeds(t *testing.T) {
 
 // @happy — admin can delete
 func TestProjectService_DeleteBySlug_AdminSucceeds(t *testing.T) {
-	svc := app.NewProjectService(newFakeProjectRepository())
+	svc := app.NewProjectService(newFakeProjectRepository(), newFakeProjectMemberRepository())
 	editorCtx := authCtx("editor-1", domain.RoleEditor)
 	adminCtx := authCtx("admin-1", domain.RoleAdmin)
 	if _, err := svc.Create(editorCtx, "Acme", "acme"); err != nil {

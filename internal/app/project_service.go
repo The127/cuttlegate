@@ -12,18 +12,20 @@ import (
 
 // ProjectService orchestrates project use cases.
 type ProjectService struct {
-	repo ports.ProjectRepository
+	repo    ports.ProjectRepository
+	members ports.ProjectMemberRepository
 }
 
 // NewProjectService constructs a ProjectService.
-func NewProjectService(repo ports.ProjectRepository) *ProjectService {
-	return &ProjectService{repo: repo}
+func NewProjectService(repo ports.ProjectRepository, members ports.ProjectMemberRepository) *ProjectService {
+	return &ProjectService{repo: repo, members: members}
 }
 
 // Create assigns a UUID and creation timestamp, then persists the project.
 // Requires at least editor role.
 func (s *ProjectService) Create(ctx context.Context, name, slug string) (*domain.Project, error) {
-	if _, err := requireRole(ctx, domain.RoleEditor); err != nil {
+	ac, err := requireRole(ctx, domain.RoleEditor)
+	if err != nil {
 		return nil, err
 	}
 	id, err := newUUID()
@@ -40,6 +42,16 @@ func (s *ProjectService) Create(ctx context.Context, name, slug string) (*domain
 		return nil, err
 	}
 	if err := s.repo.Create(ctx, p); err != nil {
+		return nil, err
+	}
+	// Auto-add the creator as an admin member of the new project.
+	m := domain.ProjectMember{
+		ProjectID: p.ID,
+		UserID:    ac.UserID,
+		Role:      domain.RoleAdmin,
+		CreatedAt: p.CreatedAt,
+	}
+	if err := s.members.AddMember(ctx, &m); err != nil {
 		return nil, err
 	}
 	return &p, nil

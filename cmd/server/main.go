@@ -133,7 +133,7 @@ func run() error {
 			return requireBearer(tenantRLS(h))
 		}
 
-		projSvc := app.NewProjectService(projRepo)
+		projSvc := app.NewProjectService(projRepo, memberRepo)
 		envSvc := app.NewEnvironmentService(envRepo, flagRepo, stateRepo)
 		memberSvc := app.NewProjectMemberService(memberRepo, projRepo, userRepo)
 		flagSvc := app.NewFlagService(flagRepo, envRepo, stateRepo, ruleRepo, broker, auditRepo)
