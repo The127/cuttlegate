@@ -72,7 +72,7 @@ class EvalResult:
 | `key` | `str` | Flag key. |
 | `enabled` | `bool` | Whether the flag is enabled for the evaluated context. |
 | `variant` | `str` | **Primary field.** `"true"` or `"false"` for bool flags; variant key string for all others. Maps from JSON `value_key`. |
-| `reason` | `str` | `"targeting_rule"`, `"default"`, `"disabled"`, or `"percentage_rollout"`. |
+| `reason` | `str` | `"rule_match"`, `"default"`, `"disabled"`, or `"percentage_rollout"`. |
 | `evaluated_at` | `str` | ISO 8601 evaluation timestamp. |
 | `value` | `str` | **Deprecated.** Always `""` for wire responses (JSON `null` coerced to `""`). Use `variant`. |
 

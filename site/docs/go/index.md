@@ -75,7 +75,7 @@ type EvalResult struct {
     Enabled     bool   // whether the flag is enabled for this context
     Value       string // Deprecated — use Variant instead
     Variant     string // Primary field: variant key; "true"/"false" for bool flags
-    Reason      string // "targeting_rule", "default", "disabled", or "percentage_rollout"
+    Reason      string // "rule_match", "default", "disabled", or "percentage_rollout"
     EvaluatedAt string // ISO 8601 timestamp
 }
 ```

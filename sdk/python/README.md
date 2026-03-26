@@ -55,7 +55,7 @@ for key, result in results.items():
 ```python
 result = client.evaluate("banner-text", ctx)
 print("variant:", result.variant)   # e.g. "holiday"
-print("reason:", result.reason)     # e.g. "targeting_rule"
+print("reason:", result.reason)     # e.g. "rule_match"
 print("enabled:", result.enabled)
 ```
 
@@ -92,7 +92,7 @@ Returns the variant string. Raises `FlagNotFoundError` if the key is absent.
 | `key` | `str` | Flag key |
 | `enabled` | `bool` | Whether the flag is enabled for this context |
 | `variant` | `str` | **Primary field.** `"true"` or `"false"` for bool flags; variant key string for all others. |
-| `reason` | `str` | `"targeting_rule"`, `"default"`, `"disabled"`, or `"percentage_rollout"` |
+| `reason` | `str` | `"rule_match"`, `"default"`, `"disabled"`, or `"percentage_rollout"` |
 | `evaluated_at` | `str` | ISO 8601 evaluation timestamp |
 | `value` | `str` | **Deprecated.** Always `""` for wire responses. Use `variant`. |
 

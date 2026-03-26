@@ -33,7 +33,7 @@ const result = await cg.evaluate('dark-mode', {
 
 console.log(result.enabled);  // true or false
 console.log(result.variant);  // "true", "false", or a variant key
-console.log(result.reason);   // "disabled", "default", "targeting_rule", etc.
+console.log(result.reason);   // "disabled", "default", "rule_match", etc.
 ```
 
 ## Configuration

@@ -78,7 +78,7 @@ Both methods accept an `EvalContext`:
 | `enabled` | `boolean` | Whether the flag is enabled for this context |
 | `variant` | `string` | **Primary field.** `"true"` or `"false"` for bool flags; the variant key string for all other types. Always present. |
 | `value` | `string \| null` | **Deprecated.** `null` for bool flags. Use `variant` instead. |
-| `reason` | `string` | Why this result was returned: `"targeting_rule"`, `"default"`, `"disabled"`, or `"percentage_rollout"` |
+| `reason` | `string` | Why this result was returned: `"rule_match"`, `"default"`, `"disabled"`, or `"percentage_rollout"` |
 | `evaluatedAt` | `string` | ISO 8601 evaluation timestamp |
 
 > **Deprecated alias:** `EvaluationResult` is a type alias for `EvalResult`. Use `EvalResult` in new code.

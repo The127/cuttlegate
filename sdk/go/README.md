@@ -101,7 +101,7 @@ func main() {
 | `Key` | `string` | Flag key |
 | `Enabled` | `bool` | Whether the flag is enabled for this context |
 | `Variant` | `string` | **Primary field.** The variant key. `"true"` or `"false"` for bool flags; the variant key string for all other types. |
-| `Reason` | `string` | Why this result was returned: `"targeting_rule"`, `"default"`, `"disabled"`, or `"percentage_rollout"` |
+| `Reason` | `string` | Why this result was returned: `"rule_match"`, `"default"`, `"disabled"`, or `"percentage_rollout"` |
 | `Value` | `string` | **Deprecated.** Empty for bool flags. Use `Variant` instead. |
 | `EvaluatedAt` | `string` | ISO 8601 evaluation timestamp |
 

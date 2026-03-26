@@ -15,7 +15,7 @@ type EvalContext struct {
 //
 // Variant is the primary field for the variant key. For bool flags it is
 // "true" or "false"; for all other flag types it is the variant key string.
-// Reason describes why this result was produced: "targeting_rule", "default",
+// Reason describes why this result was produced: "rule_match", "default",
 // "disabled", or "percentage_rollout".
 type EvalResult struct {
 	Key     string `json:"key"`

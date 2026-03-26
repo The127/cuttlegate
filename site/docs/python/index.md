@@ -35,7 +35,7 @@ print("dark-mode enabled:", enabled)
 # String variant
 result = client.evaluate("banner-text", ctx)
 print("variant:", result.variant)   # e.g. "holiday"
-print("reason:", result.reason)     # e.g. "targeting_rule"
+print("reason:", result.reason)     # e.g. "rule_match"
 ```
 
 `CuttlegateClient` validates config immediately and raises `ConfigError` on any missing field. No network call is made at construction time.
@@ -58,7 +58,7 @@ print("reason:", result.reason)     # e.g. "targeting_rule"
 | `key` | `str` | Flag key |
 | `enabled` | `bool` | Whether the flag is enabled for this context |
 | `variant` | `str` | **Primary field.** `"true"` or `"false"` for bool flags; variant key for all others. |
-| `reason` | `str` | `"targeting_rule"`, `"default"`, `"disabled"`, or `"percentage_rollout"` |
+| `reason` | `str` | `"rule_match"`, `"default"`, `"disabled"`, or `"percentage_rollout"` |
 | `evaluated_at` | `str` | ISO 8601 evaluation timestamp |
 | `value` | `str` | **Deprecated.** Use `variant` instead. |
 
