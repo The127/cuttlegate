@@ -1,4 +1,5 @@
-import type { CuttlegateConfig, EvalContext } from './types.js';
+import type { CuttlegateConfig, EvalContext, FlagStore, FlagStoreEntry } from './types.js';
+import { noopFlagStore } from './types.js';
 import type { CuttlegateClient, EvalResult, FlagResult } from './client.js';
 import { CuttlegateError } from './client.js';
 import { connectStream } from './streaming.js';
@@ -25,6 +26,13 @@ export interface CachedClientOptions {
    * attempted after a terminal error.
    */
   onError?: (err: CuttlegateError) => void;
+  /**
+   * Optional persistence store for the flag cache. When set, the client
+   * calls store.save() after hydration and on every SSE update, and falls
+   * back to store.load() if hydration fails (non-auth errors only).
+   * Defaults to noopFlagStore (no persistence).
+   */
+  store?: FlagStore;
 }
 
 /**
@@ -122,6 +130,7 @@ export function createCachedClient(
   // token is captured in the closure only — not on any property
   const token = config.token;
   const evalContext: EvalContext = options?.context ?? { user_id: '', attributes: {} };
+  const store: FlagStore = options?.store ?? noopFlagStore;
 
   const evalUrl = `${baseUrl}/api/v1/projects/${encodeURIComponent(project)}/environments/${encodeURIComponent(environment)}/evaluate`;
 
@@ -164,6 +173,18 @@ export function createCachedClient(
     }
   }
 
+  /** Convert the current cache to FlagStoreEntry array for persistence. */
+  function cacheToEntries(): FlagStoreEntry[] {
+    return Array.from(cache.values()).map((r) => ({
+      key: r.key,
+      enabled: r.enabled,
+      value: r.value,
+      variant: r.variant,
+      reason: r.reason,
+      evaluatedAt: r.evaluatedAt,
+    }));
+  }
+
   // Apply a single SSE event to the cache, then notify subscribers.
   // Preserves variant from hydration; sets reason to "default" (consistent
   // with CuttlegateProvider in react.ts). Ignores unknown keys.
@@ -171,6 +192,8 @@ export function createCachedClient(
     const existing = cache.get(event.flagKey);
     if (!existing) return; // unknown key — ignore
     cache.set(event.flagKey, { ...existing, enabled: event.enabled, reason: 'default' });
+    // Persist to store (fire-and-forget).
+    void store.save(cacheToEntries());
     // Notify subscribers after the cache is updated.
     const cbs = subscribers.get(event.flagKey);
     if (cbs) {
@@ -233,6 +256,31 @@ export function createCachedClient(
     rejectReady(err);
   }
 
+  /** Try loading from the store before failing hydration (non-auth errors only). */
+  function tryStoreFallback(err: CuttlegateError): void {
+    store.load().then((entries) => {
+      if (entries.length > 0) {
+        cache.clear();
+        for (const entry of entries) {
+          cache.set(entry.key, {
+            key: entry.key,
+            enabled: entry.enabled,
+            value: entry.value,
+            variant: entry.variant,
+            reason: entry.reason,
+            evaluatedAt: entry.evaluatedAt,
+          });
+        }
+        hydrationComplete = true;
+        resolveReady();
+      } else {
+        failHydration(err);
+      }
+    }).catch(() => {
+      failHydration(err);
+    });
+  }
+
   // Step 1: Open the SSE stream (SSE-first ordering per ADR 0025).
   sseConnection = connectStream(config, { onFlagChange, onError: onSSEError, onConnected });
 
@@ -263,7 +311,7 @@ export function createCachedClient(
         return;
       }
       if (!res.ok) {
-        failHydration(new CuttlegateError('network_error', `Hydration returned ${res.status}`));
+        tryStoreFallback(new CuttlegateError('network_error', `Hydration returned ${res.status}`));
         return;
       }
 
@@ -271,7 +319,7 @@ export function createCachedClient(
       try {
         json = await res.json();
       } catch {
-        failHydration(new CuttlegateError('invalid_response', 'Hydration response is not valid JSON'));
+        tryStoreFallback(new CuttlegateError('invalid_response', 'Hydration response is not valid JSON'));
         return;
       }
 
@@ -289,6 +337,9 @@ export function createCachedClient(
       }
       sseBuffer.length = 0;
 
+      // Persist to store (fire-and-forget).
+      void store.save(cacheToEntries());
+
       resolveReady();
     })
     .catch((err: unknown) => {
@@ -298,10 +349,10 @@ export function createCachedClient(
         return;
       }
       if (err instanceof DOMException && err.name === 'AbortError') {
-        failHydration(new CuttlegateError('timeout', `Hydration timed out after ${timeout}ms`));
+        tryStoreFallback(new CuttlegateError('timeout', `Hydration timed out after ${timeout}ms`));
         return;
       }
-      failHydration(
+      tryStoreFallback(
         new CuttlegateError(
           'network_error',
           err instanceof Error ? err.message : 'Hydration network request failed',

@@ -8,8 +8,12 @@ export type {
   EvalReason,
   EvalRequest,
   EvalResponse,
+  FlagStore,
+  FlagStoreEntry,
   FlagType,
 } from './types.js';
+
+export { noopFlagStore } from './types.js';
 
 export { createClient, CuttlegateError } from './client.js';
 export type { CuttlegateClient, EvalResult, EvaluationResult, FlagResult } from './client.js';

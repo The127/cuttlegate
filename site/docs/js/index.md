@@ -103,6 +103,58 @@ try {
 }
 ```
 
+## CachedClient
+
+For hot paths (e.g. React components, request handlers), use `createCachedClient`. It seeds an in-memory cache via HTTP, keeps it fresh via SSE, and serves reads from cache with zero network calls:
+
+```typescript
+import { createCachedClient } from '@cuttlegate/sdk';
+
+const client = createCachedClient(
+  {
+    baseUrl: 'http://localhost:8080',
+    token: 'cg_YOUR_API_KEY',
+    project: 'my-project',
+    environment: 'production',
+  },
+  { context: { user_id: 'user-123', attributes: { plan: 'pro' } } },
+);
+
+await client.ready; // wait for initial hydration
+
+const enabled = await client.bool('dark-mode', ctx); // cache hit — no HTTP call
+client.close(); // stop SSE connection
+```
+
+### Offline persistence (FlagStore)
+
+By default, the cache lives only in memory. If the server is unreachable during hydration, `ready` rejects. To survive page reloads or process restarts, provide a `FlagStore`:
+
+```typescript
+import type { FlagStore, FlagStoreEntry } from '@cuttlegate/sdk';
+
+const localStorageStore: FlagStore = {
+  async save(flags: FlagStoreEntry[]) {
+    localStorage.setItem('cg-flags', JSON.stringify(flags));
+  },
+  async load(): Promise<FlagStoreEntry[]> {
+    const raw = localStorage.getItem('cg-flags');
+    return raw ? JSON.parse(raw) : [];
+  },
+};
+
+const client = createCachedClient(config, {
+  store: localStorageStore,
+});
+```
+
+When `store` is set:
+- **`save`** is called after successful hydration and on every SSE update.
+- **`load`** is called when hydration fails (server unreachable, timeout, 5xx). If it returns a non-empty array, the cache is seeded from it and `ready` resolves.
+- Auth errors (401/403) never fall back to the store.
+
+The SDK ships with `noopFlagStore` (the default — no persistence).
+
 ## Testing
 
 See [Testing](/docs/js/testing) for the in-process mock client that lets you test flag-dependent code without a running server.

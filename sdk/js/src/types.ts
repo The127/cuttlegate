@@ -73,3 +73,29 @@ export interface ApiError {
   error: string;
   message: string;
 }
+
+/**
+ * Persistence interface for the CachedClient's flag cache.
+ * Implementations control where flag state is stored between sessions.
+ * The SDK ships with `noopFlagStore` (the default).
+ */
+export interface FlagStore {
+  save(flags: FlagStoreEntry[]): Promise<void>;
+  load(): Promise<FlagStoreEntry[]>;
+}
+
+/** A single flag entry as persisted by FlagStore. */
+export interface FlagStoreEntry {
+  key: string;
+  enabled: boolean;
+  value: string | null;
+  variant: string;
+  reason: string;
+  evaluatedAt: string;
+}
+
+/** A FlagStore that does nothing. Save is a no-op; load returns an empty array. */
+export const noopFlagStore: FlagStore = {
+  save: () => Promise.resolve(),
+  load: () => Promise.resolve([]),
+};

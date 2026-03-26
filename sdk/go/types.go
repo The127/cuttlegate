@@ -1,6 +1,9 @@
 package cuttlegate
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 // EvalContext is the user context sent with every evaluation request.
 //
@@ -52,6 +55,29 @@ type FlagDefault struct {
 	Enabled bool
 	Variant string
 }
+
+// FlagStore is an optional persistence interface for the CachedClient's flag
+// cache. Implementations control where flag state is stored between process
+// restarts (file, database, Redis, etc.). The SDK ships with NoopFlagStore
+// (the default) — consumers supply their own implementation to enable
+// offline bootstrap.
+type FlagStore interface {
+	// Save persists the current flag state. Called after successful bootstrap
+	// and on every SSE cache update.
+	Save(ctx context.Context, flags map[string]EvalResult) error
+	// Load retrieves previously persisted flag state. Called when bootstrap
+	// fails, to seed the cache from the last known good state.
+	// Returns an empty map and nil error if no persisted state exists.
+	Load(ctx context.Context) (map[string]EvalResult, error)
+}
+
+// NoopFlagStore is a FlagStore that does nothing. Save is a no-op and Load
+// always returns an empty map. This is the default when no FlagStore is
+// configured.
+type NoopFlagStore struct{}
+
+func (NoopFlagStore) Save(context.Context, map[string]EvalResult) error   { return nil }
+func (NoopFlagStore) Load(context.Context) (map[string]EvalResult, error) { return map[string]EvalResult{}, nil }
 
 // FlagUpdate is a real-time flag state change received from the SSE stream.
 // It is delivered on the updates channel returned by Client.Subscribe.

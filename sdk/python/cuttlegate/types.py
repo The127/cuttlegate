@@ -94,3 +94,42 @@ class AsyncCuttlegateClientProtocol(Protocol):
     async def evaluate(self, key: str, ctx: EvalContext) -> EvalResult: ...
     async def evaluate_all(self, ctx: EvalContext) -> dict[str, EvalResult]: ...
     async def aclose(self) -> None: ...
+
+
+class FlagStore(Protocol):
+    """Persistence interface for the CachedClient's flag cache.
+
+    Implementations control where flag state is stored between process
+    restarts (file, database, Redis, etc.). The SDK ships with
+    ``NoopFlagStore`` (the default) — consumers supply their own
+    implementation to enable offline bootstrap.
+    """
+
+    def save(self, flags: dict[str, EvalResult]) -> None:
+        """Persist the current flag state.
+
+        Called after successful bootstrap and on every SSE cache update.
+        """
+        ...
+
+    def load(self) -> dict[str, EvalResult]:
+        """Retrieve previously persisted flag state.
+
+        Called when bootstrap fails, to seed the cache from the last
+        known good state. Return an empty dict if no persisted state exists.
+        """
+        ...
+
+
+class NoopFlagStore:
+    """A FlagStore that does nothing.
+
+    ``save`` is a no-op and ``load`` always returns an empty dict.
+    This is the default when no FlagStore is configured.
+    """
+
+    def save(self, flags: dict[str, EvalResult]) -> None:
+        pass
+
+    def load(self) -> dict[str, EvalResult]:
+        return {}

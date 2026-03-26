@@ -38,7 +38,7 @@ from .errors import (
 from .streaming import FlagChangeEvent, StreamConnection, connect_stream
 from .openfeature import CuttlegateProvider
 from .testing import MockCuttlegateClient
-from .types import AsyncCuttlegateClientProtocol, CuttlegateClientProtocol, CuttlegateConfig, EvalContext, EvalResult
+from .types import AsyncCuttlegateClientProtocol, CuttlegateClientProtocol, CuttlegateConfig, EvalContext, EvalResult, FlagStore, NoopFlagStore
 
 __all__ = [
     "AsyncCuttlegateClient",
@@ -51,6 +51,8 @@ __all__ = [
     "CuttlegateConfig",
     "EvalContext",
     "EvalResult",
+    "FlagStore",
+    "NoopFlagStore",
     "connect_stream",
     "StreamConnection",
     "FlagChangeEvent",

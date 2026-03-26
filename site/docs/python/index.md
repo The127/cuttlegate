@@ -94,6 +94,33 @@ ctx = EvalContext(user_id="user-123")
 enabled = cache.bool("dark-mode", ctx)  # cache hit — no HTTP call
 ```
 
+### Offline persistence (FlagStore)
+
+By default, the cache lives only in memory. If the server is down at construction time, the constructor raises. To survive restarts, provide a `FlagStore`:
+
+```python
+from cuttlegate import CachedClient, CuttlegateConfig, EvalResult, FlagStore
+
+class RedisFlagStore:
+    """Example FlagStore backed by Redis."""
+
+    def save(self, flags: dict[str, EvalResult]) -> None:
+        redis.set("cg-flags", serialize(flags))
+
+    def load(self) -> dict[str, EvalResult]:
+        raw = redis.get("cg-flags")
+        return deserialize(raw) if raw else {}
+
+cache = CachedClient(config, store=RedisFlagStore())
+```
+
+When `store` is set:
+- **`save`** is called after successful bootstrap and on every SSE update.
+- **`load`** is called when bootstrap fails (server unreachable). If it returns a non-empty dict, the cache is seeded from it and the SSE thread starts normally.
+- Auth errors never fall back to the store.
+
+The SDK ships with `NoopFlagStore` (the default — no persistence).
+
 ## Testing
 
 Use `MockCuttlegateClient` for unit tests without a live server:

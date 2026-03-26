@@ -154,6 +154,62 @@ func TestMyService(t *testing.T) {
 
 Available mock helpers: `Enable`, `Disable`, `SetVariant`, `AssertEvaluated`, `AssertNotEvaluated`, `Reset`.
 
+## CachedClient
+
+For hot paths, use `CachedClient`. It seeds an in-memory cache via `EvaluateAll` on `Bootstrap` and keeps it fresh via a background SSE connection:
+
+```go
+cc, err := cuttlegate.NewCachedClient(cuttlegate.Config{
+    BaseURL:      "https://flags.example.com",
+    ServiceToken: "cg_your_api_key_here",
+    Project:      "my-project",
+    Environment:  "production",
+})
+if err != nil {
+    log.Fatal(err)
+}
+
+ctx, cancel := context.WithCancel(context.Background())
+defer cancel()
+
+if err := cc.Bootstrap(ctx, cuttlegate.EvalContext{UserID: "user-123"}); err != nil {
+    log.Fatal(err)
+}
+
+// Cache hit — no HTTP call
+enabled, _ := cc.Bool(ctx, "dark-mode", cuttlegate.EvalContext{UserID: "user-123"})
+```
+
+`CachedClient` satisfies the `Client` interface — you can substitute it transparently.
+
+### Offline persistence (FlagStore)
+
+By default, the cache lives only in memory. If the server is down when `Bootstrap` is called, it fails. To survive restarts, provide a `FlagStore` implementation:
+
+```go
+type FlagStore interface {
+    Save(ctx context.Context, flags map[string]EvalResult) error
+    Load(ctx context.Context) (map[string]EvalResult, error)
+}
+```
+
+The SDK ships with `NoopFlagStore` (the default — no persistence). You bring your own:
+
+```go
+cc, _ := cuttlegate.NewCachedClient(cuttlegate.Config{
+    BaseURL:      "https://flags.example.com",
+    ServiceToken: "cg_your_api_key_here",
+    Project:      "my-project",
+    Environment:  "production",
+    Store:        myRedisStore, // or file store, sqlite, etc.
+})
+```
+
+When `Store` is set:
+- **`Save`** is called after successful bootstrap and on every SSE update.
+- **`Load`** is called when bootstrap fails (server unreachable). If it returns a non-empty map, the cache is seeded from it and the SSE goroutine starts normally.
+- Auth errors (401/403) never fall back to the store.
+
 ## Configuration reference
 
 | Field | Type | Required | Default | Description |
@@ -165,6 +221,8 @@ Available mock helpers: `Enable`, `Disable`, `SetVariant`, `AssertEvaluated`, `A
 | `HTTPClient` | `*http.Client` | no | nil | Custom HTTP client; if set, `Timeout` is ignored |
 | `StreamHTTPClient` | `*http.Client` | no | nil | Custom HTTP client for SSE connections; must not have a short timeout |
 | `Timeout` | `time.Duration` | no | 10s | Request timeout for evaluation calls when `HTTPClient` is nil |
+| `Defaults` | `map[string]FlagDefault` | no | nil | Fallback flag values when the server is unreachable |
+| `Store` | `FlagStore` | no | `NoopFlagStore{}` | Persistence store for offline bootstrap (see above) |
 
 ## Custom HTTP client
 

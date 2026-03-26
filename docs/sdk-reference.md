@@ -67,6 +67,20 @@ Comparison of the Go, JavaScript, and Python SDKs. Each SDK has its own README w
 | Cache miss | — | Returns `not_found` (no HTTP fallback) | Falls back to live HTTP |
 | Thread safety | — | Single-threaded (JS) | Lock-based (daemon thread for SSE) |
 
+## Offline Persistence (FlagStore)
+
+All three SDKs support an optional `FlagStore` interface for persisting the cached flag state across restarts. The SDK ships a no-op default; consumers bring their own implementation.
+
+| Aspect | Go | JavaScript | Python |
+|---|---|---|---|
+| Interface | `FlagStore` (interface) | `FlagStore` (interface) | `FlagStore` (Protocol) |
+| No-op default | `NoopFlagStore{}` | `noopFlagStore` | `NoopFlagStore()` |
+| Config field | `Config.Store` | `CachedClientOptions.store` | `CachedClient(config, store=...)` |
+| Save shape | `map[string]EvalResult` | `FlagStoreEntry[]` | `dict[str, EvalResult]` |
+| Load shape | `map[string]EvalResult` | `FlagStoreEntry[]` | `dict[str, EvalResult]` |
+| Save triggers | After bootstrap + on SSE update | After hydration + on SSE update | After bootstrap + on SSE update |
+| Load trigger | When bootstrap/hydration fails (non-auth) | When hydration fails (non-auth) | When bootstrap fails (non-auth) |
+
 ## Error Taxonomy
 
 | Scenario | Go | JavaScript | Python |

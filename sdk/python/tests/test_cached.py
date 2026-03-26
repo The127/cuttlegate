@@ -424,3 +424,117 @@ def test_structural_protocol_satisfied():
             )
     finally:
         client.close()
+
+
+# ---------------------------------------------------------------------------
+# FlagStore integration
+# ---------------------------------------------------------------------------
+
+def test_store_save_called_after_bootstrap():
+    """Store.save() is called after successful bootstrap."""
+    class RecordingStore:
+        def __init__(self):
+            self.saved = []
+        def save(self, flags):
+            self.saved.append(dict(flags))
+        def load(self):
+            return {}
+
+    store = RecordingStore()
+    flags = {"dark-mode": _eval_result("dark-mode", enabled=True)}
+    fake_inner = _FakeInnerClient(flags)
+    mock_conn = _make_mock_stream_connection()
+
+    with patch("cuttlegate.cached.CuttlegateClient", return_value=fake_inner), \
+         patch("cuttlegate.cached.connect_stream", return_value=mock_conn):
+        client = CachedClient(_config(), store=store)
+
+    try:
+        assert len(store.saved) == 1
+        assert "dark-mode" in store.saved[0]
+    finally:
+        client.close()
+
+
+def test_store_load_fallback_on_bootstrap_failure():
+    """When bootstrap fails, Store.load() is used as fallback."""
+    class FallbackStore:
+        def save(self, flags):
+            pass
+        def load(self):
+            return {"dark-mode": _eval_result("dark-mode", enabled=True, variant="true")}
+
+    store = FallbackStore()
+    fake_inner = _FakeInnerClient({}, raise_on_evaluate_all=SDKError("connection refused"))
+    mock_conn = _make_mock_stream_connection()
+
+    with patch("cuttlegate.cached.CuttlegateClient", return_value=fake_inner), \
+         patch("cuttlegate.cached.connect_stream", return_value=mock_conn):
+        client = CachedClient(_config(), store=store)
+
+    ctx = EvalContext(user_id="u1")
+    try:
+        assert client.bool("dark-mode", ctx) is True
+    finally:
+        client.close()
+
+
+def test_store_load_empty_propagates_original_error():
+    """When Store.load() returns empty, original bootstrap error propagates."""
+    class EmptyStore:
+        def save(self, flags):
+            pass
+        def load(self):
+            return {}
+
+    store = EmptyStore()
+    fake_inner = _FakeInnerClient({}, raise_on_evaluate_all=SDKError("connection refused"))
+
+    with patch("cuttlegate.cached.CuttlegateClient", return_value=fake_inner), \
+         patch("cuttlegate.cached.connect_stream"):
+        with pytest.raises(SDKError):
+            CachedClient(_config(), store=store)
+
+
+def test_noop_flag_store():
+    """NoopFlagStore.save is a no-op and load returns empty dict."""
+    from cuttlegate.types import NoopFlagStore
+    store = NoopFlagStore()
+    store.save({"k": _eval_result("k")})
+    result = store.load()
+    assert result == {}
+
+
+def test_store_save_called_on_sse_event():
+    """Store.save() is called after an SSE event updates the cache."""
+    class RecordingStore:
+        def __init__(self):
+            self.save_count = 0
+        def save(self, flags):
+            self.save_count += 1
+        def load(self):
+            return {}
+
+    store = RecordingStore()
+    flags = {"dark-mode": _eval_result("dark-mode", enabled=True)}
+    fake_inner = _FakeInnerClient(flags)
+    mock_conn = _make_mock_stream_connection()
+
+    with patch("cuttlegate.cached.CuttlegateClient", return_value=fake_inner), \
+         patch("cuttlegate.cached.connect_stream", return_value=mock_conn):
+        client = CachedClient(_config(), store=store)
+
+    try:
+        saves_before = store.save_count
+        event = FlagChangeEvent(
+            type="flag.state_changed",
+            project="test-project",
+            environment="production",
+            flag_key="dark-mode",
+            enabled=False,
+            occurred_at="2026-03-23T11:00:00Z",
+        )
+        client._apply_event(event)
+        assert store.save_count > saves_before
+    finally:
+        client.close()

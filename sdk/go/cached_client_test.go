@@ -570,3 +570,122 @@ func TestCachedClient_SSE_TerminatesOn401(t *testing.T) {
 		t.Error("expected true for dark-mode from cache after SSE goroutine stopped on 401")
 	}
 }
+
+// --- FlagStore helpers ---
+
+// recordingStore is a test FlagStore that records Save calls and returns a
+// configurable Load result.
+type recordingStore struct {
+	mu         sync.Mutex
+	saves      int
+	loadResult map[string]cuttlegate.EvalResult
+}
+
+func (s *recordingStore) Save(_ context.Context, _ map[string]cuttlegate.EvalResult) error {
+	s.mu.Lock()
+	s.saves++
+	s.mu.Unlock()
+	return nil
+}
+
+func (s *recordingStore) Load(_ context.Context) (map[string]cuttlegate.EvalResult, error) {
+	if s.loadResult != nil {
+		return s.loadResult, nil
+	}
+	return map[string]cuttlegate.EvalResult{}, nil
+}
+
+func (s *recordingStore) saveCount() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.saves
+}
+
+// --- @happy: Store.Save called after successful Bootstrap ---
+
+func TestCachedClient_Bootstrap_CallsStoreSave(t *testing.T) {
+	srv := serveCombined(t, bulkResponse, 200, nil)
+	defer srv.Close()
+
+	store := &recordingStore{}
+	cfg := validConfig(srv.URL)
+	cfg.Store = store
+	cc, err := cuttlegate.NewCachedClient(cfg)
+	if err != nil {
+		t.Fatalf("NewCachedClient: %v", err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if err := cc.Bootstrap(ctx, cuttlegate.EvalContext{UserID: "u1"}); err != nil {
+		t.Fatalf("Bootstrap: %v", err)
+	}
+
+	if store.saveCount() == 0 {
+		t.Error("expected Store.Save to be called after successful Bootstrap")
+	}
+}
+
+// --- @happy: Store.Load used as fallback when Bootstrap fails ---
+
+func TestCachedClient_Bootstrap_FallsBackToStoreLoad(t *testing.T) {
+	// Server unreachable; Store.Load returns cached flags.
+	store := &recordingStore{
+		loadResult: map[string]cuttlegate.EvalResult{
+			"dark-mode": {Key: "dark-mode", Enabled: true, Variant: "true", Reason: "default"},
+		},
+	}
+	cfg := validConfig("http://127.0.0.1:1") // nothing listening
+	cfg.Store = store
+	cc, err := cuttlegate.NewCachedClient(cfg)
+	if err != nil {
+		t.Fatalf("NewCachedClient: %v", err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if err := cc.Bootstrap(ctx, cuttlegate.EvalContext{UserID: "u1"}); err != nil {
+		t.Fatalf("Bootstrap should succeed with Store fallback, got: %v", err)
+	}
+
+	val, err := cc.Bool(ctx, "dark-mode", cuttlegate.EvalContext{UserID: "u1"})
+	if err != nil {
+		t.Fatalf("Bool: %v", err)
+	}
+	if !val {
+		t.Error("expected true for dark-mode from Store fallback")
+	}
+}
+
+// --- @edge: Store.Load returns empty — original error propagates ---
+
+func TestCachedClient_Bootstrap_StoreLoadEmpty_ReturnsOriginalError(t *testing.T) {
+	store := &recordingStore{} // Load returns empty
+	cfg := validConfig("http://127.0.0.1:1")
+	cfg.Store = store
+	cc, err := cuttlegate.NewCachedClient(cfg)
+	if err != nil {
+		t.Fatalf("NewCachedClient: %v", err)
+	}
+
+	err = cc.Bootstrap(context.Background(), cuttlegate.EvalContext{UserID: "u1"})
+	if err == nil {
+		t.Fatal("expected error when both server and Store.Load return nothing")
+	}
+}
+
+// --- @happy: NoopFlagStore does nothing ---
+
+func TestNoopFlagStore_SaveAndLoad(t *testing.T) {
+	store := cuttlegate.NoopFlagStore{}
+	if err := store.Save(context.Background(), map[string]cuttlegate.EvalResult{"k": {}}); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+	result, err := store.Load(context.Background())
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if len(result) != 0 {
+		t.Errorf("expected empty map, got %d entries", len(result))
+	}
+}

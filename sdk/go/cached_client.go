@@ -46,6 +46,9 @@ func NewCachedClient(cfg Config) (*CachedClient, error) {
 	if err != nil {
 		return nil, err
 	}
+	if cfg.Store == nil {
+		cfg.Store = NoopFlagStore{}
+	}
 	return &CachedClient{
 		inner: inner,
 		cfg:   cfg,
@@ -62,9 +65,17 @@ func NewCachedClient(cfg Config) (*CachedClient, error) {
 // previous goroutine is stopped and the cache is replaced with a fresh
 // EvaluateAll result.
 func (cc *CachedClient) Bootstrap(ctx context.Context, ec EvalContext) error {
-	results, err := cc.inner.EvaluateAll(ctx, ec)
-	if err != nil {
-		return err
+	results, evalErr := cc.inner.EvaluateAll(ctx, ec)
+	if evalErr != nil {
+		// EvaluateAll failed — try loading from the store as fallback.
+		loaded, loadErr := cc.cfg.Store.Load(ctx)
+		if loadErr != nil || len(loaded) == 0 {
+			return evalErr
+		}
+		results = loaded
+	} else {
+		// Persist the fresh results (fire-and-forget).
+		_ = cc.cfg.Store.Save(ctx, results)
 	}
 
 	// Derive a child context for the SSE goroutine so we can stop it without
@@ -237,12 +248,24 @@ func (cc *CachedClient) attemptCacheStream(ctx context.Context, httpClient *http
 		}
 
 		cc.applyCacheUpdate(wire)
+		_ = cc.cfg.Store.Save(ctx, cc.cacheSnapshot())
 	}
 
 	if ctx.Err() != nil {
 		return streamResultClosed
 	}
 	return streamResultReconnect
+}
+
+// cacheSnapshot returns a shallow copy of the current cache under the read lock.
+func (cc *CachedClient) cacheSnapshot() map[string]EvalResult {
+	cc.mu.RLock()
+	defer cc.mu.RUnlock()
+	snapshot := make(map[string]EvalResult, len(cc.cache))
+	for k, v := range cc.cache {
+		snapshot[k] = v
+	}
+	return snapshot
 }
 
 // applyCacheUpdate writes the SSE event into the cache only if the flag key

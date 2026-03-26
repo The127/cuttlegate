@@ -689,3 +689,103 @@ describe('context-aware hydration', () => {
     client.close();
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────
+// FlagStore integration
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('FlagStore integration', () => {
+  it('calls store.save after successful hydration', async () => {
+    const saved: unknown[] = [];
+    const store = {
+      save: vi.fn((flags: unknown[]) => { saved.push(...flags); return Promise.resolve(); }),
+      load: vi.fn(() => Promise.resolve([])),
+    };
+
+    const fetchFn = buildFetch({
+      hydrationBody: bulkResponse([{ key: 'my-flag', enabled: true }]),
+    });
+
+    const client = createCachedClient(
+      { ...validConfig, fetch: fetchFn },
+      { store },
+    );
+    await client.ready;
+    await settle();
+
+    expect(store.save).toHaveBeenCalled();
+    expect(saved.length).toBeGreaterThanOrEqual(1);
+
+    client.close();
+  });
+
+  it('falls back to store.load when hydration fails with network error', async () => {
+    const store = {
+      save: vi.fn(() => Promise.resolve()),
+      load: vi.fn(() => Promise.resolve([
+        { key: 'cached-flag', enabled: true, value: null, variant: 'true', reason: 'default', evaluatedAt: '2026-01-01T00:00:00Z' },
+      ])),
+    };
+
+    const fetchFn = buildFetch({ hydrationStatus: 500 });
+
+    const client = createCachedClient(
+      { ...validConfig, fetch: fetchFn },
+      { store },
+    );
+    await client.ready;
+
+    const result = await client.evaluate('cached-flag', defaultContext);
+    expect(result.enabled).toBe(true);
+    expect(result.variant).toBe('true');
+
+    client.close();
+  });
+
+  it('does not fall back to store on auth errors (401)', async () => {
+    const store = {
+      save: vi.fn(() => Promise.resolve()),
+      load: vi.fn(() => Promise.resolve([
+        { key: 'cached-flag', enabled: true, value: null, variant: 'true', reason: 'default', evaluatedAt: '2026-01-01T00:00:00Z' },
+      ])),
+    };
+
+    const fetchFn = buildFetch({ hydrationStatus: 401 });
+
+    const client = createCachedClient(
+      { ...validConfig, fetch: fetchFn },
+      { store },
+    );
+
+    await expect(client.ready).rejects.toSatisfy((err: unknown) => {
+      return err instanceof CuttlegateError && err.code === 'unauthorized';
+    });
+    // store.load should NOT have been called for auth errors
+    expect(store.load).not.toHaveBeenCalled();
+  });
+
+  it('store.load returning empty still rejects ready', async () => {
+    const store = {
+      save: vi.fn(() => Promise.resolve()),
+      load: vi.fn(() => Promise.resolve([])),
+    };
+
+    const fetchFn = buildFetch({ hydrationStatus: 500 });
+
+    const client = createCachedClient(
+      { ...validConfig, fetch: fetchFn },
+      { store },
+    );
+
+    await expect(client.ready).rejects.toSatisfy((err: unknown) => {
+      return err instanceof CuttlegateError && err.code === 'network_error';
+    });
+  });
+
+  it('noopFlagStore save and load are no-ops', async () => {
+    const { noopFlagStore } = await import('./types.js');
+    await expect(noopFlagStore.save([])).resolves.toBeUndefined();
+    const result = await noopFlagStore.load();
+    expect(result).toEqual([]);
+  });
+});

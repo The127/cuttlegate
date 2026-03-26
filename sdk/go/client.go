@@ -89,6 +89,12 @@ type Config struct {
 	// Auth errors (401/403) still return an error — defaults are not applied.
 	// Keys are flag keys; values provide the fallback state.
 	Defaults map[string]FlagDefault
+
+	// Store is an optional FlagStore for persisting flag state across process
+	// restarts. When set, the CachedClient calls Store.Save after bootstrap
+	// and on every SSE update, and falls back to Store.Load if bootstrap fails.
+	// Defaults to NoopFlagStore (no persistence).
+	Store FlagStore
 }
 
 // NewClient constructs an authenticated Cuttlegate client.

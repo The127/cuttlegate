@@ -23,7 +23,7 @@ from typing import Optional
 from .client import CuttlegateClient
 from .errors import SDKError
 from .streaming import FlagChangeEvent, StreamConnection, connect_stream
-from .types import CuttlegateConfig, EvalContext, EvalResult
+from .types import CuttlegateConfig, EvalContext, EvalResult, FlagStore, NoopFlagStore
 
 
 class CachedClient:
@@ -45,13 +45,14 @@ class CachedClient:
             No cache is stored and no background thread is started.
     """
 
-    def __init__(self, config: CuttlegateConfig) -> None:
+    def __init__(self, config: CuttlegateConfig, store: FlagStore | None = None) -> None:
         self._config = config
         self._inner = CuttlegateClient(config)
         self._lock = threading.Lock()
         # _cache is populated by bootstrap(); until then it is empty.
         self._cache: dict[str, EvalResult] = {}
         self._stream: Optional[StreamConnection] = None
+        self._store: FlagStore = store if store is not None else NoopFlagStore()
 
         # Bootstrap is all-or-nothing: if it raises, no thread is started.
         self._bootstrap()
@@ -151,17 +152,36 @@ class CachedClient:
     def _bootstrap(self) -> None:
         """Seed the cache from evaluate_all and start the SSE thread.
 
-        All-or-nothing: if evaluate_all raises, the exception propagates
-        directly and no SSE thread is started.
+        On success, persists to the FlagStore (best-effort). On failure,
+        attempts to load from the FlagStore as a fallback; if that returns
+        an empty dict the original exception propagates.
         """
         # EvalContext is required by the protocol; the bootstrap call uses a
         # sentinel user_id — the bulk endpoint returns canonical flag state.
         seed_ctx = EvalContext(user_id="__cuttlegate_bootstrap__")
-        # May raise SDKError, AuthError, etc. — propagates directly.
-        results = self._inner.evaluate_all(seed_ctx)
+        try:
+            results = self._inner.evaluate_all(seed_ctx)
+        except Exception as exc:
+            # Try loading from store as fallback
+            stored = self._store.load()
+            if stored:
+                with self._lock:
+                    self._cache = stored
+                self._stream = connect_stream(
+                    self._config,
+                    on_change=self._apply_event,
+                )
+                return
+            raise exc
 
         with self._lock:
             self._cache = results
+
+        # Persist to store (best-effort)
+        try:
+            self._store.save(results)
+        except Exception:
+            pass
 
         # Cache is seeded — now start the SSE background thread.
         self._stream = connect_stream(
@@ -189,3 +209,8 @@ class CachedClient:
                     evaluated_at=existing.evaluated_at,
                     value=existing.value,
                 )
+                # Persist to store (best-effort, under lock to get consistent snapshot)
+                try:
+                    self._store.save(dict(self._cache))
+                except Exception:
+                    pass
