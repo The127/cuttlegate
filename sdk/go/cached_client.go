@@ -112,7 +112,7 @@ func (cc *CachedClient) String(ctx context.Context, key string, ec EvalContext) 
 	cc.mu.RUnlock()
 
 	if ok {
-		return result.Value, nil
+		return result.Variant, nil
 	}
 	return cc.inner.String(ctx, key, ec)
 }

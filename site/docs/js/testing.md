@@ -29,7 +29,7 @@ mock.enable('dark-mode');
 mock.setVariant('button-color', 'blue');
 
 // Use it like the real client
-const result = await mock.evaluateFlag('dark-mode', { user_id: 'user-1', attributes: {} });
+const result = await mock.evaluate('dark-mode', { user_id: 'user-1', attributes: {} });
 console.log(result.enabled); // true
 ```
 
@@ -54,15 +54,15 @@ The mock implements the same `CuttlegateClient` interface as the real client:
 
 ```typescript
 // Evaluate a single flag
-const result = await mock.evaluateFlag('my-flag', { user_id: 'user-1', attributes: {} });
-// { enabled: boolean, value: string | null, reason: string }
+const result = await mock.evaluate('my-flag', { user_id: 'user-1', attributes: {} });
+// { key, enabled, variant, reason, evaluatedAt }
 
 // Evaluate all configured flags
-const results = await mock.evaluate({ user_id: 'user-1', attributes: {} });
-// EvaluationResult[] — only flags that were explicitly configured
+const results = await mock.evaluateAll({ user_id: 'user-1', attributes: {} });
+// EvalResult[] — only flags that were explicitly configured
 ```
 
-**Default behaviour:** unconfigured flags return `{ enabled: false, value: null, reason: "mock_default" }`.
+**Default behaviour:** unconfigured flags return `{ enabled: false, variant: '', reason: 'mock_default' }`.
 
 ### Assertions
 

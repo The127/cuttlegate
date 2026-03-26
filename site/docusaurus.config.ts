@@ -11,10 +11,10 @@ const config: Config = {
     v4: true,
   },
 
-  url: 'https://karo.github.io',
+  url: 'https://the127.github.io',
   baseUrl: '/cuttlegate/',
 
-  organizationName: 'karo',
+  organizationName: 'The127',
   projectName: 'cuttlegate',
   trailingSlash: false,
 

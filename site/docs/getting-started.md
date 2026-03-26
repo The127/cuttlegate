@@ -7,7 +7,7 @@ sidebar_position: 1
 
 This guide takes you from zero to your first SDK-powered flag evaluation — with targeting rules, segments, and a real audit trail.
 
-**Prerequisites:** Docker, Git, and either Node 18+ (for the JS path) or Go 1.21+ (for the Go path). Nothing else.
+**Prerequisites:** Docker, Git, and either Node 20+ (for the JS path) or Go 1.24+ (for the Go path). Nothing else.
 
 By the end you will have:
 

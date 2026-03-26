@@ -1,6 +1,6 @@
 # Cuttlegate Go SDK
 
-Go client for the [Cuttlegate](https://github.com/The127/cuttlegate) feature-flag service. Requires Go 1.22 or later.
+Go client for the [Cuttlegate](https://github.com/The127/cuttlegate) feature-flag service. Requires Go 1.24 or later.
 
 ## Install
 
@@ -105,7 +105,7 @@ func main() {
 | `Value` | `string` | **Deprecated.** Empty for bool flags. Use `Variant` instead. |
 | `EvaluatedAt` | `string` | ISO 8601 evaluation timestamp |
 
-**`String()` method note:** `String(ctx, key, evalCtx)` returns `result.Value`, which is empty for bool flags. Do not call `String()` on a bool flag — use `Bool()` instead, and use `Variant` if you need the raw `"true"`/`"false"` key.
+**`String()` method note:** `String(ctx, key, evalCtx)` returns `result.Variant`. For bool flags, `Variant` is `"true"` or `"false"` — use `Bool()` instead for a typed `bool` value.
 
 ### FlagResult (deprecated)
 

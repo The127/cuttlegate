@@ -26,13 +26,14 @@ const cg = createClient({
 });
 
 // Evaluate a single flag
-const result = await cg.evaluateFlag('dark-mode', {
+const result = await cg.evaluate('dark-mode', {
   user_id: 'user-123',
-  attributes: {},
+  attributes: { plan: 'pro' },
 });
 
-console.log(result.enabled); // true or false
-console.log(result.reason);  // 'disabled', 'default', 'rule_match', or 'rollout'
+console.log(result.enabled);  // true or false
+console.log(result.variant);  // "true", "false", or a variant key
+console.log(result.reason);   // "disabled", "default", "targeting_rule", etc.
 ```
 
 ## Configuration
@@ -53,23 +54,30 @@ console.log(result.reason);  // 'disabled', 'default', 'rule_match', or 'rollout
 ### Single flag
 
 ```typescript
-const result = await cg.evaluateFlag('my-flag', {
+const result = await cg.evaluate('my-flag', {
   user_id: 'user-123',
   attributes: { plan: 'pro', country: 'DE' },
 });
-// { enabled: boolean, value: string | null, reason: string }
+// { key, enabled, variant, reason, evaluatedAt }
 ```
 
-If the flag does not exist, the SDK returns `{ enabled: false, value: null, reason: 'not_found' }`.
+If the flag does not exist, the SDK throws `CuttlegateError` with `code: 'not_found'`.
+
+### Convenience methods
+
+```typescript
+const enabled = await cg.bool('dark-mode', ctx);   // returns boolean
+const variant = await cg.string('banner-text', ctx); // returns variant string
+```
 
 ### Bulk evaluation
 
 ```typescript
-const results = await cg.evaluate({
+const results = await cg.evaluateAll({
   user_id: 'user-123',
   attributes: { plan: 'pro' },
 });
-// EvaluationResult[] — one entry per flag in the project/environment
+// EvalResult[] — one entry per flag in the project/environment
 ```
 
 ## Error handling
@@ -80,12 +88,13 @@ The SDK throws `CuttlegateError` with a machine-readable `code`:
 import { CuttlegateError } from '@cuttlegate/sdk';
 
 try {
-  await cg.evaluateFlag('my-flag', ctx);
+  await cg.evaluate('my-flag', ctx);
 } catch (err) {
   if (err instanceof CuttlegateError) {
     switch (err.code) {
       case 'unauthorized':     // invalid or expired token
       case 'forbidden':        // token lacks access to this project/environment
+      case 'not_found':        // flag key does not exist
       case 'timeout':          // request exceeded timeout
       case 'network_error':    // server unreachable or non-2xx response
       case 'invalid_response': // response didn't match expected schema

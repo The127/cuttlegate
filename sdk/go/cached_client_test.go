@@ -212,7 +212,7 @@ func TestCachedClient_Bool_CacheHit_NoHTTPCall(t *testing.T) {
 	}
 }
 
-// --- @happy: String returns cached value on cache hit ---
+// --- @happy: String returns cached Variant (not deprecated Value) ---
 
 func TestCachedClient_String_CacheHit(t *testing.T) {
 	// @happy
@@ -233,6 +233,38 @@ func TestCachedClient_String_CacheHit(t *testing.T) {
 	}
 	if val != "holiday" {
 		t.Errorf("expected holiday, got %q", val)
+	}
+}
+
+// --- @edge: String returns Variant, not deprecated Value, when they differ ---
+
+func TestCachedClient_String_ReturnsVariantNotValue(t *testing.T) {
+	// @edge — Value is deprecated and may be nil or stale; String must return Variant.
+	// Construct a response where value != value_key to prove the cache uses Variant.
+	divergentResponse := map[string]any{
+		"flags": []map[string]any{
+			{"key": "promo-banner", "enabled": true, "value": "old-copy", "value_key": "new-copy", "reason": "default", "type": "string"},
+		},
+		"evaluated_at": "2026-03-23T10:00:00Z",
+	}
+
+	srv := serveCombined(t, divergentResponse, 200, nil)
+	defer srv.Close()
+
+	cc := newCachedClient(t, srv.URL)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if err := cc.Bootstrap(ctx, cuttlegate.EvalContext{UserID: "u1"}); err != nil {
+		t.Fatalf("Bootstrap: %v", err)
+	}
+
+	val, err := cc.String(ctx, "promo-banner", cuttlegate.EvalContext{UserID: "u1"})
+	if err != nil {
+		t.Fatalf("String: %v", err)
+	}
+	if val != "new-copy" {
+		t.Errorf("expected Variant 'new-copy', got %q (probably returned deprecated Value)", val)
 	}
 }
 

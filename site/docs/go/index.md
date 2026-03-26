@@ -5,7 +5,7 @@ sidebar_position: 1
 
 # Go SDK
 
-The Cuttlegate Go SDK evaluates feature flags in your Go services. It requires Go 1.22 or later.
+The Cuttlegate Go SDK evaluates feature flags in your Go services. It requires Go 1.24 or later.
 
 ## Install
 
@@ -59,6 +59,7 @@ func main() {
 | Method | Returns | Notes |
 |---|---|---|
 | `Bool(ctx, key, evalCtx)` | `(bool, error)` | Preferred for boolean flags |
+| `String(ctx, key, evalCtx)` | `(string, error)` | Returns the variant string |
 | `Evaluate(ctx, key, evalCtx)` | `(EvalResult, error)` | Returns full result including `Reason` and `Variant` |
 | `EvaluateAll(ctx, evalCtx)` | `(map[string]EvalResult, error)` | Evaluates all flags in one HTTP round trip |
 | `EvaluateFlag(ctx, key, evalCtx)` | `(FlagResult, error)` | Deprecated — use `Bool` or `Evaluate` for new code |
@@ -72,8 +73,8 @@ func main() {
 type EvalResult struct {
     Key         string // flag key
     Enabled     bool   // whether the flag is enabled for this context
-    Value       string // string value; empty for bool flags
-    Variant     string // variant key; "true" or "false" for bool flags
+    Value       string // Deprecated — use Variant instead
+    Variant     string // Primary field: variant key; "true"/"false" for bool flags
     Reason      string // "targeting_rule", "default", "disabled", or "percentage_rollout"
     EvaluatedAt string // ISO 8601 timestamp
 }

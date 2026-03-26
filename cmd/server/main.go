@@ -163,7 +163,8 @@ func run() error {
 		httpadapter.NewEvaluationAuditHandler(evalAuditSvc, projSvc, envSvc).RegisterRoutes(mux, requireBearerWithRLS)
 		httpadapter.NewEvaluationStatsHandler(evalStatsSvc, projSvc, envSvc).RegisterRoutes(mux, requireBearerWithRLS)
 
-		httpadapter.NewSSEHandler(broker, projSvc, envSvc).RegisterRoutes(mux, requireBearerWithRLS)
+		sseAuth := func(h http.Handler) http.Handler { return requireBearerOrAPIKey(tenantRLS(h)) }
+		httpadapter.NewSSEHandler(broker, projSvc, envSvc).RegisterRoutes(mux, sseAuth)
 		httpadapter.NewAuditHandler(auditSvc, projSvc).RegisterRoutes(mux, requireBearerWithRLS)
 		// ── MCP server ────────────────────────────────────────────────────────
 		mcpMux := http.NewServeMux()
